@@ -22,7 +22,7 @@ class Unit(db.Model):
     # Relationships
     partners = db.relationship('UnitPartner', backref='unit', lazy='dynamic', cascade='all, delete-orphan')
     debts = db.relationship('PartnerDebt', backref='unit', lazy='dynamic')
-    # contracts relationship handled by Contract model
+    # contracts and installments relationships are handled by Contract and Installment models via backref
     
     def __repr__(self):
         return f'<Unit {self.code}>'

@@ -54,8 +54,7 @@ def index():
 def add():
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
-        contractor_id = request.form.get('contractor_id')
-        unit_id = request.form.get('unit_id')
+        code = request.form.get('code', '').strip()
         budget = parse_number(request.form.get('budget', 0))
         start_date = request.form.get('start_date', get_today().isoformat())
         expected_end_date = request.form.get('expected_end_date', '')
@@ -65,17 +64,22 @@ def add():
             flash('الرجاء إدخال اسم المشروع', 'error')
             return redirect(url_for('projects.add'))
         
-        if not contractor_id:
-            flash('الرجاء اختيار المقاول', 'error')
+        if not code:
+            flash('الرجاء إدخال كود المشروع', 'error')
+            return redirect(url_for('projects.add'))
+        
+        # Check if code already exists
+        existing = Project.query.filter_by(code=code).first()
+        if existing:
+            flash('كود المشروع موجود بالفعل', 'error')
             return redirect(url_for('projects.add'))
         
         project = Project(
             id=generate_uid('PRJ'),
             name=name,
-            contractor_id=contractor_id,
-            unit_id=unit_id if unit_id else None,
+            code=code,
             budget=budget if budget > 0 else None,
-            start_date=datetime.strptime(start_date, '%Y-%m-%d').date(),
+            start_date=datetime.strptime(start_date, '%Y-%m-%d').date() if start_date else None,
             expected_end_date=datetime.strptime(expected_end_date, '%Y-%m-%d').date() if expected_end_date else None,
             description=description,
             status='جاري'
@@ -89,14 +93,7 @@ def add():
         return redirect(url_for('projects.detail', id=project.id))
     
     # Get data for form
-    contractors = Contractor.query.order_by(Contractor.name).all()
-    units = Unit.query.order_by(Unit.code).all()
-    contractor_id = request.args.get('contractor_id', '')
-    
     return render_template('projects/add.html',
-                         contractors=contractors,
-                         units=units,
-                         contractor_id=contractor_id,
                          today=get_today())
 
 
@@ -130,26 +127,35 @@ def edit(id):
     
     if request.method == 'POST':
         project.name = request.form.get('name', '').strip()
-        project.contractor_id = request.form.get('contractor_id')
-        project.unit_id = request.form.get('unit_id') or None
+        project.code = request.form.get('code', '').strip()
         project.budget = parse_number(request.form.get('budget', 0)) or None
-        project.start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
+        start_date = request.form.get('start_date', '')
+        project.start_date = datetime.strptime(start_date, '%Y-%m-%d').date() if start_date else None
         expected_end_date = request.form.get('expected_end_date', '')
         project.expected_end_date = datetime.strptime(expected_end_date, '%Y-%m-%d').date() if expected_end_date else None
-        project.status = request.form.get('status', 'جاري')
+        actual_end_date = request.form.get('actual_end_date', '')
+        project.actual_end_date = datetime.strptime(actual_end_date, '%Y-%m-%d').date() if actual_end_date else None
+        project.status = request.form.get('status', 'نشط')
         project.description = request.form.get('description', '').strip()
+        project.is_default = request.form.get('is_default') == '1'
         
         if not project.name:
             flash('الرجاء إدخال اسم المشروع', 'error')
             return redirect(url_for('projects.edit', id=id))
         
-        if not project.contractor_id:
-            flash('الرجاء اختيار المقاول', 'error')
+        if not project.code:
+            flash('الرجاء إدخال كود المشروع', 'error')
             return redirect(url_for('projects.edit', id=id))
         
-        # If marking as completed, set end date
-        if project.status == 'مكتمل' and not project.actual_end_date:
-            project.actual_end_date = get_today()
+        # Check if code already exists (excluding current project)
+        existing = Project.query.filter(Project.code == project.code, Project.id != project.id).first()
+        if existing:
+            flash('كود المشروع موجود بالفعل', 'error')
+            return redirect(url_for('projects.edit', id=id))
+        
+        # If marking as default, unset other defaults
+        if project.is_default:
+            Project.query.filter(Project.id != project.id).update({'is_default': False})
         
         log_action('تعديل مشروع', {'id': project.id, 'name': project.name})
         db.session.commit()
@@ -157,14 +163,7 @@ def edit(id):
         flash('تم تحديث بيانات المشروع بنجاح', 'success')
         return redirect(url_for('projects.detail', id=id))
     
-    # Get data for form
-    contractors = Contractor.query.order_by(Contractor.name).all()
-    units = Unit.query.order_by(Unit.code).all()
-    
-    return render_template('projects/edit.html',
-                         project=project,
-                         contractors=contractors,
-                         units=units)
+    return render_template('projects/edit.html', project=project)
 
 
 @bp.route('/<id>/add-stage', methods=['POST'])

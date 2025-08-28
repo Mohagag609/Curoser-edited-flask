@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-gray-900">{{ project.name }}</h2>
+        <div class="flex gap-2">
+            <a href="{{ url_for('projects.set_project', project_id=project.id) }}" class="btn btn-primary">
+                <i class="fas fa-check ml-2"></i>
+                تحديد كمشروع حالي
+            </a>
+            <a href="{{ url_for('projects.edit', id=project.id) }}" class="btn btn-secondary">
+                <i class="fas fa-edit ml-2"></i>
+                تعديل
+            </a>
+            <a href="{{ url_for('projects.index') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right ml-2"></i>
+                رجوع
+            </a>
+        </div>
+    </div>
+    
+    <!-- معلومات المشروع -->
+    <div class="card mb-6">
+        <h3 class="text-lg font-semibold mb-4">معلومات المشروع</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="text-sm text-gray-600">كود المشروع</label>
+                <p class="font-medium">{{ project.code }}</p>
+            </div>
+            <div>
+                <label class="text-sm text-gray-600">الحالة</label>
+                <p>
+                    {% if project.status == 'نشط' %}
+                        <span class="badge badge-success">{{ project.status }}</span>
+                    {% elif project.status == 'مكتمل' %}
+                        <span class="badge badge-secondary">{{ project.status }}</span>
+                    {% else %}
+                        <span class="badge badge-warning">{{ project.status }}</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div>
+                <label class="text-sm text-gray-600">الميزانية</label>
+                <p class="font-medium">{{ format_currency(project.budget) if project.budget else '-' }}</p>
+            </div>
+            <div>
+                <label class="text-sm text-gray-600">تاريخ البداية</label>
+                <p>{{ project.start_date if project.start_date else '-' }}</p>
+            </div>
+            <div>
+                <label class="text-sm text-gray-600">التاريخ المتوقع للانتهاء</label>
+                <p>{{ project.expected_end_date if project.expected_end_date else '-' }}</p>
+            </div>
+            <div>
+                <label class="text-sm text-gray-600">التاريخ الفعلي للانتهاء</label>
+                <p>{{ project.actual_end_date if project.actual_end_date else '-' }}</p>
+            </div>
+            {% if project.description %}
+            <div class="md:col-span-3">
+                <label class="text-sm text-gray-600">الوصف</label>
+                <p class="mt-1">{{ project.description }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- الوحدات -->
+    <div class="card mb-6">
+        <h3 class="text-lg font-semibold mb-4">الوحدات في المشروع ({{ project.units.count() }})</h3>
+        {% if project.units.count() > 0 %}
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>كود الوحدة</th>
+                        <th>الاسم</th>
+                        <th>المبنى</th>
+                        <th>الدور</th>
+                        <th>المساحة</th>
+                        <th>السعر</th>
+                        <th>الحالة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for unit in project.units.limit(10) %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('units.detail', id=unit.id) }}" class="text-blue-600 hover:underline">
+                                {{ unit.code }}
+                            </a>
+                        </td>
+                        <td>{{ unit.name }}</td>
+                        <td>{{ unit.building }}</td>
+                        <td>{{ unit.floor }}</td>
+                        <td>{{ unit.area }} م²</td>
+                        <td>{{ format_currency(unit.total_price) }}</td>
+                        <td>
+                            {% if unit.status == 'متاحة' %}
+                                <span class="badge badge-success">{{ unit.status }}</span>
+                            {% elif unit.status == 'محجوزة' %}
+                                <span class="badge badge-warning">{{ unit.status }}</span>
+                            {% else %}
+                                <span class="badge badge-secondary">{{ unit.status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if project.units.count() > 10 %}
+            <div class="mt-4 text-center">
+                <a href="{{ url_for('units.index', project_id=project.id) }}" class="text-blue-600 hover:underline">
+                    عرض جميع الوحدات ({{ project.units.count() }})
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <p class="text-gray-500">لا توجد وحدات في هذا المشروع بعد</p>
+        {% endif %}
+    </div>
+    
+    <!-- مراحل المشروع -->
+    <div class="card mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold">مراحل المشروع ({{ project.stages.count() }})</h3>
+            <a href="{{ url_for('projects.add_stage', project_id=project.id) }}" class="btn btn-sm btn-primary">
+                <i class="fas fa-plus ml-2"></i>
+                إضافة مرحلة
+            </a>
+        </div>
+        {% if project.stages.count() > 0 %}
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>اسم المرحلة</th>
+                        <th>المقاول</th>
+                        <th>تاريخ البداية</th>
+                        <th>تاريخ الانتهاء</th>
+                        <th>التكلفة</th>
+                        <th>نسبة الإنجاز</th>
+                        <th>الحالة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stage in project.stages %}
+                    <tr>
+                        <td>{{ stage.name }}</td>
+                        <td>{{ stage.contractor.name if stage.contractor else '-' }}</td>
+                        <td>{{ stage.start_date if stage.start_date else '-' }}</td>
+                        <td>{{ stage.end_date if stage.end_date else '-' }}</td>
+                        <td>{{ format_currency(stage.cost) if stage.cost else '-' }}</td>
+                        <td>{{ stage.completion_percentage }}%</td>
+                        <td>
+                            {% if stage.status == 'مكتملة' %}
+                                <span class="badge badge-success">{{ stage.status }}</span>
+                            {% elif stage.status == 'جارية' %}
+                                <span class="badge badge-warning">{{ stage.status }}</span>
+                            {% else %}
+                                <span class="badge badge-secondary">{{ stage.status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-gray-500">لا توجد مراحل مسجلة لهذا المشروع</p>
+        {% endif %}
+    </div>
+    
+    <!-- ملخص مالي -->
+    <div class="card">
+        <h3 class="text-lg font-semibold mb-4">الملخص المالي</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="text-sm text-gray-600">الميزانية المخصصة</label>
+                <p class="text-xl font-bold text-gray-900">{{ format_currency(project.budget) if project.budget else '0.00 ج.م' }}</p>
+            </div>
+            <div>
+                <label class="text-sm text-gray-600">إجمالي التكاليف</label>
+                <p class="text-xl font-bold text-red-600">{{ format_currency(project.calculate_total_cost()) }}</p>
+            </div>
+            <div>
+                <label class="text-sm text-gray-600">المتبقي من الميزانية</label>
+                {% set remaining = (project.budget or 0) - project.calculate_total_cost() %}
+                <p class="text-xl font-bold {{ 'text-green-600' if remaining >= 0 else 'text-red-600' }}">
+                    {{ format_currency(remaining) }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

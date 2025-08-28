@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة مشروع جديد{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-gray-900">إضافة مشروع جديد</h2>
+        <a href="{{ url_for('projects.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-right ml-2"></i>
+            رجوع
+        </a>
+    </div>
+    
+    <form method="post" class="max-w-2xl">
+        <div class="card">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- اسم المشروع -->
+                <div class="md:col-span-2">
+                    <label class="form-label required">اسم المشروع</label>
+                    <input type="text" name="name" required 
+                           class="form-input"
+                           placeholder="مثال: مشروع أبراج السلام">
+                </div>
+                
+                <!-- كود المشروع -->
+                <div>
+                    <label class="form-label required">كود المشروع</label>
+                    <input type="text" name="code" required 
+                           class="form-input"
+                           placeholder="مثال: SALAM-001">
+                    <p class="text-sm text-gray-500 mt-1">كود فريد لتمييز المشروع</p>
+                </div>
+                
+                <!-- الميزانية -->
+                <div>
+                    <label class="form-label">الميزانية</label>
+                    <input type="number" name="budget" 
+                           class="form-input"
+                           placeholder="0.00">
+                </div>
+                
+                <!-- تاريخ البداية -->
+                <div>
+                    <label class="form-label">تاريخ البداية</label>
+                    <input type="date" name="start_date" 
+                           value="{{ today }}"
+                           class="form-input">
+                </div>
+                
+                <!-- التاريخ المتوقع للانتهاء -->
+                <div>
+                    <label class="form-label">التاريخ المتوقع للانتهاء</label>
+                    <input type="date" name="expected_end_date" 
+                           class="form-input">
+                </div>
+                
+                <!-- الوصف -->
+                <div class="md:col-span-2">
+                    <label class="form-label">وصف المشروع</label>
+                    <textarea name="description" rows="4" 
+                              class="form-input"
+                              placeholder="وصف تفصيلي للمشروع..."></textarea>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex gap-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save ml-2"></i>
+                    حفظ المشروع
+                </button>
+                <a href="{{ url_for('projects.index') }}" class="btn btn-secondary">
+                    إلغاء
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
