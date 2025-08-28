@@ -52,5 +52,8 @@ class ProjectStage(db.Model):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())
     
+    # Relationships
+    contractor = db.relationship('Contractor', backref='project_stages')
+    
     def __repr__(self):
         return f'<ProjectStage {self.name}>'

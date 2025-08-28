@@ -95,7 +95,11 @@ def add():
             return redirect(url_for('projects.add'))
         
         flash('تم إضافة المشروع بنجاح', 'success')
-        return redirect(url_for('projects.detail', id=project.id))
+        try:
+            return redirect(url_for('projects.detail', id=project.id))
+        except Exception:
+            # If detail page has issues, redirect to index
+            return redirect(url_for('projects.index'))
     
     # Get data for form
     return render_template('projects/add.html',
@@ -107,7 +111,7 @@ def detail(id):
     project = Project.query.get_or_404(id)
     
     # Get project stages
-    stages = project.stages.order_by(ProjectStage.stage_number).all()
+    stages = project.stages.order_by(ProjectStage.created_at).all()
     
     # Calculate progress
     if stages:
@@ -117,7 +121,7 @@ def detail(id):
         progress = 0
     
     # Calculate costs
-    total_spent = sum(s.actual_cost or 0 for s in stages)
+    total_spent = sum(s.cost or 0 for s in stages)
     
     return render_template('projects/detail.html',
                          project=project,
