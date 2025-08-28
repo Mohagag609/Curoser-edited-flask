@@ -31,8 +31,8 @@ def seed_database():
         db.session.add_all(projects)
         db.session.commit()
         
-        # Keep projects in session
-        # projects = Project.query.order_by(Project.id).all()
+        # Re-query projects to keep them in session
+        projects = Project.query.order_by(Project.id).all()
         
         # Add some customers
         customers = [
