@@ -9,7 +9,7 @@ services:
     name: acc-light
     runtime: python
     region: oregon
-               buildCommand: "./build_simple.sh"
+               buildCommand: "./build_no_migrations.sh"
     startCommand: "gunicorn app:app"
     envVars:
       - key: DATABASE_URL

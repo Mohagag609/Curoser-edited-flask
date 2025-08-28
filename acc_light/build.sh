@@ -12,6 +12,9 @@ pip install -r requirements.txt
 npm install
 npm run build
 
+# Clean up any existing migration state in database
+python3 clean_migrations.py || echo "No migration state to clean"
+
 # Initialize database migrations if needed
 if [ ! -d "migrations" ]; then
     echo "Initializing migrations..."
