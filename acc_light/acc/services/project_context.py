@@ -1,9 +1,17 @@
 from flask import session, g
 from acc.models import Project
 
+SESSION_PROJECT_KEY = 'current_project_id'
+
+def get_current_project_id():
+    """Get the ID of the current project from the session."""
+    return session.get(SESSION_PROJECT_KEY)
+
 def get_current_project():
     """Get the current project from session"""
-    if 'current_project_id' not in session:
+    project_id = get_current_project_id()
+    
+    if not project_id:
         # Try to get default project
         default_project = Project.query.filter_by(is_default=True).first()
         if default_project:
