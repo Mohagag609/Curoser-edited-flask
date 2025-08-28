@@ -78,6 +78,11 @@
         direction: rtl;
     }
     
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+        opacity: 1;
+    }
+    
     body {
         @apply bg-gray-50 text-gray-900;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;

@@ -40,7 +40,7 @@
                         {% for unit in units %}
                         <option value="{{ unit.id }}" data-price="{{ unit.total_price }}">
                             {{ unit.get_display_name() }} - {{ unit.code }}
-                            ({{ format_currency(unit.total_price) }})
+                            ({{ "{:,.2f}".format(unit.total_price) }} ج.م)
                         </option>
                         {% endfor %}
                     </select>

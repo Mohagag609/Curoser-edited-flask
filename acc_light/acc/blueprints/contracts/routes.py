@@ -29,7 +29,7 @@ def index():
     if status_filter:
         query = query.filter(Contract.status == status_filter)
     
-    query = query.order_by(Contract.contract_date.desc())
+    query = query.order_by(Contract.start_date.desc())
     pagination = Pagination(query, page)
     
     # Calculate totals for each contract
@@ -285,7 +285,7 @@ def search():
     if status_filter:
         query = query.filter(Contract.status == status_filter)
     
-    query = query.order_by(Contract.contract_date.desc())
+    query = query.order_by(Contract.start_date.desc())
     pagination = Pagination(query, page)
     
     # Calculate totals for each contract

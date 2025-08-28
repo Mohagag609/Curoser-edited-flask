@@ -31,14 +31,23 @@ class Contract(db.Model):
     commission_safe = db.relationship('Safe', backref='contracts')
     
     @property
-    def customer(self):
+    def get_customer(self):
         from acc.models import Customer
         return Customer.query.get(self.customer_id)
     
     @property
-    def unit(self):
+    def get_unit(self):
         from acc.models import Unit
         return Unit.query.get(self.unit_id)
+    
+    # For backwards compatibility
+    @property
+    def customer(self):
+        return self.get_customer
+    
+    @property
+    def unit(self):
+        return self.get_unit
     
     @property
     def installments(self):

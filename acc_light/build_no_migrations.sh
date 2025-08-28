@@ -25,6 +25,10 @@ python3 clean_migrations.py || true
 echo "Creating database tables..."
 python3 create_db.py
 
+# Fix model relationships
+echo "Fixing model relationships..."
+python3 fix_models.py || true
+
 # Create initial data if needed
 echo "Seeding initial data..."
 python3 seed_data.py || echo "Seed data skipped"
