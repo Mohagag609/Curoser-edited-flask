@@ -1,5 +1,5 @@
 from acc.extensions import db
-from sqlalchemy import Column, String, Text, JSON, DateTime, func
+from sqlalchemy import Integer, Column, String, Text, JSON, DateTime, func
 
 
 class AuditLog(db.Model):

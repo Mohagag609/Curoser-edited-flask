@@ -71,7 +71,7 @@ def add():
             return redirect(url_for('contractors.add'))
         
         contractor = Contractor(
-            id=generate_uid('CN'),
+            id=generate_uid('CO'),
             name=name,
             phone=phone,
             email=email,

@@ -1,5 +1,5 @@
 from acc.extensions import db
-from sqlalchemy import Column, String, Numeric, DateTime, func, Boolean, ForeignKey
+from sqlalchemy import Integer, Column, String, Numeric, DateTime, func, Boolean, ForeignKey
 
 class Safe(db.Model):
     __tablename__ = 'safes'

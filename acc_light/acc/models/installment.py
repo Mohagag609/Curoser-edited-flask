@@ -1,5 +1,5 @@
 from acc.extensions import db
-from sqlalchemy import Column, String, Numeric, ForeignKey, Date, DateTime, func
+from sqlalchemy import Integer, Column, String, Numeric, ForeignKey, Date, DateTime, func
 
 
 class Installment(db.Model):

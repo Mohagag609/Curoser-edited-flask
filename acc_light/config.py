@@ -16,6 +16,11 @@ class Config:
     
     SQLALCHEMY_DATABASE_URI = db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'connect_args': {
+            'check_same_thread': False
+        } if 'sqlite' in db_url else {}
+    }
     
     # Pagination
     ITEMS_PER_PAGE = int(os.environ.get('ITEMS_PER_PAGE', 20))

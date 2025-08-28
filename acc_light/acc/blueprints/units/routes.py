@@ -111,7 +111,6 @@ def add():
             if group:
                 for member in group.members:
                     unit_partner = UnitPartner(
-                        id=generate_uid('UP'),
                         unit_id=unit.id,
                         partner_id=member.partner_id,
                         percentage=member.percentage
@@ -231,7 +230,6 @@ def add_partner(id):
     
     # Add partner
     unit_partner = UnitPartner(
-        id=generate_uid('UP'),
         unit_id=id,
         partner_id=partner_id,
         percentage=percentage

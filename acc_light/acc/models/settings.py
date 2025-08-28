@@ -1,5 +1,5 @@
 from acc.extensions import db
-from sqlalchemy import Column, String, JSON, DateTime, func
+from sqlalchemy import Integer, Column, String, JSON, DateTime, func
 
 
 class Settings(db.Model):

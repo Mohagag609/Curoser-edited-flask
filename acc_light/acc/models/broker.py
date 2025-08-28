@@ -1,5 +1,5 @@
 from acc.extensions import db
-from sqlalchemy import Column, String, Numeric, ForeignKey, DateTime, func
+from sqlalchemy import Integer, Column, String, Numeric, ForeignKey, DateTime, func
 
 
 class Broker(db.Model):

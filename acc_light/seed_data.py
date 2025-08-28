@@ -29,7 +29,10 @@ def seed_database():
                    status='نشط', budget=300000000),
         ]
         db.session.add_all(projects)
-        db.session.flush()
+        db.session.commit()
+        
+        # Keep projects in session
+        # projects = Project.query.order_by(Project.id).all()
         
         # Add some customers
         customers = [
@@ -42,6 +45,10 @@ def seed_database():
         ]
         for c in customers:
             db.session.add(c)
+        db.session.commit()
+        
+        # Keep customers in session
+        # customers = Customer.query.order_by(Customer.id).all()
         
         # Add some partners
         partners = [
@@ -51,12 +58,15 @@ def seed_database():
             Partner(id=generate_uid('PR'), name='محمد إبراهيم - شريك', phone='01444444444'),
         ]
         db.session.add_all(partners)
-        db.session.flush()  # To get IDs
+        db.session.commit()  # To get IDs
+        
+        # Keep partners in session
+        # partners = Partner.query.order_by(Partner.id).all()
         
         # Add partner groups
         group1 = PartnerGroup(id=generate_uid('PG'), name='مجموعة المستثمرين الرئيسيين')
         db.session.add(group1)
-        db.session.flush()
+        db.session.commit()
         
         # Add members to group
         members = [
@@ -77,7 +87,10 @@ def seed_database():
                 building='B', area=200, unit_type='سكني', total_price=2500000, status='متاحة'),
         ]
         db.session.add_all(units)
-        db.session.flush()
+        db.session.commit()
+        
+        # Keep units in session
+        # units = Unit.query.order_by(Unit.id).all()
         
         # Add partners to some units
         unit_partners = [
@@ -96,7 +109,7 @@ def seed_database():
         Safe(id=generate_uid('SF'), project_id=projects[1].id, name='بنك أبراج النيل - CIB', type='bank', bank_name='البنك التجاري الدولي'),
     ]
     db.session.add_all(safes)
-    db.session.flush()
+    db.session.commit()
     
     # Add brokers
     brokers = [
@@ -104,12 +117,14 @@ def seed_database():
         Broker(id=generate_uid('BR'), name='محمود السمسار', phone='01666666666'),
     ]
     db.session.add_all(brokers)
-    db.session.flush()
+    db.session.commit()
+    
+    # Keep brokers in session
+    # brokers = Broker.query.order_by(Broker.id).all()
         
     # Add contracts
     # Contract 1: Cash payment
-    contract1 = Contract(
-        id=generate_uid('CT'),
+    contract1 = Contract(id=generate_uid('CT'), 
         project_id=projects[0].id,
         code='2024-0001',
         customer_id=customers[0].id,
@@ -128,8 +143,7 @@ def seed_database():
     db.session.add(contract1)
         
     # Contract 2: Installments
-    contract2 = Contract(
-        id=generate_uid('CT'),
+    contract2 = Contract(id=generate_uid('CT'), 
         project_id=projects[1].id,
         code='2024-0002',
         customer_id=customers[1].id,
@@ -152,7 +166,7 @@ def seed_database():
     units[0].status = 'مباعة'
     units[2].status = 'مباعة'
     
-    db.session.flush()
+    db.session.commit()
     
     # Generate installments for contract2
     total_after_discount = contract2.total_price - contract2.discount_amount
@@ -162,8 +176,7 @@ def seed_database():
     
     for i in range(contract2.installment_count):
         due_date = start_date + relativedelta(months=i)
-        installment = Installment(
-            id=generate_uid('INS'),
+        installment = Installment(id=generate_uid('IN'), 
             unit_id=contract2.unit_id,
             installment_number=i + 1,
             type='شهري',

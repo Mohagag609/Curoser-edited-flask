@@ -70,7 +70,7 @@ def add():
             return redirect(url_for('projects.add'))
         
         project = Project(
-            id=generate_uid('PJ'),
+            id=generate_uid('PRJ'),
             name=name,
             contractor_id=contractor_id,
             unit_id=unit_id if unit_id else None,
@@ -181,8 +181,8 @@ def add_stage(id):
         return redirect(url_for('projects.detail', id=id))
     
     stage = ProjectStage(
-        id=generate_uid('PS'),
-        project_id=id,
+            id=generate_uid('PS'),
+            project_id=id,
         name=name,
         stage_number=stage_number or (project.stages.count() + 1),
         estimated_cost=estimated_cost if estimated_cost > 0 else None,

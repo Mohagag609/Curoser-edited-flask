@@ -30,30 +30,12 @@ class Contract(db.Model):
     
     # Relationships
     commission_safe = db.relationship('Safe', backref='contracts')
-    
-    @property
-    def get_customer(self):
-        from acc.models import Customer
-        return Customer.query.get(self.customer_id)
-    
-    @property
-    def get_unit(self):
-        from acc.models import Unit
-        return Unit.query.get(self.unit_id)
-    
-    # For backwards compatibility
-    @property
-    def customer(self):
-        return self.get_customer
-    
-    @property
-    def unit(self):
-        return self.get_unit
-    
-    @property
-    def installments(self):
-        from acc.models import Installment
-        return Installment.query.filter_by(unit_id=self.unit_id).all()
+    customer = db.relationship('Customer', foreign_keys=[customer_id], backref='contracts')
+    unit = db.relationship('Unit', foreign_keys=[unit_id], backref='contracts')
+    installments = db.relationship('Installment', 
+                                 primaryjoin="Contract.unit_id==Installment.unit_id",
+                                 foreign_keys=[unit_id],
+                                 viewonly=True)
     
     def __repr__(self):
         return f'<Contract {self.code}>'

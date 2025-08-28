@@ -1,6 +1,6 @@
 from datetime import datetime
 from acc.extensions import db
-from sqlalchemy import Column, String, Text, DateTime, func
+from sqlalchemy import Column, Integer, String, Text, DateTime, func
 
 
 class Customer(db.Model):
@@ -17,7 +17,7 @@ class Customer(db.Model):
     updated_at = Column(DateTime, onupdate=func.now())
     
     # Relationships
-    contracts = db.relationship('Contract', backref='customer', lazy='dynamic')
+    # contracts relationship handled by Contract model
     
     def __repr__(self):
         return f'<Customer {self.name}>'

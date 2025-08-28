@@ -159,7 +159,6 @@ def add_due(id):
         return redirect(url_for('brokers.detail', id=id))
     
     due = BrokerDue(
-        id=generate_uid('BD'),
         broker_id=id,
         amount=amount,
         remaining_amount=amount,
@@ -197,7 +196,6 @@ def pay_due(broker_id, due_id):
     
     # Create payment voucher
     voucher = Voucher(
-        id=generate_uid('V'),
         type='payment',
         amount=amount,
         date=payment_date,

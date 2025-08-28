@@ -117,7 +117,6 @@ def pay(id):
     
     # Create voucher
     voucher = Voucher(
-        id=generate_uid('V'),
         type='receipt',
         date=datetime.strptime(payment_date, '%Y-%m-%d').date(),
         amount=amount,
@@ -200,7 +199,6 @@ def batch_update():
             if installment and installment.status != 'مدفوع':
                 # Create voucher
                 voucher = Voucher(
-                    id=generate_uid('V'),
                     type='receipt',
                     date=datetime.strptime(payment_date, '%Y-%m-%d').date(),
                     amount=installment.amount,

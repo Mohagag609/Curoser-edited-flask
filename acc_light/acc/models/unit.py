@@ -1,5 +1,5 @@
 from acc.extensions import db
-from sqlalchemy import Column, String, Float, Numeric, Text, DateTime, func, ForeignKey
+from sqlalchemy import Integer, Column, String, Float, Numeric, Text, DateTime, func, ForeignKey
 
 
 class Unit(db.Model):
@@ -22,6 +22,7 @@ class Unit(db.Model):
     # Relationships
     partners = db.relationship('UnitPartner', backref='unit', lazy='dynamic', cascade='all, delete-orphan')
     debts = db.relationship('PartnerDebt', backref='unit', lazy='dynamic')
+    # contracts relationship handled by Contract model
     
     def __repr__(self):
         return f'<Unit {self.code}>'

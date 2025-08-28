@@ -377,7 +377,6 @@ def generate_installments(contract, interval, start_date_str):
             due_date = start_date + relativedelta(years=i)
         
         installment = Installment(
-            id=generate_uid('INS'),
             unit_id=contract.unit_id,
             installment_number=i + 1,
             amount=installment_amount,

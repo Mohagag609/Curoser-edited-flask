@@ -186,7 +186,6 @@ def add_group():
             return redirect(url_for('partners.add_group'))
         
         group = PartnerGroup(
-            id=generate_uid('PG'),
             name=name,
             notes=notes
         )
@@ -247,7 +246,6 @@ def add_group_member(id):
         return redirect(url_for('partners.group_detail', id=id))
     
     member = PartnerGroupMember(
-        id=generate_uid('PGM'),
         group_id=id,
         partner_id=partner_id,
         percentage=percentage
@@ -306,7 +304,6 @@ def add_debt():
         return redirect(request.referrer or url_for('partners.index'))
     
     debt = PartnerDebt(
-        id=generate_uid('PD'),
         creditor_id=creditor_id,
         debtor_id=debtor_id,
         unit_id=unit_id,

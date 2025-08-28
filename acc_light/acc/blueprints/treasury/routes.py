@@ -223,7 +223,6 @@ def add_transfer():
             return redirect(url_for('treasury.add_transfer'))
         
         transfer = SafeTransfer(
-            id=generate_uid('ST'),
             from_safe_id=from_safe_id,
             to_safe_id=to_safe_id,
             amount=amount,
