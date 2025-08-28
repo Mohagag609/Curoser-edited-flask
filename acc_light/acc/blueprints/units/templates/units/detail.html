@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}{{ unit.get_display_name() }} - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-4 mb-2">
+                    <a href="{{ url_for('units.index') }}" class="text-gray-600 hover:text-gray-900">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                    </a>
+                    <h2 class="text-3xl font-bold text-gray-900">{{ unit.get_display_name() }}</h2>
+                    {% if unit.status == 'متاحة' %}
+                        <span class="badge badge-success">{{ unit.status }}</span>
+                    {% elif unit.status == 'محجوزة' %}
+                        <span class="badge badge-warning">{{ unit.status }}</span>
+                    {% elif unit.status == 'مباعة' %}
+                        <span class="badge badge-danger">{{ unit.status }}</span>
+                    {% endif %}
+                </div>
+                <p class="text-gray-600">كود الوحدة: <span class="font-mono font-medium">{{ unit.code }}</span></p>
+            </div>
+            <div class="flex gap-2">
+                {% if unit.status != 'مباعة' %}
+                <a href="{{ url_for('units.edit', id=unit.id) }}" class="btn btn-primary">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                    تعديل
+                </a>
+                {% endif %}
+                {% if not has_contract %}
+                <form method="post" action="{{ url_for('units.delete', id=unit.id) }}" 
+                      class="inline"
+                      onsubmit="return confirm('هل أنت متأكد من حذف هذه الوحدة؟');">
+                    <button type="submit" class="btn btn-danger">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        حذف
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Info Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-600 text-sm font-medium">السعر الكلي</p>
+                    <p class="text-2xl font-bold text-blue-900 mt-1">{{ format_currency(unit.total_price) }}</p>
+                </div>
+                <div class="bg-blue-200 bg-opacity-50 rounded-lg p-3">
+                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-600 text-sm font-medium">المتبقي</p>
+                    <p class="text-2xl font-bold text-green-900 mt-1">{{ format_currency(unit.calculate_remaining()) }}</p>
+                </div>
+                <div class="bg-green-200 bg-opacity-50 rounded-lg p-3">
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-600 text-sm font-medium">نسبة الشركاء</p>
+                    <p class="text-2xl font-bold text-purple-900 mt-1">{{ total_percentage }}%</p>
+                    {% if total_percentage != 100 %}
+                    <p class="text-xs text-purple-600 mt-1">يجب أن يكون 100%</p>
+                    {% endif %}
+                </div>
+                <div class="bg-purple-200 bg-opacity-50 rounded-lg p-3">
+                    <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Unit Details -->
+        <div class="card">
+            <h3 class="text-lg font-semibold text-gray-900 mb-6 pb-4 border-b flex items-center gap-2">
+                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                </svg>
+                تفاصيل الوحدة
+            </h3>
+            
+            <dl class="grid grid-cols-1 gap-4">
+                <div class="flex justify-between py-3 border-b">
+                    <dt class="text-gray-600">النوع</dt>
+                    <dd class="font-medium text-gray-900">{{ unit.unit_type }}</dd>
+                </div>
+                {% if unit.area %}
+                <div class="flex justify-between py-3 border-b">
+                    <dt class="text-gray-600">المساحة</dt>
+                    <dd class="font-medium text-gray-900">{{ unit.area }} م²</dd>
+                </div>
+                {% endif %}
+                <div class="flex justify-between py-3 border-b">
+                    <dt class="text-gray-600">المبنى</dt>
+                    <dd class="font-medium text-gray-900">{{ unit.building }}</dd>
+                </div>
+                <div class="flex justify-between py-3 border-b">
+                    <dt class="text-gray-600">الدور</dt>
+                    <dd class="font-medium text-gray-900">{{ unit.floor }}</dd>
+                </div>
+                {% if unit.notes %}
+                <div class="py-3">
+                    <dt class="text-gray-600 mb-2">ملاحظات</dt>
+                    <dd class="text-gray-900 bg-gray-50 p-3 rounded-lg">{{ unit.notes }}</dd>
+                </div>
+                {% endif %}
+            </dl>
+        </div>
+        
+        <!-- Partners Management -->
+        <div class="card">
+            <div class="flex items-center justify-between mb-6 pb-4 border-b">
+                <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    شركاء الوحدة
+                </h3>
+                {% if total_percentage < 100 %}
+                <span class="text-sm text-yellow-600 bg-yellow-50 px-3 py-1 rounded-full">
+                    متبقي {{ 100 - total_percentage }}%
+                </span>
+                {% elif total_percentage == 100 %}
+                <span class="text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
+                    مكتمل 100%
+                </span>
+                {% else %}
+                <span class="text-sm text-red-600 bg-red-50 px-3 py-1 rounded-full">
+                    تجاوز {{ total_percentage - 100 }}%
+                </span>
+                {% endif %}
+            </div>
+            
+            {% if partners_data %}
+            <div class="space-y-3 mb-6">
+                {% for data in partners_data %}
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span class="text-blue-600 font-medium">{{ data.partner.name[0] }}</span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900">{{ data.partner.name }}</p>
+                            <p class="text-sm text-gray-600">{{ data.partner.phone or 'لا يوجد هاتف' }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <input type="number" 
+                               value="{{ data.percentage }}"
+                               min="1" max="100" step="0.01"
+                               class="w-20 px-2 py-1 text-center border rounded-md"
+                               onchange="updatePartnerPercentage('{{ data.link.id }}', this.value)">
+                        <span class="text-gray-600">%</span>
+                        <form method="post" action="{{ url_for('units.remove_partner', link_id=data.link.id) }}" class="inline">
+                            <button type="submit" class="text-red-600 hover:text-red-800"
+                                    onclick="return confirm('هل أنت متأكد من حذف هذا الشريك؟');">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8 text-gray-500">
+                <svg class="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+                <p>لا يوجد شركاء لهذه الوحدة</p>
+            </div>
+            {% endif %}
+            
+            {% if available_partners %}
+            <div class="border-t pt-6">
+                <h4 class="text-sm font-medium text-gray-700 mb-3">إضافة شريك جديد</h4>
+                <form method="post" action="{{ url_for('units.add_partner', id=unit.id) }}" class="flex gap-3">
+                    <select name="partner_id" class="form-select flex-1" required>
+                        <option value="">اختر شريك...</option>
+                        {% for partner in available_partners %}
+                        <option value="{{ partner.id }}">{{ partner.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="number" 
+                           name="percentage" 
+                           placeholder="النسبة %"
+                           min="1" max="100" step="0.01"
+                           class="form-input w-24" 
+                           required>
+                    <button type="submit" class="btn btn-primary">إضافة</button>
+                </form>
+            </div>
+            {% endif %}
+            
+            {% if total_percentage != 100 and unit.status != 'مباعة' %}
+            <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p class="text-sm text-yellow-800">
+                    <strong>تنبيه:</strong> يجب أن يكون مجموع نسب الشركاء 100% لإنشاء عقد لهذه الوحدة.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function updatePartnerPercentage(linkId, newValue) {
+    fetch(`/units/partner/${linkId}/update`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `percentage=${newValue}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.dispatchEvent(new CustomEvent('notify', {
+                detail: { type: 'success', message: data.message }
+            }));
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            window.dispatchEvent(new CustomEvent('notify', {
+                detail: { type: 'error', message: data.message }
+            }));
+        }
+    })
+    .catch(error => {
+        window.dispatchEvent(new CustomEvent('notify', {
+            detail: { type: 'error', message: 'حدث خطأ في تحديث النسبة' }
+        }));
+    });
+}
+</script>
+{% endblock %}

@@ -23,11 +23,27 @@ class Contract(db.Model):
     extra_annual = Column(Integer, default=0)
     annual_payment_value = Column(Numeric(15, 2), default=0)
     start_date = Column(Date, nullable=False)
+    status = Column(String(20), default='نشط')
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())
     
     # Relationships
     commission_safe = db.relationship('Safe', backref='contracts')
+    
+    @property
+    def customer(self):
+        from acc.models import Customer
+        return Customer.query.get(self.customer_id)
+    
+    @property
+    def unit(self):
+        from acc.models import Unit
+        return Unit.query.get(self.unit_id)
+    
+    @property
+    def installments(self):
+        from acc.models import Installment
+        return Installment.query.filter_by(unit_id=self.unit_id).all()
     
     def __repr__(self):
         return f'<Contract {self.code}>'

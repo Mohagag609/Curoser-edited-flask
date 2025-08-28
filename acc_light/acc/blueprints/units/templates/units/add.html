@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة وحدة جديدة - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex items-center gap-4 mb-4">
+            <a href="{{ url_for('units.index') }}" class="text-gray-600 hover:text-gray-900">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+            </a>
+            <h2 class="text-2xl font-bold text-gray-900">إضافة وحدة جديدة</h2>
+        </div>
+        <p class="text-gray-600">أدخل بيانات الوحدة الجديدة واختر مجموعة الشركاء إن وجدت</p>
+    </div>
+    
+    <form method="post" action="{{ url_for('units.add') }}">
+        <!-- Basic Information Card -->
+        <div class="card mb-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-6 pb-4 border-b">المعلومات الأساسية</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label class="form-label" for="building">المبنى/البرج *</label>
+                    <input type="text" 
+                           id="building" 
+                           name="building" 
+                           class="form-input" 
+                           placeholder="مثال: A, B, 1"
+                           required
+                           autofocus>
+                </div>
+                
+                <div>
+                    <label class="form-label" for="floor">الدور *</label>
+                    <input type="text" 
+                           id="floor" 
+                           name="floor" 
+                           class="form-input" 
+                           placeholder="مثال: 1, 2, الأرضي"
+                           required>
+                </div>
+                
+                <div>
+                    <label class="form-label" for="name">رقم/اسم الوحدة *</label>
+                    <input type="text" 
+                           id="name" 
+                           name="name" 
+                           class="form-input" 
+                           placeholder="مثال: 101, 102A"
+                           required>
+                </div>
+            </div>
+            
+            <div class="mt-4 p-4 bg-blue-50 rounded-lg">
+                <p class="text-sm text-blue-800">
+                    <strong>كود الوحدة سيكون:</strong> 
+                    <span id="unit-code-preview" class="font-mono">-</span>
+                </p>
+            </div>
+        </div>
+        
+        <!-- Details Card -->
+        <div class="card mb-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-6 pb-4 border-b">التفاصيل</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="form-label" for="unit_type">نوع الوحدة</label>
+                    <select id="unit_type" name="unit_type" class="form-select">
+                        <option value="سكني">سكني</option>
+                        <option value="تجاري">تجاري</option>
+                        <option value="إداري">إداري</option>
+                        <option value="صناعي">صناعي</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="form-label" for="area">المساحة (م²)</label>
+                    <input type="number" 
+                           id="area" 
+                           name="area" 
+                           class="form-input" 
+                           placeholder="مثال: 150"
+                           step="0.01">
+                </div>
+                
+                <div>
+                    <label class="form-label" for="total_price">السعر الكلي *</label>
+                    <div class="relative">
+                        <input type="number" 
+                               id="total_price" 
+                               name="total_price" 
+                               class="form-input pl-16" 
+                               placeholder="0.00"
+                               step="0.01"
+                               required>
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-gray-500 sm:text-sm">ج.م</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="form-label" for="partner_group_id">مجموعة الشركاء</label>
+                    <select id="partner_group_id" name="partner_group_id" class="form-select">
+                        <option value="">-- اختياري --</option>
+                        {% for group in partner_groups %}
+                        <option value="{{ group.id }}">
+                            {{ group.name }} 
+                            ({{ group.get_total_percentage() }}%)
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <p class="mt-1 text-sm text-gray-500">يمكنك إضافة الشركاء لاحقاً إذا لم تختر مجموعة</p>
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <label class="form-label" for="notes">ملاحظات</label>
+                <textarea id="notes" 
+                          name="notes" 
+                          rows="3" 
+                          class="form-input"
+                          placeholder="أي ملاحظات إضافية عن الوحدة..."></textarea>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="flex gap-3">
+            <button type="submit" class="btn btn-primary">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                حفظ الوحدة
+            </button>
+            <a href="{{ url_for('units.index') }}" class="btn btn-secondary">إلغاء</a>
+        </div>
+    </form>
+</div>
+
+<script>
+// Preview unit code
+function updateCodePreview() {
+    const building = document.getElementById('building').value || '?';
+    const floor = document.getElementById('floor').value || '?';
+    const name = document.getElementById('name').value || '?';
+    const preview = document.getElementById('unit-code-preview');
+    preview.textContent = `${building}-${floor}-${name}`;
+}
+
+document.getElementById('building').addEventListener('input', updateCodePreview);
+document.getElementById('floor').addEventListener('input', updateCodePreview);
+document.getElementById('name').addEventListener('input', updateCodePreview);
+</script>
+{% endblock %}

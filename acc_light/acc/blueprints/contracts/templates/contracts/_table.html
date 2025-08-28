@@ -1,0 +1,104 @@
+{# Contracts table partial for HTMX updates #}
+<div class="card overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="table">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">رقم العقد</th>
+                    <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">العميل</th>
+                    <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الوحدة</th>
+                    <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">القيمة</th>
+                    <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المدفوع</th>
+                    <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المتبقي</th>
+                    <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">طريقة الدفع</th>
+                    <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
+                    <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for data in contracts_data %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ data.contract.code }}</div>
+                        <div class="text-sm text-gray-500">{{ data.contract.start_date.strftime('%Y-%m-%d') }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ data.contract.customer.name }}</div>
+                        <div class="text-sm text-gray-500">{{ data.contract.customer.phone }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ data.contract.unit.name }}</div>
+                        <div class="text-sm text-gray-500">{{ data.contract.unit.code }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ format_currency(data.contract.total_price - (data.contract.discount_amount or 0)) }}</div>
+                        {% if data.contract.discount_amount %}
+                        <div class="text-xs text-red-600">خصم: {{ format_currency(data.contract.discount_amount) }}</div>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-green-600">{{ format_currency(data.paid) }}</div>
+                        <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+                            <div class="bg-green-600 h-2 rounded-full" style="width: {{ data.progress }}%"></div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium {% if data.remaining > 0 %}text-red-600{% else %}text-gray-500{% endif %}">
+                            {{ format_currency(data.remaining) }}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if data.contract.payment_type == 'cash' %}
+                            <span class="badge badge-success">نقدي</span>
+                        {% else %}
+                            <span class="badge badge-warning">أقساط ({{ data.contract.installment_count }})</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if data.contract.status == 'نشط' %}
+                            <span class="badge badge-success">{{ data.contract.status }}</span>
+                        {% elif data.contract.status == 'مكتمل' %}
+                            <span class="badge badge-secondary">{{ data.contract.status }}</span>
+                        {% else %}
+                            <span class="badge badge-danger">{{ data.contract.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <div class="flex items-center gap-2">
+                            <a href="{{ url_for('contracts.detail', id=data.contract.id) }}" 
+                               class="text-blue-600 hover:text-blue-800 font-medium"
+                               title="عرض التفاصيل">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="px-6 py-12 text-center">
+                        <div class="flex flex-col items-center">
+                            <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <p class="text-gray-500 text-lg">لا توجد عقود</p>
+                            <a href="{{ url_for('contracts.add') }}" class="mt-4 btn btn-primary btn-sm">
+                                إنشاء أول عقد
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if pagination and pagination.pages > 1 %}
+    <div class="px-6 py-4 bg-gray-50 border-t">
+        {% set target_id = 'contracts-table' %}
+        {% include '_partials/pagination.html' %}
+    </div>
+    {% endif %}
+</div>

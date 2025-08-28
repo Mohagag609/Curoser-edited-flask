@@ -15,8 +15,10 @@ def create_app(config_class=Config):
     # Template context processors
     @app.context_processor
     def inject_globals():
+        from acc.services.utils import format_currency
         return {
-            'current_year': datetime.now().year
+            'current_year': datetime.now().year,
+            'format_currency': format_currency
         }
     
     # Register blueprints

@@ -4,18 +4,120 @@
 
 {% block content %}
 <div class="mb-8">
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-gray-900">الوحدات</h2>
-        <button class="btn btn-primary">
+    <!-- Header -->
+    <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-900">إدارة الوحدات</h2>
+            <p class="text-gray-600 mt-1">إدارة جميع الوحدات العقارية والشركاء</p>
+        </div>
+        <a href="{{ url_for('units.add') }}" class="btn btn-primary">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
             </svg>
             إضافة وحدة جديدة
-        </button>
+        </a>
     </div>
     
-    <div class="card">
-        <p class="text-gray-500">قسم الوحدات قيد التطوير...</p>
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100">إجمالي الوحدات</p>
+                    <p class="text-3xl font-bold mt-2">{{ units_data|length }}</p>
+                </div>
+                <svg class="w-12 h-12 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                </svg>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100">متاحة</p>
+                    <p class="text-3xl font-bold mt-2">{{ units_data|selectattr('unit.status', 'equalto', 'متاحة')|list|length }}</p>
+                </div>
+                <svg class="w-12 h-12 text-green-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-yellow-100">محجوزة</p>
+                    <p class="text-3xl font-bold mt-2">{{ units_data|selectattr('unit.status', 'equalto', 'محجوزة')|list|length }}</p>
+                </div>
+                <svg class="w-12 h-12 text-yellow-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-100">مباعة</p>
+                    <p class="text-3xl font-bold mt-2">{{ units_data|selectattr('unit.status', 'equalto', 'مباعة')|list|length }}</p>
+                </div>
+                <svg class="w-12 h-12 text-purple-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filters and Search -->
+    <div class="card mb-6">
+        <div class="flex flex-wrap gap-4 items-end">
+            <div class="flex-1 min-w-[200px]">
+                <label class="form-label">البحث</label>
+                <div class="relative">
+                    <input type="text" 
+                           name="q" 
+                           value="{{ q }}"
+                           placeholder="بحث بالكود، الاسم، الدور، المبنى..."
+                           class="form-input pl-10"
+                           hx-get="{{ url_for('units.search') }}"
+                           hx-trigger="keyup changed delay:500ms"
+                           hx-target="#units-table"
+                           hx-include="[name='status']">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="min-w-[150px]">
+                <label class="form-label">الحالة</label>
+                <select name="status" 
+                        class="form-select"
+                        hx-get="{{ url_for('units.search') }}"
+                        hx-trigger="change"
+                        hx-target="#units-table"
+                        hx-include="[name='q']">
+                    <option value="">جميع الحالات</option>
+                    <option value="متاحة" {% if status_filter == 'متاحة' %}selected{% endif %}>متاحة</option>
+                    <option value="محجوزة" {% if status_filter == 'محجوزة' %}selected{% endif %}>محجوزة</option>
+                    <option value="مباعة" {% if status_filter == 'مباعة' %}selected{% endif %}>مباعة</option>
+                </select>
+            </div>
+            
+            <button type="button" 
+                    class="btn btn-secondary"
+                    onclick="window.location.href='{{ url_for('units.index') }}'">
+                إعادة تعيين
+            </button>
+        </div>
+    </div>
+    
+    <!-- Units Table -->
+    <div id="units-table">
+        {% include 'units/_table.html' %}
     </div>
 </div>
 {% endblock %}

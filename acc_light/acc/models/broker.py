@@ -8,6 +8,7 @@ class Broker(db.Model):
     id = Column(String(20), primary_key=True)
     name = Column(String(200), nullable=False, unique=True)
     phone = Column(String(20))
+    status = Column(String(20), default='نشط')
     notes = Column(db.Text)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())

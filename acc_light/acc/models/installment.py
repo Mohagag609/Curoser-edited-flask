@@ -7,6 +7,7 @@ class Installment(db.Model):
     
     id = Column(String(20), primary_key=True)
     unit_id = Column(String(20), ForeignKey('units.id'), nullable=False)
+    installment_number = Column(db.Integer)
     type = Column(String(50))  # شهري/ربع سنوي/دفعة سنوية/دفعة صيانة
     original_amount = Column(Numeric(15, 2))
     amount = Column(Numeric(15, 2), nullable=False)  # المتبقي

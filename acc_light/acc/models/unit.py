@@ -19,9 +19,7 @@ class Unit(db.Model):
     updated_at = Column(DateTime, onupdate=func.now())
     
     # Relationships
-    contracts = db.relationship('Contract', backref='unit', lazy='dynamic')
     partners = db.relationship('UnitPartner', backref='unit', lazy='dynamic', cascade='all, delete-orphan')
-    installments = db.relationship('Installment', backref='unit', lazy='dynamic')
     debts = db.relationship('PartnerDebt', backref='unit', lazy='dynamic')
     
     def __repr__(self):
@@ -32,19 +30,29 @@ class Unit(db.Model):
         parts = []
         if self.name:
             parts.append(self.name)
-        if self.floor:
-            parts.append(f'رقم الدور ({self.floor})')
         if self.building:
-            parts.append(f'رقم العمارة ({self.building})')
-        return ' '.join(parts)
+            parts.append(self.building)
+        if self.floor:
+            parts.append(f"الدور {self.floor}")
+        return ' - '.join(parts) if parts else self.code
     
     def get_total_partners_percentage(self):
         """Calculate total percentage of all partners"""
         return sum(up.percentage for up in self.partners)
     
+    @property 
+    def contracts(self):
+        from acc.models import Contract
+        return Contract.query.filter_by(unit_id=self.id).first()
+    
+    @property
+    def installments(self):
+        from acc.models import Installment
+        return Installment.query.filter_by(unit_id=self.id).all()
+    
     def calculate_remaining(self):
         """Calculate remaining amount to be paid for this unit"""
-        contract = self.contracts.first()
+        contract = self.contracts
         if not contract:
             return 0
         
