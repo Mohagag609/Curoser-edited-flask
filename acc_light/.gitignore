@@ -32,7 +32,7 @@ npm-debug.log*
 
 # Build files
 # acc/static/css/tailwind.css  # Needed for production
-migrations/
+# migrations/  # Handle migrations in build script
 
 # Logs
 *.log
