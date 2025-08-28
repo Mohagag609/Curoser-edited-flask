@@ -56,7 +56,7 @@ def add():
         name = request.form.get('name', '').strip()
         code = request.form.get('code', '').strip()
         budget = parse_number(request.form.get('budget', 0))
-        start_date = request.form.get('start_date', get_today().isoformat())
+        start_date = request.form.get('start_date', get_today())
         expected_end_date = request.form.get('expected_end_date', '')
         description = request.form.get('description', '').strip()
         
