@@ -56,8 +56,8 @@ def add():
         name = request.form.get('name', '').strip()
         code = request.form.get('code', '').strip()
         budget = parse_number(request.form.get('budget', 0))
-        start_date = request.form.get('start_date', get_today())
-        expected_end_date = request.form.get('expected_end_date', '')
+        start_date = request.form.get('start_date', '').strip()
+        expected_end_date = request.form.get('expected_end_date', '').strip()
         description = request.form.get('description', '').strip()
         
         if not name:
@@ -82,12 +82,17 @@ def add():
             start_date=datetime.strptime(start_date, '%Y-%m-%d').date() if start_date else None,
             expected_end_date=datetime.strptime(expected_end_date, '%Y-%m-%d').date() if expected_end_date else None,
             description=description,
-            status='جاري'
+            status='نشط'
         )
         
-        db.session.add(project)
-        log_action('إضافة مشروع جديد', {'id': project.id, 'name': project.name})
-        db.session.commit()
+        try:
+            db.session.add(project)
+            log_action('إضافة مشروع جديد', {'id': project.id, 'name': project.name})
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            flash(f'خطأ في حفظ المشروع: {str(e)}', 'error')
+            return redirect(url_for('projects.add'))
         
         flash('تم إضافة المشروع بنجاح', 'success')
         return redirect(url_for('projects.detail', id=project.id))
