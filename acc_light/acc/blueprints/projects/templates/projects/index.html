@@ -88,8 +88,8 @@
                 <thead>
                     <tr>
                         <th>اسم المشروع</th>
-                        <th>المقاول</th>
-                        <th>الوحدة</th>
+                        <th>الكود</th>
+                        <th>الوصف</th>
                         <th>تاريخ البداية</th>
                         <th>التاريخ المتوقع</th>
                         <th>الميزانية</th>
@@ -105,20 +105,8 @@
                                 {{ project.name }}
                             </a>
                         </td>
-                        <td>
-                            <a href="{{ url_for('contractors.detail', id=project.contractor_id) }}" class="text-blue-600 hover:underline">
-                                {{ project.contractor.name }}
-                            </a>
-                        </td>
-                        <td>
-                            {% if project.unit %}
-                                <a href="{{ url_for('units.detail', id=project.unit_id) }}" class="text-blue-600 hover:underline">
-                                    {{ project.unit.get_display_name() }}
-                                </a>
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
+                        <td>{{ project.code }}</td>
+                        <td>{{ project.description[:50] + '...' if project.description and project.description|length > 50 else project.description or '-' }}</td>
                         <td>{{ project.start_date }}</td>
                         <td>{{ project.expected_end_date or '-' }}</td>
                         <td>{{ format_currency(project.budget) if project.budget else '-' }}</td>
