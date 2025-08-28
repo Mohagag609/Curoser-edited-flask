@@ -368,8 +368,7 @@
                     <h1 class="text-xl font-semibold text-gray-900">{{ config.SITE_NAME }}</h1>
                     
                     <!-- Project Selector -->
-                    {% if all_projects %}
-                    <div class="relative" x-data="{ open: false }">
+                    <div class="relative mr-4" x-data="{ open: false }">
                         <button @click="open = !open" 
                                 class="flex items-center px-3 py-2 text-sm font-medium rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200">
                             <i class="fas fa-building ml-2"></i>
@@ -407,7 +406,6 @@
                             </div>
                         </div>
                     </div>
-                    {% endif %}
                 </div>
                 
                 <!-- Navigation Links -->
