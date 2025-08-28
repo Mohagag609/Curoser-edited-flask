@@ -17,13 +17,35 @@ echo "Installing Node dependencies and building CSS..."
 npm install
 npm run build
 
-# NO MIGRATIONS - just create tables directly
-echo "Creating database tables..."
+# NO MIGRATIONS - recreate tables if needed
+echo "Managing database tables..."
 python3 -c "
 from app import app, db
+from sqlalchemy import inspect, text
+
 with app.app_context():
-    db.create_all()
-    print('Database tables created successfully')
+    # Check if we need to drop and recreate tables
+    inspector = inspect(db.engine)
+    
+    # Check if projects table exists and has is_default column
+    need_recreate = False
+    
+    if 'projects' in inspector.get_table_names():
+        columns = [col['name'] for col in inspector.get_columns('projects')]
+        if 'is_default' not in columns:
+            print('Projects table is missing is_default column - will recreate all tables')
+            need_recreate = True
+    
+    if need_recreate:
+        print('Dropping all existing tables...')
+        db.drop_all()
+        print('Creating fresh tables...')
+        db.create_all()
+        print('Database tables recreated successfully')
+    else:
+        print('Creating any missing tables...')
+        db.create_all()
+        print('Database tables created successfully')
 "
 
 # Seed initial data if needed
