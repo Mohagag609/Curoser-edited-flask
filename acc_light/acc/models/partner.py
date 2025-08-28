@@ -8,16 +8,19 @@ class Partner(db.Model):
     id = Column(String(20), primary_key=True)
     name = Column(String(200), nullable=False, unique=True)
     phone = Column(String(20))
+    national_id = Column(String(20), unique=True)
+    address = Column(db.Text)
+    notes = Column(db.Text)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())
     
     # Relationships
-    unit_partnerships = db.relationship('UnitPartner', backref='partner', lazy='dynamic')
+    unit_partners = db.relationship('UnitPartner', backref='partner', lazy='dynamic')
     group_memberships = db.relationship('PartnerGroupMember', backref='partner', lazy='dynamic')
-    debts_owed = db.relationship('PartnerDebt', foreign_keys='PartnerDebt.owed_partner_id', 
-                                  backref='owed_partner', lazy='dynamic')
-    debts_to_pay = db.relationship('PartnerDebt', foreign_keys='PartnerDebt.paying_partner_id', 
-                                   backref='paying_partner', lazy='dynamic')
+    debts_owed = db.relationship('PartnerDebt', foreign_keys='PartnerDebt.creditor_id', 
+                                  backref='creditor', lazy='dynamic')
+    debts_due = db.relationship('PartnerDebt', foreign_keys='PartnerDebt.debtor_id', 
+                                   backref='debtor', lazy='dynamic')
     
     def __repr__(self):
         return f'<Partner {self.name}>'
@@ -28,6 +31,7 @@ class PartnerGroup(db.Model):
     
     id = Column(String(20), primary_key=True)
     name = Column(String(200), nullable=False)
+    notes = Column(db.Text)
     created_at = Column(DateTime, default=func.now())
     
     # Relationships
@@ -40,7 +44,7 @@ class PartnerGroup(db.Model):
 class PartnerGroupMember(db.Model):
     __tablename__ = 'partner_group_members'
     
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(String(20), primary_key=True)
     group_id = Column(String(20), ForeignKey('partner_groups.id'), nullable=False)
     partner_id = Column(String(20), ForeignKey('partners.id'), nullable=False)
     percentage = Column(Numeric(5, 2), nullable=False)
@@ -68,11 +72,11 @@ class PartnerDebt(db.Model):
     __tablename__ = 'partner_debts'
     
     id = Column(String(20), primary_key=True)
-    unit_id = Column(String(20), ForeignKey('units.id'), nullable=False)
-    paying_partner_id = Column(String(20), ForeignKey('partners.id'), nullable=False)
-    owed_partner_id = Column(String(20), ForeignKey('partners.id'), nullable=False)
+    creditor_id = Column(String(20), ForeignKey('partners.id'), nullable=False)
+    debtor_id = Column(String(20), ForeignKey('partners.id'), nullable=False)
+    unit_id = Column(String(20), ForeignKey('units.id'))
     amount = Column(Numeric(15, 2), nullable=False)
-    due_date = Column(db.Date)
-    status = Column(String(20), default='غير مدفوع')
-    payment_date = Column(db.Date)
+    remaining_amount = Column(Numeric(15, 2), nullable=False)
+    description = Column(db.Text)
+    status = Column(String(20), default='نشط')
     created_at = Column(DateTime, default=func.now())

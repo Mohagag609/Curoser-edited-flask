@@ -48,8 +48,8 @@ def seed_database():
         
         # Add members to group
         members = [
-            PartnerGroupMember(group_id=group1.id, partner_id=partners[0].id, percentage=60),
-            PartnerGroupMember(group_id=group1.id, partner_id=partners[1].id, percentage=40),
+            PartnerGroupMember(id=generate_uid('PGM'), group_id=group1.id, partner_id=partners[0].id, percentage=60),
+            PartnerGroupMember(id=generate_uid('PGM'), group_id=group1.id, partner_id=partners[1].id, percentage=40),
         ]
         db.session.add_all(members)
         
