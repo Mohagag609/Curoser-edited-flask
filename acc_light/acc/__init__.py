@@ -1,7 +1,7 @@
 from flask import Flask
 from datetime import datetime
 from config import Config
-from acc.extensions import db, migrate
+from acc.extensions import db
 
 
 def create_app(config_class=Config):
@@ -10,7 +10,6 @@ def create_app(config_class=Config):
     
     # Initialize extensions
     db.init_app(app)
-    migrate.init_app(app, db)
     
     # Template context processors
     @app.context_processor

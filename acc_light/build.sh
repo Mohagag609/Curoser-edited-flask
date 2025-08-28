@@ -2,36 +2,43 @@
 # exit on error
 set -o errexit
 
+echo "=== Starting build process ==="
+
 # Upgrade pip
+echo "Upgrading pip..."
 pip install --upgrade pip
 
 # Install Python dependencies
+echo "Installing Python dependencies..."
 pip install -r requirements.txt
 
 # Install Node dependencies and build CSS
+echo "Installing Node dependencies and building CSS..."
 npm install
 npm run build
 
-# Clean up any existing migration state in database
-python3 clean_migrations.py || echo "No migration state to clean"
+# NO MIGRATIONS - just create tables directly
+echo "Creating database tables..."
+python3 -c "
+from app import app, db
+with app.app_context():
+    db.create_all()
+    print('Database tables created successfully')
+"
 
-# Initialize database migrations if needed
-if [ ! -d "migrations" ]; then
-    echo "Initializing migrations..."
-    flask db init
-fi
+# Seed initial data if needed
+echo "Checking for initial data..."
+python3 -c "
+from app import app, db
+from acc.models import Project
 
-# Create initial migration if no versions exist
-if [ ! "$(ls -A migrations/versions 2>/dev/null)" ]; then
-    echo "Creating initial migration..."
-    flask db migrate -m "Initial migration"
-fi
+with app.app_context():
+    if Project.query.count() == 0:
+        print('No projects found, running seed...')
+        import seed_data
+        seed_data.seed_database()
+    else:
+        print('Database already has data, skipping seed')
+"
 
-# Run database migrations (with fallback)
-flask db upgrade || {
-    echo "Migration failed, creating tables directly..."
-    python3 create_db.py
-}
-
-# Create initial data if needed (ignore errors)
-python3 seed_data.py || echo "Seed data skipped"
+echo "=== Build completed successfully ==="
