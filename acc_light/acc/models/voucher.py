@@ -19,3 +19,23 @@ class Voucher(db.Model):
     
     def __repr__(self):
         return f'<Voucher {self.type} - {self.amount}>'
+    
+    def get_entity(self):
+        """Get the associated entity object"""
+        if not self.entity_type or not self.entity_id:
+            return None
+        
+        if self.entity_type == 'customer':
+            from acc.models import Customer
+            return Customer.query.get(self.entity_id)
+        elif self.entity_type == 'supplier':
+            from acc.models import Supplier
+            return Supplier.query.get(self.entity_id)
+        elif self.entity_type == 'contractor':
+            from acc.models import Contractor
+            return Contractor.query.get(self.entity_id)
+        elif self.entity_type == 'partner':
+            from acc.models import Partner
+            return Partner.query.get(self.entity_id)
+        
+        return None

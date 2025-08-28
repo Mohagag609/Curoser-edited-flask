@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة سند - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-3xl font-bold text-gray-900">إضافة سند جديد</h2>
+        <a href="{{ url_for('vouchers.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i>
+            العودة للسندات
+        </a>
+    </div>
+    
+    <!-- Form -->
+    <div class="card max-w-3xl mx-auto">
+        <form method="post" action="{{ url_for('vouchers.add') }}">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Type -->
+                <div>
+                    <label class="form-label">نوع السند <span class="text-red-500">*</span></label>
+                    <select name="type" class="form-select" onchange="updateForm(this)">
+                        <option value="receipt">سند قبض</option>
+                        <option value="payment">سند صرف</option>
+                    </select>
+                </div>
+                
+                <!-- Safe -->
+                <div>
+                    <label class="form-label">الخزينة <span class="text-red-500">*</span></label>
+                    <select name="safe_id" required class="form-select">
+                        <option value="">اختر الخزينة...</option>
+                        {% for safe in safes %}
+                        <option value="{{ safe.id }}" {% if safe.is_default %}selected{% endif %}>
+                            {{ safe.name }} ({{ format_currency(safe.balance) }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Amount -->
+                <div>
+                    <label class="form-label">المبلغ <span class="text-red-500">*</span></label>
+                    <input type="number" name="amount" step="0.01" min="0.01" required class="form-input">
+                </div>
+                
+                <!-- Date -->
+                <div>
+                    <label class="form-label">التاريخ <span class="text-red-500">*</span></label>
+                    <input type="date" name="date" value="{{ today }}" required class="form-input">
+                </div>
+                
+                <!-- Entity Type -->
+                <div>
+                    <label class="form-label">مرتبط بـ</label>
+                    <select name="entity_type" class="form-select" onchange="updateEntitySelect(this)">
+                        <option value="">غير مرتبط</option>
+                        <option value="customer">عميل</option>
+                        <option value="supplier">مورد</option>
+                        <option value="contractor">مقاول</option>
+                        <option value="partner">شريك</option>
+                    </select>
+                </div>
+                
+                <!-- Entity -->
+                <div>
+                    <label class="form-label" id="entity-label">اختر...</label>
+                    <select name="entity_id" id="entity-select" class="form-select" disabled>
+                        <option value="">اختر النوع أولاً</option>
+                    </select>
+                </div>
+                
+                <!-- Description -->
+                <div class="md:col-span-2">
+                    <label class="form-label">البيان <span class="text-red-500">*</span></label>
+                    <input type="text" name="description" required class="form-input">
+                </div>
+                
+                <!-- Notes -->
+                <div class="md:col-span-2">
+                    <label class="form-label">ملاحظات</label>
+                    <textarea name="notes" rows="3" class="form-input"></textarea>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex justify-end gap-2">
+                <a href="{{ url_for('vouchers.index') }}" class="btn btn-secondary">
+                    إلغاء
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    حفظ
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Entities data
+const entities = {
+    customer: [
+        {% for customer in customers %}
+        {id: "{{ customer.id }}", name: "{{ customer.name }}"},
+        {% endfor %}
+    ],
+    supplier: [
+        {% for supplier in suppliers %}
+        {id: "{{ supplier.id }}", name: "{{ supplier.name }}"},
+        {% endfor %}
+    ],
+    contractor: [
+        {% for contractor in contractors %}
+        {id: "{{ contractor.id }}", name: "{{ contractor.name }}"},
+        {% endfor %}
+    ],
+    partner: [
+        {% for partner in partners %}
+        {id: "{{ partner.id }}", name: "{{ partner.name }}"},
+        {% endfor %}
+    ]
+};
+
+const entityLabels = {
+    customer: 'العميل',
+    supplier: 'المورد',
+    contractor: 'المقاول',
+    partner: 'الشريك'
+};
+
+function updateForm(typeSelect) {
+    // Update form based on voucher type
+}
+
+function updateEntitySelect(typeSelect) {
+    const entitySelect = document.getElementById('entity-select');
+    const entityLabel = document.getElementById('entity-label');
+    const entityType = typeSelect.value;
+    
+    // Clear current options
+    entitySelect.innerHTML = '';
+    
+    if (!entityType) {
+        entitySelect.disabled = true;
+        entitySelect.innerHTML = '<option value="">اختر النوع أولاً</option>';
+        entityLabel.textContent = 'اختر...';
+        return;
+    }
+    
+    // Enable select
+    entitySelect.disabled = false;
+    entityLabel.textContent = entityLabels[entityType];
+    
+    // Add default option
+    entitySelect.innerHTML = '<option value="">اختر ' + entityLabels[entityType] + '...</option>';
+    
+    // Add entities
+    const entityList = entities[entityType];
+    entityList.forEach(entity => {
+        const option = document.createElement('option');
+        option.value = entity.id;
+        option.textContent = entity.name;
+        entitySelect.appendChild(option);
+    });
+}
+</script>
+{% endblock %}

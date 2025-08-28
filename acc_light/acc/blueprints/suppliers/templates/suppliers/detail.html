@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}{{ supplier.name }} - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-900">{{ supplier.name }}</h2>
+            <p class="text-gray-600 mt-1">تفاصيل المورد</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{{ url_for('suppliers.edit', id=supplier.id) }}" class="btn btn-primary">
+                <i class="fas fa-edit"></i>
+                تعديل
+            </a>
+            <a href="{{ url_for('suppliers.index') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i>
+                العودة للموردين
+            </a>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Supplier Info & Financial Summary -->
+        <div>
+            <!-- Info -->
+            <div class="card">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">معلومات المورد</h3>
+                
+                <div class="space-y-3">
+                    <div>
+                        <label class="form-label">الاسم</label>
+                        <p class="text-lg">{{ supplier.name }}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="form-label">رقم الهاتف</label>
+                        <p class="text-lg">{{ supplier.phone or '-' }}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="form-label">البريد الإلكتروني</label>
+                        <p class="text-lg">{{ supplier.email or '-' }}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="form-label">الرقم الضريبي</label>
+                        <p class="text-lg">{{ supplier.tax_number or '-' }}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="form-label">العنوان</label>
+                        <p>{{ supplier.address or '-' }}</p>
+                    </div>
+                    
+                    {% if supplier.notes %}
+                    <div>
+                        <label class="form-label">ملاحظات</label>
+                        <p class="text-gray-600">{{ supplier.notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Financial Summary -->
+            <div class="card mt-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">الملخص المالي</h3>
+                
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">إجمالي المدفوعات</span>
+                        <span class="text-lg font-semibold text-red-600">{{ format_currency(total_payments) }}</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">إجمالي المقبوضات</span>
+                        <span class="text-lg font-semibold text-green-600">{{ format_currency(total_receipts) }}</span>
+                    </div>
+                    
+                    <hr class="my-3">
+                    
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">الرصيد</span>
+                        <span class="text-xl font-bold {% if balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            {{ format_currency(balance) }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="card mt-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">إجراءات سريعة</h3>
+                
+                <a href="{{ url_for('vouchers.add') }}?entity_type=supplier&entity_id={{ supplier.id }}" class="btn btn-primary w-full">
+                    <i class="fas fa-plus"></i>
+                    إضافة سند
+                </a>
+            </div>
+        </div>
+        
+        <!-- Vouchers -->
+        <div class="lg:col-span-2">
+            <div class="card">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">السندات</h3>
+                
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>النوع</th>
+                                <th>البيان</th>
+                                <th>المبلغ</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for voucher in vouchers %}
+                            <tr>
+                                <td>{{ voucher.date }}</td>
+                                <td>
+                                    {% if voucher.type == 'receipt' %}
+                                        <span class="badge badge-success">قبض</span>
+                                    {% else %}
+                                        <span class="badge badge-danger">صرف</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ voucher.description }}</td>
+                                <td class="font-semibold {% if voucher.type == 'receipt' %}text-green-600{% else %}text-red-600{% endif %}">
+                                    {% if voucher.type == 'receipt' %}+{% else %}-{% endif %}
+                                    {{ format_currency(voucher.amount) }}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('vouchers.detail', id=voucher.id) }}" class="btn btn-sm btn-secondary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-gray-500">لا توجد سندات</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,6 +1,290 @@
-from flask import render_template
+from flask import render_template, request, redirect, url_for, flash, jsonify
 from acc.blueprints.treasury import bp
+from acc.models import Safe, SafeTransfer, Voucher
+from acc.extensions import db
+from acc.services.utils import generate_uid, log_action, Pagination, parse_number, get_today
+from datetime import datetime
+from sqlalchemy import func
 
 @bp.route('/')
 def index():
-    return '<h1>treasury - Coming Soon</h1>'
+    page = request.args.get('page', 1, type=int)
+    
+    # Get all safes
+    safes = Safe.query.order_by(Safe.is_default.desc(), Safe.name).all()
+    
+    # Update balances
+    for safe in safes:
+        safe.update_balance()
+    db.session.commit()
+    
+    # Calculate totals
+    total_cash = db.session.query(func.sum(Safe.balance)).filter_by(type='cash').scalar() or 0
+    total_bank = db.session.query(func.sum(Safe.balance)).filter_by(type='bank').scalar() or 0
+    total_balance = total_cash + total_bank
+    
+    # Get recent transfers
+    recent_transfers = SafeTransfer.query.order_by(SafeTransfer.date.desc()).limit(10).all()
+    
+    return render_template('treasury/index.html',
+                         safes=safes,
+                         total_cash=total_cash,
+                         total_bank=total_bank,
+                         total_balance=total_balance,
+                         recent_transfers=recent_transfers)
+
+
+@bp.route('/safes/add', methods=['GET', 'POST'])
+def add_safe():
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        safe_type = request.form.get('type', 'cash')
+        bank_name = request.form.get('bank_name', '').strip()
+        account_number = request.form.get('account_number', '').strip()
+        is_default = request.form.get('is_default') == '1'
+        notes = request.form.get('notes', '').strip()
+        
+        if not name:
+            flash('الرجاء إدخال اسم الخزينة', 'error')
+            return redirect(url_for('treasury.add_safe'))
+        
+        # Check duplicate
+        if Safe.query.filter_by(name=name).first():
+            flash('اسم الخزينة موجود بالفعل', 'error')
+            return redirect(url_for('treasury.add_safe'))
+        
+        # If setting as default, unset other defaults
+        if is_default:
+            Safe.query.update({'is_default': False})
+        
+        safe = Safe(
+            id=generate_uid('SF'),
+            name=name,
+            type=safe_type,
+            bank_name=bank_name if safe_type == 'bank' else None,
+            account_number=account_number if safe_type == 'bank' else None,
+            is_default=is_default,
+            notes=notes
+        )
+        
+        db.session.add(safe)
+        log_action('إضافة خزينة جديدة', {'id': safe.id, 'name': safe.name})
+        db.session.commit()
+        
+        flash('تم إضافة الخزينة بنجاح', 'success')
+        return redirect(url_for('treasury.safe_detail', id=safe.id))
+    
+    return render_template('treasury/add_safe.html')
+
+
+@bp.route('/safes/<id>')
+def safe_detail(id):
+    safe = Safe.query.get_or_404(id)
+    
+    # Update balance
+    safe.update_balance()
+    db.session.commit()
+    
+    # Get vouchers
+    page = request.args.get('page', 1, type=int)
+    from_date = request.args.get('from_date', '')
+    to_date = request.args.get('to_date', '')
+    voucher_type = request.args.get('type', '')
+    
+    query = Voucher.query.filter_by(safe_id=id)
+    
+    if from_date:
+        query = query.filter(Voucher.date >= datetime.strptime(from_date, '%Y-%m-%d').date())
+    
+    if to_date:
+        query = query.filter(Voucher.date <= datetime.strptime(to_date, '%Y-%m-%d').date())
+    
+    if voucher_type:
+        query = query.filter(Voucher.type == voucher_type)
+    
+    query = query.order_by(Voucher.date.desc(), Voucher.created_at.desc())
+    
+    pagination = Pagination(query, page)
+    vouchers = pagination.items
+    
+    # Get transfers
+    transfers_out = SafeTransfer.query.filter_by(from_safe_id=id).order_by(SafeTransfer.date.desc()).limit(5).all()
+    transfers_in = SafeTransfer.query.filter_by(to_safe_id=id).order_by(SafeTransfer.date.desc()).limit(5).all()
+    
+    return render_template('treasury/safe_detail.html',
+                         safe=safe,
+                         vouchers=vouchers,
+                         pagination=pagination,
+                         from_date=from_date,
+                         to_date=to_date,
+                         voucher_type=voucher_type,
+                         transfers_out=transfers_out,
+                         transfers_in=transfers_in)
+
+
+@bp.route('/safes/<id>/edit', methods=['GET', 'POST'])
+def edit_safe(id):
+    safe = Safe.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        safe.name = request.form.get('name', '').strip()
+        safe.type = request.form.get('type', 'cash')
+        safe.bank_name = request.form.get('bank_name', '').strip() if safe.type == 'bank' else None
+        safe.account_number = request.form.get('account_number', '').strip() if safe.type == 'bank' else None
+        safe.is_default = request.form.get('is_default') == '1'
+        safe.notes = request.form.get('notes', '').strip()
+        
+        if not safe.name:
+            flash('الرجاء إدخال اسم الخزينة', 'error')
+            return redirect(url_for('treasury.edit_safe', id=id))
+        
+        # Check duplicate
+        existing = Safe.query.filter_by(name=safe.name).first()
+        if existing and existing.id != id:
+            flash('اسم الخزينة موجود بالفعل', 'error')
+            return redirect(url_for('treasury.edit_safe', id=id))
+        
+        # If setting as default, unset other defaults
+        if safe.is_default:
+            Safe.query.filter(Safe.id != id).update({'is_default': False})
+        
+        log_action('تعديل خزينة', {'id': safe.id, 'name': safe.name})
+        db.session.commit()
+        
+        flash('تم تحديث بيانات الخزينة بنجاح', 'success')
+        return redirect(url_for('treasury.safe_detail', id=id))
+    
+    return render_template('treasury/edit_safe.html', safe=safe)
+
+
+@bp.route('/transfers')
+def transfers():
+    page = request.args.get('page', 1, type=int)
+    from_date = request.args.get('from_date', '')
+    to_date = request.args.get('to_date', '')
+    
+    query = SafeTransfer.query
+    
+    if from_date:
+        query = query.filter(SafeTransfer.date >= datetime.strptime(from_date, '%Y-%m-%d'))
+    
+    if to_date:
+        query = query.filter(SafeTransfer.date <= datetime.strptime(to_date, '%Y-%m-%d'))
+    
+    query = query.order_by(SafeTransfer.date.desc())
+    
+    pagination = Pagination(query, page)
+    transfers = pagination.items
+    
+    return render_template('treasury/transfers.html',
+                         transfers=transfers,
+                         pagination=pagination,
+                         from_date=from_date,
+                         to_date=to_date)
+
+
+@bp.route('/transfers/add', methods=['GET', 'POST'])
+def add_transfer():
+    if request.method == 'POST':
+        from_safe_id = request.form.get('from_safe_id')
+        to_safe_id = request.form.get('to_safe_id')
+        amount = parse_number(request.form.get('amount', 0))
+        date = request.form.get('date', get_today().isoformat())
+        description = request.form.get('description', '').strip()
+        notes = request.form.get('notes', '').strip()
+        
+        if not all([from_safe_id, to_safe_id, amount]):
+            flash('الرجاء إدخال جميع البيانات المطلوبة', 'error')
+            return redirect(url_for('treasury.add_transfer'))
+        
+        if from_safe_id == to_safe_id:
+            flash('لا يمكن التحويل من وإلى نفس الخزينة', 'error')
+            return redirect(url_for('treasury.add_transfer'))
+        
+        if amount <= 0:
+            flash('الرجاء إدخال مبلغ صحيح', 'error')
+            return redirect(url_for('treasury.add_transfer'))
+        
+        # Check source safe balance
+        from_safe = Safe.query.get(from_safe_id)
+        from_safe.update_balance()
+        
+        if from_safe.balance < amount:
+            flash(f'الرصيد غير كافي في {from_safe.name}. الرصيد المتاح: {from_safe.balance}', 'error')
+            return redirect(url_for('treasury.add_transfer'))
+        
+        transfer = SafeTransfer(
+            id=generate_uid('ST'),
+            from_safe_id=from_safe_id,
+            to_safe_id=to_safe_id,
+            amount=amount,
+            date=datetime.strptime(date, '%Y-%m-%d') if isinstance(date, str) else date,
+            description=description,
+            notes=notes
+        )
+        
+        db.session.add(transfer)
+        
+        # Update safe balances
+        from_safe.update_balance()
+        to_safe = Safe.query.get(to_safe_id)
+        to_safe.update_balance()
+        
+        log_action('تحويل بين الخزائن', {
+            'id': transfer.id,
+            'from_safe': from_safe.name,
+            'to_safe': to_safe.name,
+            'amount': amount
+        })
+        
+        db.session.commit()
+        
+        flash('تم إجراء التحويل بنجاح', 'success')
+        return redirect(url_for('treasury.transfers'))
+    
+    safes = Safe.query.order_by(Safe.name).all()
+    return render_template('treasury/add_transfer.html',
+                         safes=safes,
+                         today=get_today())
+
+
+@bp.route('/transfers/<id>/delete', methods=['POST'])
+def delete_transfer(id):
+    transfer = SafeTransfer.query.get_or_404(id)
+    
+    # Update safe balances
+    from_safe = transfer.from_safe
+    to_safe = transfer.to_safe
+    
+    db.session.delete(transfer)
+    
+    from_safe.update_balance()
+    to_safe.update_balance()
+    
+    log_action('حذف تحويل', {
+        'id': id,
+        'from_safe': from_safe.name,
+        'to_safe': to_safe.name,
+        'amount': transfer.amount
+    })
+    
+    db.session.commit()
+    
+    flash('تم حذف التحويل بنجاح', 'success')
+    return redirect(request.referrer or url_for('treasury.transfers'))
+
+
+# API endpoints
+@bp.route('/api/safes')
+def api_safes():
+    safes = Safe.query.order_by(Safe.is_default.desc(), Safe.name).all()
+    for safe in safes:
+        safe.update_balance()
+    
+    return jsonify([{
+        'id': s.id,
+        'name': s.name,
+        'type': s.type,
+        'balance': float(s.balance),
+        'is_default': s.is_default
+    } for s in safes])

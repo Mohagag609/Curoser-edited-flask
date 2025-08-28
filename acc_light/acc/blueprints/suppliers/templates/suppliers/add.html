@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة مورد - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-3xl font-bold text-gray-900">إضافة مورد جديد</h2>
+        <a href="{{ url_for('suppliers.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i>
+            العودة للموردين
+        </a>
+    </div>
+    
+    <!-- Form -->
+    <div class="card max-w-3xl mx-auto">
+        <form method="post" action="{{ url_for('suppliers.add') }}">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label class="form-label">اسم المورد <span class="text-red-500">*</span></label>
+                    <input type="text" name="name" required class="form-input" autofocus>
+                </div>
+                
+                <div>
+                    <label class="form-label">رقم الهاتف</label>
+                    <input type="text" name="phone" class="form-input" dir="ltr">
+                </div>
+                
+                <div>
+                    <label class="form-label">البريد الإلكتروني</label>
+                    <input type="email" name="email" class="form-input" dir="ltr">
+                </div>
+                
+                <div>
+                    <label class="form-label">الرقم الضريبي</label>
+                    <input type="text" name="tax_number" class="form-input" dir="ltr">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="form-label">العنوان</label>
+                    <textarea name="address" rows="2" class="form-input"></textarea>
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="form-label">ملاحظات</label>
+                    <textarea name="notes" rows="3" class="form-input"></textarea>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex justify-end gap-2">
+                <a href="{{ url_for('suppliers.index') }}" class="btn btn-secondary">
+                    إلغاء
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    حفظ
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

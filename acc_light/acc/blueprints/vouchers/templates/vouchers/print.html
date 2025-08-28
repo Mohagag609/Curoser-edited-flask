@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>طباعة سند - {{ voucher.id }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            direction: rtl;
+            margin: 0;
+            padding: 20px;
+            font-size: 14px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border: 1px solid #ddd;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .header p {
+            margin: 5px 0;
+            color: #666;
+        }
+        .voucher-type {
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            display: inline-block;
+            margin: 10px 0;
+        }
+        .voucher-type.receipt {
+            background: #28a745;
+        }
+        .voucher-type.payment {
+            background: #dc3545;
+        }
+        .details {
+            margin: 20px 0;
+        }
+        .detail-row {
+            display: flex;
+            margin: 10px 0;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .detail-label {
+            font-weight: bold;
+            width: 150px;
+        }
+        .detail-value {
+            flex: 1;
+        }
+        .amount {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #333;
+            border-radius: 5px;
+        }
+        .footer {
+            margin-top: 50px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .signature {
+            text-align: center;
+            min-width: 200px;
+        }
+        .signature-line {
+            border-bottom: 1px solid #333;
+            margin: 50px 0 10px;
+        }
+        @media print {
+            body {
+                padding: 0;
+            }
+            .container {
+                border: none;
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+        .print-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 20px auto;
+            display: block;
+        }
+        .print-btn:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <button class="print-btn no-print" onclick="window.print()">طباعة</button>
+    
+    <div class="container">
+        <div class="header">
+            <h1>{{ config.SITE_NAME }}</h1>
+            <p>نظام إدارة العقارات</p>
+            <div class="voucher-type {% if voucher.type == 'receipt' %}receipt{% else %}payment{% endif %}">
+                {% if voucher.type == 'receipt' %}
+                    سند قبض
+                {% else %}
+                    سند صرف
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="details">
+            <div class="detail-row">
+                <div class="detail-label">رقم السند:</div>
+                <div class="detail-value">{{ voucher.id }}</div>
+            </div>
+            
+            <div class="detail-row">
+                <div class="detail-label">التاريخ:</div>
+                <div class="detail-value">{{ voucher.date }}</div>
+            </div>
+            
+            <div class="detail-row">
+                <div class="detail-label">الخزينة:</div>
+                <div class="detail-value">{{ voucher.safe.name if voucher.safe else '-' }}</div>
+            </div>
+            
+            {% if voucher.entity_type and voucher.entity_id %}
+            <div class="detail-row">
+                <div class="detail-label">
+                    {% if voucher.entity_type == 'customer' %}العميل:
+                    {% elif voucher.entity_type == 'supplier' %}المورد:
+                    {% elif voucher.entity_type == 'contractor' %}المقاول:
+                    {% elif voucher.entity_type == 'partner' %}الشريك:
+                    {% endif %}
+                </div>
+                <div class="detail-value">{{ voucher.get_entity().name }}</div>
+            </div>
+            {% endif %}
+            
+            <div class="detail-row">
+                <div class="detail-label">البيان:</div>
+                <div class="detail-value">{{ voucher.description }}</div>
+            </div>
+            
+            {% if voucher.notes %}
+            <div class="detail-row">
+                <div class="detail-label">ملاحظات:</div>
+                <div class="detail-value">{{ voucher.notes }}</div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="amount">
+            المبلغ: {{ "{:,.2f}".format(voucher.amount) }} ج.م
+        </div>
+        
+        <div class="footer">
+            <div class="signature">
+                <div class="signature-line"></div>
+                <p>المستلم</p>
+            </div>
+            
+            <div class="signature">
+                <div class="signature-line"></div>
+                <p>المحاسب</p>
+            </div>
+            
+            <div class="signature">
+                <div class="signature-line"></div>
+                <p>المدير</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

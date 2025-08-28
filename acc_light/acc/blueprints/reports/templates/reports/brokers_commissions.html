@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}عمولات السماسرة - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-900">عمولات السماسرة</h2>
+            <p class="text-gray-600 mt-1">تقرير عن عمولات السماسرة والوسطاء</p>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="window.print()" class="btn btn-secondary">
+                <i class="fas fa-print"></i>
+                طباعة
+            </button>
+            <a href="{{ url_for('reports.index') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i>
+                العودة للتقارير
+            </a>
+        </div>
+    </div>
+    
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100">إجمالي العقود</p>
+                    <p class="text-3xl font-bold mt-2">{{ total_contracts }}</p>
+                </div>
+                <i class="fas fa-file-contract text-3xl opacity-50"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100">إجمالي المبيعات</p>
+                    <p class="text-2xl font-bold mt-2">{{ format_currency(total_sales) }}</p>
+                </div>
+                <i class="fas fa-chart-line text-3xl opacity-50"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-yellow-100">إجمالي العمولات</p>
+                    <p class="text-2xl font-bold mt-2">{{ format_currency(total_commissions) }}</p>
+                </div>
+                <i class="fas fa-percentage text-3xl opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Brokers Table -->
+    <div class="card">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">تفاصيل السماسرة</h3>
+        
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>السمسار</th>
+                        <th>عدد العقود</th>
+                        <th>إجمالي المبيعات</th>
+                        <th>إجمالي العمولة</th>
+                        <th>متوسط العمولة</th>
+                        <th>التفاصيل</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for broker in brokers_list %}
+                    <tr>
+                        <td class="font-medium">{{ broker.name }}</td>
+                        <td>
+                            <span class="badge badge-secondary">{{ broker.contracts_count }}</span>
+                        </td>
+                        <td>{{ format_currency(broker.total_sales) }}</td>
+                        <td class="font-semibold text-green-600">{{ format_currency(broker.total_commission) }}</td>
+                        <td>
+                            {% if broker.total_sales > 0 %}
+                                {{ "%.2f"|format(broker.total_commission / broker.total_sales * 100) }}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button onclick="toggleBrokerDetails('broker-{{ loop.index }}')" class="btn btn-sm btn-secondary">
+                                <i class="fas fa-eye"></i>
+                                عرض
+                            </button>
+                        </td>
+                    </tr>
+                    <!-- Details Row -->
+                    <tr id="broker-{{ loop.index }}" class="hidden">
+                        <td colspan="6" class="bg-gray-50 p-4">
+                            <h4 class="font-semibold mb-2">العقود:</h4>
+                            <div class="table-container">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>رقم العقد</th>
+                                            <th>الوحدة</th>
+                                            <th>العميل</th>
+                                            <th>قيمة العقد</th>
+                                            <th>نسبة العمولة</th>
+                                            <th>قيمة العمولة</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for contract in broker.contracts %}
+                                        <tr>
+                                            <td>
+                                                <a href="{{ url_for('contracts.detail', id=contract.id) }}" class="text-blue-600 hover:underline">
+                                                    {{ contract.code }}
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <a href="{{ url_for('units.detail', id=contract.unit_id) }}" class="text-blue-600 hover:underline">
+                                                    {{ contract.unit.get_display_name() }}
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <a href="{{ url_for('customers.detail', id=contract.customer_id) }}" class="text-blue-600 hover:underline">
+                                                    {{ contract.customer.name }}
+                                                </a>
+                                            </td>
+                                            <td>{{ format_currency(contract.total_price) }}</td>
+                                            <td>{{ contract.broker_percent }}%</td>
+                                            <td class="font-semibold text-green-600">{{ format_currency(contract.broker_amount) }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-gray-500">لا توجد بيانات</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleBrokerDetails(id) {
+    const row = document.getElementById(id);
+    row.classList.toggle('hidden');
+}
+</script>
+
+<style>
+@media print {
+    .btn, .no-print {
+        display: none !important;
+    }
+    .card {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+    }
+    .hidden {
+        display: table-row !important;
+    }
+}
+</style>
+{% endblock %}

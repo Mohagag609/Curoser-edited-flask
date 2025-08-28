@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}تقرير أرصدة العملاء - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-900">تقرير أرصدة العملاء</h2>
+            <p class="text-gray-600 mt-1">تقرير مفصل عن مديونية وأرصدة العملاء</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{{ url_for('reports.export_report', report_type='customers-balance') }}" class="btn btn-secondary">
+                <i class="fas fa-download"></i>
+                تصدير CSV
+            </a>
+            <button onclick="window.print()" class="btn btn-secondary">
+                <i class="fas fa-print"></i>
+                طباعة
+            </button>
+            <a href="{{ url_for('reports.index') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i>
+                العودة للتقارير
+            </a>
+        </div>
+    </div>
+    
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100">إجمالي القيمة</p>
+                    <p class="text-3xl font-bold mt-2">{{ format_currency(total_value) }}</p>
+                </div>
+                <i class="fas fa-money-check-alt text-3xl opacity-50"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100">إجمالي المدفوع</p>
+                    <p class="text-3xl font-bold mt-2">{{ format_currency(total_paid) }}</p>
+                </div>
+                <i class="fas fa-check-circle text-3xl opacity-50"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-red-100">إجمالي المتبقي</p>
+                    <p class="text-3xl font-bold mt-2">{{ format_currency(total_remaining) }}</p>
+                </div>
+                <i class="fas fa-exclamation-circle text-3xl opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Customers Table -->
+    <div class="card">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">تفاصيل العملاء</h3>
+        
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>العميل</th>
+                        <th>الهاتف</th>
+                        <th>عدد العقود</th>
+                        <th>إجمالي القيمة</th>
+                        <th>المدفوع</th>
+                        <th>المتبقي</th>
+                        <th>نسبة السداد</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in customers_data %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('customers.detail', id=item.customer.id) }}" class="text-blue-600 hover:underline font-medium">
+                                {{ item.customer.name }}
+                            </a>
+                        </td>
+                        <td>{{ item.customer.phone or '-' }}</td>
+                        <td>
+                            <span class="badge badge-secondary">{{ item.total_contracts }}</span>
+                        </td>
+                        <td>{{ format_currency(item.total_value) }}</td>
+                        <td class="text-green-600">{{ format_currency(item.paid_amount) }}</td>
+                        <td class="font-semibold {% if item.remaining > 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                            {{ format_currency(item.remaining) }}
+                        </td>
+                        <td>
+                            <div class="flex items-center gap-2">
+                                <div class="w-24 bg-gray-200 rounded-full h-2">
+                                    <div class="bg-green-600 h-2 rounded-full" style="width: {{ item.percentage }}%"></div>
+                                </div>
+                                <span class="text-sm">{{ "%.1f"|format(item.percentage) }}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-gray-500">لا توجد بيانات</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .btn, .no-print {
+        display: none !important;
+    }
+    .card {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+    }
+}
+</style>
+{% endblock %}

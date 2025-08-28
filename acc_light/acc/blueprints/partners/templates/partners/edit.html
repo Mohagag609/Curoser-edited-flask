@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}تعديل {{ partner.name }} - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-3xl font-bold text-gray-900">تعديل بيانات الشريك</h2>
+        <a href="{{ url_for('partners.detail', id=partner.id) }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i>
+            العودة للتفاصيل
+        </a>
+    </div>
+    
+    <!-- Form -->
+    <div class="card max-w-3xl mx-auto">
+        <form method="post" action="{{ url_for('partners.edit', id=partner.id) }}">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label class="form-label">اسم الشريك <span class="text-red-500">*</span></label>
+                    <input type="text" name="name" value="{{ partner.name }}" required class="form-input" autofocus>
+                </div>
+                
+                <div>
+                    <label class="form-label">رقم الهاتف</label>
+                    <input type="text" name="phone" value="{{ partner.phone or '' }}" class="form-input" dir="ltr">
+                </div>
+                
+                <div>
+                    <label class="form-label">الرقم القومي</label>
+                    <input type="text" name="national_id" value="{{ partner.national_id or '' }}" class="form-input" dir="ltr">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="form-label">العنوان</label>
+                    <textarea name="address" rows="2" class="form-input">{{ partner.address or '' }}</textarea>
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="form-label">ملاحظات</label>
+                    <textarea name="notes" rows="3" class="form-input">{{ partner.notes or '' }}</textarea>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex justify-end gap-2">
+                <a href="{{ url_for('partners.detail', id=partner.id) }}" class="btn btn-secondary">
+                    إلغاء
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    حفظ التعديلات
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

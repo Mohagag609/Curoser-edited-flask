@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}الملخص المالي - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-900">الملخص المالي</h2>
+            <p class="text-gray-600 mt-1">تقرير شامل عن الحركات المالية</p>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="window.print()" class="btn btn-secondary">
+                <i class="fas fa-print"></i>
+                طباعة
+            </button>
+            <a href="{{ url_for('reports.index') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i>
+                العودة للتقارير
+            </a>
+        </div>
+    </div>
+    
+    <!-- Date Filter -->
+    <div class="card mb-6">
+        <form method="get" action="{{ url_for('reports.financial_summary') }}" class="flex flex-wrap gap-4 items-end">
+            <div>
+                <label class="form-label">من تاريخ</label>
+                <input type="date" name="from_date" value="{{ from_date }}" class="form-input">
+            </div>
+            <div>
+                <label class="form-label">إلى تاريخ</label>
+                <input type="date" name="to_date" value="{{ to_date }}" class="form-input">
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-filter"></i>
+                تطبيق
+            </button>
+            <a href="{{ url_for('reports.financial_summary') }}" class="btn btn-secondary">
+                إعادة تعيين
+            </a>
+        </form>
+    </div>
+    
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100">إجمالي القبض</p>
+                    <p class="text-3xl font-bold mt-2">{{ format_currency(total_receipts) }}</p>
+                </div>
+                <i class="fas fa-arrow-down text-3xl opacity-50"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-red-100">إجمالي الصرف</p>
+                    <p class="text-3xl font-bold mt-2">{{ format_currency(total_payments) }}</p>
+                </div>
+                <i class="fas fa-arrow-up text-3xl opacity-50"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100">صافي الدخل</p>
+                    <p class="text-3xl font-bold mt-2">{{ format_currency(net_income) }}</p>
+                </div>
+                <i class="fas fa-chart-line text-3xl opacity-50"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-100">إجمالي الأرصدة</p>
+                    <p class="text-3xl font-bold mt-2">{{ format_currency(total_balance) }}</p>
+                </div>
+                <i class="fas fa-wallet text-3xl opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Vouchers by Safe -->
+        <div class="lg:col-span-2">
+            <div class="card">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">الحركات حسب الخزينة</h3>
+                
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>الخزينة</th>
+                                <th>قبض</th>
+                                <th>صرف</th>
+                                <th>الصافي</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set safe_totals = {} %}
+                            {% for safe_name, voucher_type, total in vouchers_by_safe %}
+                                {% if safe_name not in safe_totals %}
+                                    {% set _ = safe_totals.update({safe_name: {'receipt': 0, 'payment': 0}}) %}
+                                {% endif %}
+                                {% set _ = safe_totals[safe_name].update({voucher_type: total}) %}
+                            {% endfor %}
+                            
+                            {% for safe_name, totals in safe_totals.items() %}
+                            <tr>
+                                <td class="font-medium">{{ safe_name }}</td>
+                                <td class="text-green-600">{{ format_currency(totals.receipt) }}</td>
+                                <td class="text-red-600">{{ format_currency(totals.payment) }}</td>
+                                <td class="font-semibold {% if totals.receipt - totals.payment >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                    {{ format_currency(totals.receipt - totals.payment) }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Recent Vouchers -->
+            <div class="card mt-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">آخر الحركات</h3>
+                
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>النوع</th>
+                                <th>البيان</th>
+                                <th>المبلغ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for voucher in recent_vouchers %}
+                            <tr>
+                                <td>{{ voucher.date }}</td>
+                                <td>
+                                    {% if voucher.type == 'receipt' %}
+                                        <span class="badge badge-success">قبض</span>
+                                    {% else %}
+                                        <span class="badge badge-danger">صرف</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ voucher.description }}</td>
+                                <td class="font-semibold {% if voucher.type == 'receipt' %}text-green-600{% else %}text-red-600{% endif %}">
+                                    {% if voucher.type == 'receipt' %}+{% else %}-{% endif %}
+                                    {{ format_currency(voucher.amount) }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Safe Balances -->
+        <div>
+            <div class="card">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">أرصدة الخزائن</h3>
+                
+                <div class="space-y-4">
+                    {% for safe in safes %}
+                    <div class="border-b pb-4 last:border-0">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-medium">{{ safe.name }}</p>
+                                <p class="text-sm text-gray-500">
+                                    {% if safe.type == 'bank' %}
+                                        <i class="fas fa-university text-xs"></i>
+                                        {{ safe.bank_name }}
+                                    {% else %}
+                                        <i class="fas fa-money-bill text-xs"></i>
+                                        نقدي
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <p class="text-lg font-semibold {% if safe.balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                {{ format_currency(safe.balance) }}
+                            </p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .btn, .no-print {
+        display: none !important;
+    }
+    .card {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+    }
+}
+</style>
+{% endblock %}

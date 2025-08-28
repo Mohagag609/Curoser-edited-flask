@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة الأقساط - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-900">إدارة الأقساط</h2>
+            <p class="text-gray-600 mt-1">متابعة وإدارة أقساط العقود</p>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100">إجمالي الأقساط</p>
+                    <p class="text-3xl font-bold mt-2">{{ total_installments }}</p>
+                </div>
+                <i class="fas fa-list text-3xl opacity-50"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100">المدفوعة</p>
+                    <p class="text-3xl font-bold mt-2">{{ paid_installments }}</p>
+                </div>
+                <i class="fas fa-check-circle text-3xl opacity-50"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-red-100">المتأخرة</p>
+                    <p class="text-3xl font-bold mt-2">{{ overdue_installments }}</p>
+                </div>
+                <i class="fas fa-exclamation-triangle text-3xl opacity-50"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-yellow-100">المتبقي</p>
+                    <p class="text-2xl font-bold mt-2">{{ format_currency(total_remaining) }}</p>
+                </div>
+                <i class="fas fa-money-bill-wave text-3xl opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Search and Filters -->
+    <div class="card mb-6">
+        <form method="get" action="{{ url_for('installments.index') }}" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Search -->
+                <div>
+                    <label class="form-label">البحث (كود/اسم الوحدة)</label>
+                    <input type="text" name="search" value="{{ search }}" 
+                           placeholder="ابحث بكود أو اسم الوحدة..."
+                           class="form-input">
+                </div>
+                
+                <!-- Unit Filter -->
+                <div>
+                    <label class="form-label">الوحدة</label>
+                    <select name="unit_id" class="form-select">
+                        <option value="">جميع الوحدات</option>
+                        {% for unit in units %}
+                        <option value="{{ unit.id }}" {% if unit.id == unit_id %}selected{% endif %}>
+                            {{ unit.get_display_name() }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Status Filter -->
+                <div>
+                    <label class="form-label">الحالة</label>
+                    <select name="status" class="form-select">
+                        <option value="">جميع الحالات</option>
+                        <option value="غير مدفوع" {% if status == 'غير مدفوع' %}selected{% endif %}>غير مدفوع</option>
+                        <option value="مدفوع جزئياً" {% if status == 'مدفوع جزئياً' %}selected{% endif %}>مدفوع جزئياً</option>
+                        <option value="مدفوع" {% if status == 'مدفوع' %}selected{% endif %}>مدفوع</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Date Range -->
+                <div>
+                    <label class="form-label">من تاريخ</label>
+                    <input type="date" name="from_date" value="{{ from_date }}" class="form-input">
+                </div>
+                
+                <div>
+                    <label class="form-label">إلى تاريخ</label>
+                    <input type="date" name="to_date" value="{{ to_date }}" class="form-input">
+                </div>
+                
+                <!-- Buttons -->
+                <div class="flex items-end gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i>
+                        بحث
+                    </button>
+                    <a href="{{ url_for('installments.index') }}" class="btn btn-secondary">
+                        <i class="fas fa-redo"></i>
+                        إعادة تعيين
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Table -->
+    <div class="card">
+        <form method="post" action="{{ url_for('installments.batch_update') }}" id="batch-form">
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th class="w-10">
+                                <input type="checkbox" id="select-all" class="rounded">
+                            </th>
+                            <th>رقم القسط</th>
+                            <th>الوحدة</th>
+                            <th>العميل</th>
+                            <th>النوع</th>
+                            <th>المبلغ الأصلي</th>
+                            <th>المتبقي</th>
+                            <th>تاريخ الاستحقاق</th>
+                            <th>الحالة</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for installment in installments %}
+                        <tr>
+                            <td>
+                                {% if installment.status != 'مدفوع' %}
+                                <input type="checkbox" name="installment_ids" value="{{ installment.id }}" class="installment-check rounded">
+                                {% endif %}
+                            </td>
+                            <td>{{ installment.installment_number or '-' }}</td>
+                            <td>
+                                <a href="{{ url_for('units.detail', id=installment.unit_id) }}" class="text-blue-600 hover:underline">
+                                    {{ installment.unit.get_display_name() }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if installment.unit.contracts %}
+                                    <a href="{{ url_for('customers.detail', id=installment.unit.contracts.customer_id) }}" class="text-blue-600 hover:underline">
+                                        {{ installment.unit.contracts.customer.name }}
+                                    </a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ installment.type }}</td>
+                            <td>{{ format_currency(installment.original_amount) }}</td>
+                            <td class="font-semibold {% if installment.amount > 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                                {{ format_currency(installment.amount) }}
+                            </td>
+                            <td>
+                                {{ installment.due_date }}
+                                {% if installment.status != 'مدفوع' and installment.due_date < today %}
+                                    <span class="badge badge-danger text-xs">متأخر</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if installment.status == 'مدفوع' %}
+                                    <span class="badge badge-success">{{ installment.status }}</span>
+                                {% elif installment.status == 'مدفوع جزئياً' %}
+                                    <span class="badge badge-warning">{{ installment.status }}</span>
+                                {% else %}
+                                    <span class="badge badge-danger">{{ installment.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('installments.detail', id=installment.id) }}" class="btn btn-sm btn-secondary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="10" class="text-center text-gray-500">لا توجد أقساط</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Batch Actions -->
+            {% if installments %}
+            <div class="mt-4 flex items-center gap-4">
+                <select name="action" class="form-select w-auto" required>
+                    <option value="">اختر إجراء...</option>
+                    <option value="mark_paid">تحديد كمدفوع</option>
+                </select>
+                
+                <input type="date" name="payment_date" class="form-input w-auto" value="{{ today }}">
+                
+                <select name="safe_id" class="form-select w-auto" required>
+                    <option value="">اختر الخزينة...</option>
+                </select>
+                
+                <button type="submit" class="btn btn-primary" onclick="return confirm('هل أنت متأكد من تنفيذ هذا الإجراء على الأقساط المحددة؟')">
+                    <i class="fas fa-check"></i>
+                    تنفيذ
+                </button>
+            </div>
+            {% endif %}
+        </form>
+        
+        <!-- Pagination -->
+        {% if pagination.pages > 1 %}
+            {% include '_partials/pagination.html' %}
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Select all checkbox
+document.getElementById('select-all')?.addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.installment-check');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+});
+
+// Load safes
+fetch('{{ url_for("treasury.api_safes") }}')
+    .then(response => response.json())
+    .then(safes => {
+        const select = document.querySelector('select[name="safe_id"]');
+        if (select) {
+            safes.forEach(safe => {
+                const option = document.createElement('option');
+                option.value = safe.id;
+                option.textContent = safe.name + ' (' + safe.balance.toLocaleString('ar-EG', {minimumFractionDigits: 2}) + ' ج.م)';
+                if (safe.is_default) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+        }
+    });
+</script>
+{% endblock %}

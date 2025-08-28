@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة شريك - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-3xl font-bold text-gray-900">إضافة شريك جديد</h2>
+        <a href="{{ url_for('partners.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i>
+            العودة للشركاء
+        </a>
+    </div>
+    
+    <!-- Form -->
+    <div class="card max-w-3xl mx-auto">
+        <form method="post" action="{{ url_for('partners.add') }}">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label class="form-label">اسم الشريك <span class="text-red-500">*</span></label>
+                    <input type="text" name="name" required class="form-input" autofocus>
+                </div>
+                
+                <div>
+                    <label class="form-label">رقم الهاتف</label>
+                    <input type="text" name="phone" class="form-input" dir="ltr">
+                </div>
+                
+                <div>
+                    <label class="form-label">الرقم القومي</label>
+                    <input type="text" name="national_id" class="form-input" dir="ltr">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="form-label">العنوان</label>
+                    <textarea name="address" rows="2" class="form-input"></textarea>
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="form-label">ملاحظات</label>
+                    <textarea name="notes" rows="3" class="form-input"></textarea>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex justify-end gap-2">
+                <a href="{{ url_for('partners.index') }}" class="btn btn-secondary">
+                    إلغاء
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    حفظ
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

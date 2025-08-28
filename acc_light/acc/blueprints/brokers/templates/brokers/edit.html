@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}تعديل {{ broker.name }} - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-3xl font-bold text-gray-900">تعديل بيانات السمسار</h2>
+        <a href="{{ url_for('brokers.detail', id=broker.id) }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i>
+            العودة للتفاصيل
+        </a>
+    </div>
+    
+    <!-- Form -->
+    <div class="card max-w-2xl mx-auto">
+        <form method="post" action="{{ url_for('brokers.edit', id=broker.id) }}">
+            <div class="space-y-6">
+                <div>
+                    <label class="form-label">اسم السمسار <span class="text-red-500">*</span></label>
+                    <input type="text" name="name" value="{{ broker.name }}" required class="form-input" autofocus>
+                </div>
+                
+                <div>
+                    <label class="form-label">رقم الهاتف</label>
+                    <input type="text" name="phone" value="{{ broker.phone or '' }}" class="form-input" dir="ltr">
+                </div>
+                
+                <div>
+                    <label class="form-label">الحالة</label>
+                    <select name="status" class="form-select">
+                        <option value="نشط" {% if broker.status == 'نشط' %}selected{% endif %}>نشط</option>
+                        <option value="غير نشط" {% if broker.status == 'غير نشط' %}selected{% endif %}>غير نشط</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="form-label">ملاحظات</label>
+                    <textarea name="notes" rows="3" class="form-input">{{ broker.notes or '' }}</textarea>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex justify-end gap-2">
+                <a href="{{ url_for('brokers.detail', id=broker.id) }}" class="btn btn-secondary">
+                    إلغاء
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    حفظ التعديلات
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

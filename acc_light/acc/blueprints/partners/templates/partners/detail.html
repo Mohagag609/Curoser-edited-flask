@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}{{ partner.name }} - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-900">{{ partner.name }}</h2>
+            <p class="text-gray-600 mt-1">تفاصيل الشريك</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{{ url_for('partners.edit', id=partner.id) }}" class="btn btn-primary">
+                <i class="fas fa-edit"></i>
+                تعديل
+            </a>
+            <a href="{{ url_for('partners.index') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i>
+                العودة للشركاء
+            </a>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Partner Info -->
+        <div>
+            <div class="card">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">معلومات الشريك</h3>
+                
+                <div class="space-y-3">
+                    <div>
+                        <label class="form-label">الاسم</label>
+                        <p class="text-lg">{{ partner.name }}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="form-label">رقم الهاتف</label>
+                        <p class="text-lg">{{ partner.phone or '-' }}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="form-label">الرقم القومي</label>
+                        <p class="text-lg">{{ partner.national_id or '-' }}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="form-label">العنوان</label>
+                        <p>{{ partner.address or '-' }}</p>
+                    </div>
+                    
+                    {% if partner.notes %}
+                    <div>
+                        <label class="form-label">ملاحظات</label>
+                        <p class="text-gray-600">{{ partner.notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Financial Summary -->
+            <div class="card mt-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">الملخص المالي</h3>
+                
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">إجمالي النسب</span>
+                        <span class="text-lg font-semibold">{{ total_percentage }}%</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">له (دائن)</span>
+                        <span class="text-lg font-semibold text-green-600">{{ format_currency(total_owed) }}</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">عليه (مدين)</span>
+                        <span class="text-lg font-semibold text-red-600">{{ format_currency(total_due) }}</span>
+                    </div>
+                    
+                    <hr class="my-3">
+                    
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">الصافي</span>
+                        <span class="text-xl font-bold {% if total_owed - total_due >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            {{ format_currency(total_owed - total_due) }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Units & Groups -->
+        <div class="lg:col-span-2">
+            <!-- Units -->
+            <div class="card">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">الوحدات</h3>
+                
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>الوحدة</th>
+                                <th>النسبة</th>
+                                <th>القيمة</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for up in unit_partners %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('units.detail', id=up.unit_id) }}" class="text-blue-600 hover:underline">
+                                        {{ up.unit.get_display_name() }}
+                                    </a>
+                                </td>
+                                <td>{{ up.percentage }}%</td>
+                                <td>{{ format_currency((up.unit.total_price or 0) * up.percentage / 100) }}</td>
+                                <td>
+                                    {% if up.unit.status == 'متاحة' %}
+                                        <span class="badge badge-success">{{ up.unit.status }}</span>
+                                    {% elif up.unit.status == 'محجوزة' %}
+                                        <span class="badge badge-warning">{{ up.unit.status }}</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary">{{ up.unit.status }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-gray-500">لا توجد وحدات</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Groups -->
+            <div class="card mt-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">المجموعات</h3>
+                
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>المجموعة</th>
+                                <th>النسبة</th>
+                                <th>إجمالي نسب المجموعة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for membership in group_memberships %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('partners.group_detail', id=membership.group_id) }}" class="text-blue-600 hover:underline">
+                                        {{ membership.group.name }}
+                                    </a>
+                                </td>
+                                <td>{{ membership.percentage }}%</td>
+                                <td>{{ membership.group.get_total_percentage() }}%</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center text-gray-500">لا توجد مجموعات</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Debts -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <!-- Debts Owed (له) -->
+                <div class="card">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">ديون له (دائن)</h3>
+                    
+                    <div class="space-y-3">
+                        {% for debt in debts_owed %}
+                        <div class="border rounded-lg p-3">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="font-medium">
+                                        <a href="{{ url_for('partners.detail', id=debt.debtor_id) }}" class="text-blue-600 hover:underline">
+                                            {{ debt.debtor.name }}
+                                        </a>
+                                    </p>
+                                    {% if debt.unit %}
+                                    <p class="text-sm text-gray-600">
+                                        الوحدة: {{ debt.unit.get_display_name() }}
+                                    </p>
+                                    {% endif %}
+                                    {% if debt.description %}
+                                    <p class="text-sm text-gray-500">{{ debt.description }}</p>
+                                    {% endif %}
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-semibold text-green-600">{{ format_currency(debt.remaining_amount) }}</p>
+                                    <p class="text-xs text-gray-500">من {{ format_currency(debt.amount) }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <p class="text-center text-gray-500">لا توجد ديون</p>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Debts Due (عليه) -->
+                <div class="card">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">ديون عليه (مدين)</h3>
+                    
+                    <div class="space-y-3">
+                        {% for debt in debts_due %}
+                        <div class="border rounded-lg p-3">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="font-medium">
+                                        <a href="{{ url_for('partners.detail', id=debt.creditor_id) }}" class="text-blue-600 hover:underline">
+                                            {{ debt.creditor.name }}
+                                        </a>
+                                    </p>
+                                    {% if debt.unit %}
+                                    <p class="text-sm text-gray-600">
+                                        الوحدة: {{ debt.unit.get_display_name() }}
+                                    </p>
+                                    {% endif %}
+                                    {% if debt.description %}
+                                    <p class="text-sm text-gray-500">{{ debt.description }}</p>
+                                    {% endif %}
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-semibold text-red-600">{{ format_currency(debt.remaining_amount) }}</p>
+                                    <p class="text-xs text-gray-500">من {{ format_currency(debt.amount) }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <p class="text-center text-gray-500">لا توجد ديون</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
