@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}{{ customer.name }} - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <!-- Header -->
+    <div class="card mb-6">
+        <div class="flex justify-between items-start">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ customer.name }}</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                        <span class="text-gray-500">الهاتف:</span>
+                        <span class="font-medium">{{ customer.phone }}</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">الرقم القومي:</span>
+                        <span class="font-medium">{{ customer.national_id or '-' }}</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">الحالة:</span>
+                        {% if customer.status == 'نشط' %}
+                            <span class="badge badge-success">{{ customer.status }}</span>
+                        {% else %}
+                            <span class="badge badge-warning">{{ customer.status }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if customer.address %}
+                <div class="mt-2">
+                    <span class="text-gray-500">العنوان:</span>
+                    <span class="font-medium">{{ customer.address }}</span>
+                </div>
+                {% endif %}
+                {% if customer.notes %}
+                <div class="mt-2">
+                    <span class="text-gray-500">ملاحظات:</span>
+                    <span class="font-medium">{{ customer.notes }}</span>
+                </div>
+                {% endif %}
+            </div>
+            <div class="flex gap-2">
+                <a href="{{ url_for('customers.edit', id=customer.id) }}" class="btn btn-primary">تعديل</a>
+                <a href="{{ url_for('customers.index') }}" class="btn btn-secondary">رجوع</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Financial Summary -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="card">
+            <h3 class="text-sm font-medium text-gray-500 mb-2">إجمالي قيمة العقود</h3>
+            <p class="text-2xl font-bold text-gray-900">{{ format_currency(total_value) }}</p>
+        </div>
+        
+        <div class="card">
+            <h3 class="text-sm font-medium text-gray-500 mb-2">إجمالي المدفوع</h3>
+            <p class="text-2xl font-bold text-green-600">{{ format_currency(total_paid) }}</p>
+        </div>
+        
+        <div class="card">
+            <h3 class="text-sm font-medium text-gray-500 mb-2">إجمالي المديونية</h3>
+            <p class="text-2xl font-bold text-red-600">{{ format_currency(total_debt) }}</p>
+        </div>
+    </div>
+    
+    <!-- Contracts -->
+    <div class="card">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">عقود العميل</h3>
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>كود العقد</th>
+                        <th>الوحدة</th>
+                        <th>السعر</th>
+                        <th>تاريخ البدء</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for contract in contracts %}
+                    <tr>
+                        <td>{{ contract.code }}</td>
+                        <td>{{ contract.unit.get_display_name() }}</td>
+                        <td>{{ format_currency(contract.total_price) }}</td>
+                        <td>{{ contract.start_date }}</td>
+                        <td>
+                            <a href="{{ url_for('contracts.detail', id=contract.id) }}" 
+                               class="text-blue-600 hover:text-blue-800">
+                                عرض التفاصيل
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-gray-500">لا توجد عقود لهذا العميل</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

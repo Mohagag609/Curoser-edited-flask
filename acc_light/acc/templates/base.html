@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ config.SITE_NAME }}{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <link href="{{ url_for('static', filename='css/tailwind.css') }}" rel="stylesheet">
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <!-- Alpine.js for interactive components -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-semibold text-gray-900">{{ config.SITE_NAME }}</h1>
+                </div>
+                
+                <!-- Navigation Links -->
+                <div class="hidden md:flex items-center space-x-reverse space-x-4">
+                    <a href="{{ url_for('dashboard.index') }}" 
+                       class="px-3 py-2 rounded-md text-sm font-medium {% if request.endpoint == 'dashboard.index' %}bg-gray-100 text-gray-900{% else %}text-gray-600 hover:text-gray-900{% endif %}">
+                        لوحة التحكم
+                    </a>
+                    <a href="{{ url_for('customers.index') }}" 
+                       class="px-3 py-2 rounded-md text-sm font-medium {% if 'customers' in request.endpoint %}bg-gray-100 text-gray-900{% else %}text-gray-600 hover:text-gray-900{% endif %}">
+                        العملاء
+                    </a>
+                    <a href="{{ url_for('units.index') }}" 
+                       class="px-3 py-2 rounded-md text-sm font-medium {% if 'units' in request.endpoint %}bg-gray-100 text-gray-900{% else %}text-gray-600 hover:text-gray-900{% endif %}">
+                        الوحدات
+                    </a>
+                    <a href="{{ url_for('contracts.index') }}" 
+                       class="px-3 py-2 rounded-md text-sm font-medium {% if 'contracts' in request.endpoint %}bg-gray-100 text-gray-900{% else %}text-gray-600 hover:text-gray-900{% endif %}">
+                        العقود
+                    </a>
+                    <a href="{{ url_for('partners.index') }}" 
+                       class="px-3 py-2 rounded-md text-sm font-medium {% if 'partners' in request.endpoint %}bg-gray-100 text-gray-900{% else %}text-gray-600 hover:text-gray-900{% endif %}">
+                        الشركاء
+                    </a>
+                    <a href="{{ url_for('treasury.index') }}" 
+                       class="px-3 py-2 rounded-md text-sm font-medium {% if 'treasury' in request.endpoint %}bg-gray-100 text-gray-900{% else %}text-gray-600 hover:text-gray-900{% endif %}">
+                        الخزينة
+                    </a>
+                    <a href="{{ url_for('reports.index') }}" 
+                       class="px-3 py-2 rounded-md text-sm font-medium {% if 'reports' in request.endpoint %}bg-gray-100 text-gray-900{% else %}text-gray-600 hover:text-gray-900{% endif %}">
+                        التقارير
+                    </a>
+                    
+                    <!-- Dropdown for more items -->
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" 
+                                class="px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 flex items-center gap-1">
+                            المزيد
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div x-show="open" 
+                             @click.away="open = false"
+                             x-transition
+                             class="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                            <div class="py-1">
+                                <a href="{{ url_for('brokers.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">السماسرة</a>
+                                <a href="{{ url_for('installments.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">الأقساط</a>
+                                <a href="{{ url_for('vouchers.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">السندات</a>
+                                <hr class="my-1">
+                                <a href="{{ url_for('suppliers.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">الموردون</a>
+                                <a href="{{ url_for('contractors.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">المقاولون</a>
+                                <a href="{{ url_for('projects.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">المشاريع</a>
+                                <a href="{{ url_for('materials.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">المواد</a>
+                                <hr class="my-1">
+                                <a href="{{ url_for('system.audit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">سجل التغييرات</a>
+                                <a href="{{ url_for('system.backup') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">النسخ الاحتياطي</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Mobile menu button -->
+                <div class="md:hidden">
+                    <button type="button" 
+                            class="inline-flex items-center justify-center p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                            @click="mobileMenuOpen = !mobileMenuOpen">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mx-auto px-4 mt-4">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} mb-4" role="alert">
+                        {{ message }}
+                        <button type="button" class="float-left" onclick="this.parentElement.remove()">×</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-auto">
+        <div class="container mx-auto px-4 py-4">
+            <p class="text-center text-sm text-gray-600">
+                جميع الحقوق محفوظة © {{ config.SITE_NAME }} {{ current_year }}
+            </p>
+        </div>
+    </footer>
+    
+    <!-- HTMX Event Handlers -->
+    <script>
+        // Show loading indicator during HTMX requests
+        document.body.addEventListener('htmx:beforeRequest', function(evt) {
+            // You can add a loading indicator here
+        });
+        
+        // Handle HTMX errors
+        document.body.addEventListener('htmx:responseError', function(evt) {
+            alert('حدث خطأ في الطلب. يرجى المحاولة مرة أخرى.');
+        });
+    </script>
+    
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

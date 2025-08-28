@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة عميل جديد - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-gray-900">إضافة عميل جديد</h2>
+    </div>
+    
+    <div class="card">
+        <form method="post" action="{{ url_for('customers.add') }}">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="form-label" for="name">اسم العميل *</label>
+                    <input type="text" 
+                           id="name" 
+                           name="name" 
+                           class="form-input" 
+                           required
+                           autofocus>
+                </div>
+                
+                <div>
+                    <label class="form-label" for="phone">رقم الهاتف *</label>
+                    <input type="text" 
+                           id="phone" 
+                           name="phone" 
+                           class="form-input" 
+                           required>
+                </div>
+                
+                <div>
+                    <label class="form-label" for="national_id">الرقم القومي</label>
+                    <input type="text" 
+                           id="national_id" 
+                           name="national_id" 
+                           class="form-input">
+                </div>
+                
+                <div>
+                    <label class="form-label" for="status">الحالة</label>
+                    <select id="status" name="status" class="form-select">
+                        <option value="نشط">نشط</option>
+                        <option value="موقوف">موقوف</option>
+                    </select>
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="form-label" for="address">العنوان</label>
+                    <input type="text" 
+                           id="address" 
+                           name="address" 
+                           class="form-input">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="form-label" for="notes">ملاحظات</label>
+                    <textarea id="notes" 
+                              name="notes" 
+                              rows="3" 
+                              class="form-input"></textarea>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex gap-3">
+                <button type="submit" class="btn btn-primary">حفظ</button>
+                <a href="{{ url_for('customers.index') }}" class="btn btn-secondary">إلغاء</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
