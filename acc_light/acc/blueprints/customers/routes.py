@@ -89,13 +89,21 @@ def detail(id):
         installment_ids = [i.id for i in Installment.query.filter_by(unit_id=contract.unit_id).all()]
         
         # Get vouchers
-        paid = db.session.query(func.sum(Voucher.amount)).filter(
-            Voucher.type == 'receipt',
-            or_(
-                Voucher.linked_ref == contract.id,
-                Voucher.linked_ref.in_(installment_ids) if installment_ids else False
+        voucher_query = db.session.query(func.sum(Voucher.amount)).filter(
+            Voucher.type == 'receipt'
+        )
+        
+        if installment_ids:
+            voucher_query = voucher_query.filter(
+                or_(
+                    Voucher.linked_ref == contract.id,
+                    Voucher.linked_ref.in_(installment_ids)
+                )
             )
-        ).scalar() or 0
+        else:
+            voucher_query = voucher_query.filter(Voucher.linked_ref == contract.id)
+            
+        paid = voucher_query.scalar() or 0
         
         total_paid += paid
     

@@ -54,13 +54,23 @@ class Unit(db.Model):
         from acc.models.voucher import Voucher
         installment_ids = [i.id for i in self.installments]
         
-        total_paid = db.session.query(func.sum(Voucher.amount)).filter(
-            Voucher.type == 'receipt',
-            db.or_(
-                Voucher.linked_ref == contract.id,
-                Voucher.linked_ref.in_(installment_ids) if installment_ids else False
+        # Build query for vouchers
+        voucher_query = db.session.query(func.sum(Voucher.amount)).filter(
+            Voucher.type == 'receipt'
+        )
+        
+        # Add conditions based on what references exist
+        if installment_ids:
+            voucher_query = voucher_query.filter(
+                db.or_(
+                    Voucher.linked_ref == contract.id,
+                    Voucher.linked_ref.in_(installment_ids)
+                )
             )
-        ).scalar() or 0
+        else:
+            voucher_query = voucher_query.filter(Voucher.linked_ref == contract.id)
+        
+        total_paid = voucher_query.scalar() or 0
         
         remaining = total_owed - total_paid
         return max(0, remaining)

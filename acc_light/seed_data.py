@@ -1,8 +1,14 @@
+import os
 from app import app, db
 from acc.models import Customer, Unit, Partner, Safe
 from acc.services.utils import generate_uid
 
 def seed_database():
+    # Skip seeding in production unless explicitly requested
+    if os.environ.get('FLASK_ENV') == 'production' and not os.environ.get('FORCE_SEED'):
+        print("Skipping seed in production. Set FORCE_SEED=1 to override.")
+        return
+        
     with app.app_context():
         # Check if data already exists
         if Customer.query.count() > 0:
