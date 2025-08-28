@@ -5,7 +5,7 @@ from sqlalchemy import Column, Integer, String, Float, Numeric, ForeignKey, Date
 class Material(db.Model):
     __tablename__ = 'materials'
     
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(String(20), primary_key=True)
     name = Column(String(200), nullable=False)
     code = Column(String(50), unique=True)
     unit = Column(String(50))  # متر، كيلو، قطعة
@@ -25,10 +25,10 @@ class Material(db.Model):
 class ProjectMaterial(db.Model):
     __tablename__ = 'project_materials'
     
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    project_id = Column(Integer, ForeignKey('projects.id'), nullable=False)
-    material_id = Column(Integer, ForeignKey('materials.id'), nullable=False)
-    supplier_id = Column(Integer, ForeignKey('suppliers.id'))
+    id = Column(String(20), primary_key=True)
+    project_id = Column(String(20), ForeignKey('projects.id'), nullable=False)
+    material_id = Column(String(20), ForeignKey('materials.id'), nullable=False)
+    supplier_id = Column(String(20), ForeignKey('suppliers.id'))
     quantity = Column(Float, nullable=False)
     unit_price = Column(Numeric(15, 2))
     total_price = Column(Numeric(15, 2))

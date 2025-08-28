@@ -3,6 +3,7 @@ from acc.blueprints.treasury import bp
 from acc.models import Safe, SafeTransfer, Voucher
 from acc.extensions import db
 from acc.services.utils import generate_uid, log_action, Pagination, parse_number, get_today
+from acc.services.project_context import get_current_project, filter_by_project
 from datetime import datetime
 from sqlalchemy import func
 
@@ -10,17 +11,18 @@ from sqlalchemy import func
 def index():
     page = request.args.get('page', 1, type=int)
     
-    # Get all safes
-    safes = Safe.query.order_by(Safe.is_default.desc(), Safe.name).all()
+    # Get all safes for current project
+    safes = filter_by_project(Safe.query, Safe).order_by(Safe.is_default.desc(), Safe.name).all()
     
     # Update balances
     for safe in safes:
         safe.update_balance()
     db.session.commit()
     
-    # Calculate totals
-    total_cash = db.session.query(func.sum(Safe.balance)).filter_by(type='cash').scalar() or 0
-    total_bank = db.session.query(func.sum(Safe.balance)).filter_by(type='bank').scalar() or 0
+    # Calculate totals for current project
+    safe_query = filter_by_project(db.session.query(func.sum(Safe.balance)), Safe)
+    total_cash = safe_query.filter(Safe.type == 'cash').scalar() or 0
+    total_bank = safe_query.filter(Safe.type == 'bank').scalar() or 0
     total_balance = total_cash + total_bank
     
     # Get recent transfers
@@ -53,12 +55,19 @@ def add_safe():
             flash('اسم الخزينة موجود بالفعل', 'error')
             return redirect(url_for('treasury.add_safe'))
         
-        # If setting as default, unset other defaults
+        # Get current project
+        current_project = get_current_project()
+        if not current_project:
+            flash('الرجاء اختيار مشروع أولاً', 'error')
+            return redirect(url_for('projects.index'))
+        
+        # If setting as default, unset other defaults in current project
         if is_default:
-            Safe.query.update({'is_default': False})
+            filter_by_project(Safe.query, Safe).update({'is_default': False})
         
         safe = Safe(
             id=generate_uid('SF'),
+            project_id=current_project.id,
             name=name,
             type=safe_type,
             bank_name=bank_name if safe_type == 'bank' else None,
@@ -277,7 +286,7 @@ def delete_transfer(id):
 # API endpoints
 @bp.route('/api/safes')
 def api_safes():
-    safes = Safe.query.order_by(Safe.is_default.desc(), Safe.name).all()
+    safes = filter_by_project(Safe.query, Safe).order_by(Safe.is_default.desc(), Safe.name).all()
     for safe in safes:
         safe.update_balance()
     

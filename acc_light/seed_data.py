@@ -1,6 +1,6 @@
 import os
 from app import app, db
-from acc.models import Customer, Unit, Partner, Safe, PartnerGroup, PartnerGroupMember, UnitPartner, Broker, Contract, Installment
+from acc.models import Customer, Unit, Partner, Safe, PartnerGroup, PartnerGroupMember, UnitPartner, Broker, Contract, Installment, Project
 from acc.services.utils import generate_uid
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
@@ -18,6 +18,18 @@ def seed_database():
             return
         
         print("Seeding database...")
+        
+        # Add projects first
+        projects = [
+            Project(id=generate_uid('PRJ'), name='مشروع الحياة للإسكان', code='HAYAT-001',
+                   description='مشروع سكني متكامل يضم 200 وحدة سكنية', 
+                   status='نشط', is_default=True, budget=150000000),
+            Project(id=generate_uid('PRJ'), name='مشروع أبراج النيل', code='NILE-002',
+                   description='مشروع سكني وتجاري فاخر على كورنيش النيل',
+                   status='نشط', budget=300000000),
+        ]
+        db.session.add_all(projects)
+        db.session.flush()
         
         # Add some customers
         customers = [
@@ -55,13 +67,13 @@ def seed_database():
         
         # Add some units
         units = [
-            Unit(id=generate_uid('U'), code='A-1-101', name='101', floor='1', 
+            Unit(id=generate_uid('U'), project_id=projects[0].id, code='A-1-101', name='101', floor='1', 
                 building='A', area=120, unit_type='سكني', total_price=1500000, status='متاحة'),
-            Unit(id=generate_uid('U'), code='A-2-201', name='201', floor='2', 
+            Unit(id=generate_uid('U'), project_id=projects[0].id, code='A-2-201', name='201', floor='2', 
                 building='A', area=150, unit_type='سكني', total_price=1800000, status='متاحة'),
-            Unit(id=generate_uid('U'), code='B-1-101', name='101', floor='1', 
+            Unit(id=generate_uid('U'), project_id=projects[1].id, code='B-1-101', name='101', floor='1', 
                 building='B', area=100, unit_type='تجاري', total_price=2000000, status='محجوزة'),
-            Unit(id=generate_uid('U'), code='B-3-303', name='303', floor='3', 
+            Unit(id=generate_uid('U'), project_id=projects[1].id, code='B-3-303', name='303', floor='3', 
                 building='B', area=200, unit_type='سكني', total_price=2500000, status='متاحة'),
         ]
         db.session.add_all(units)
@@ -78,8 +90,10 @@ def seed_database():
     # Add safes
     from acc.models import Safe
     safes = [
-        Safe(id=generate_uid('SF'), name='الخزينة الرئيسية', type='cash', is_default=True),
-        Safe(id=generate_uid('SF'), name='البنك الأهلي', type='bank', bank_name='البنك الأهلي المصري'),
+        Safe(id=generate_uid('SF'), project_id=projects[0].id, name='خزينة الحياة', type='cash', is_default=True),
+        Safe(id=generate_uid('SF'), project_id=projects[0].id, name='بنك الحياة - الأهلي', type='bank', bank_name='البنك الأهلي المصري'),
+        Safe(id=generate_uid('SF'), project_id=projects[1].id, name='خزينة أبراج النيل', type='cash'),
+        Safe(id=generate_uid('SF'), project_id=projects[1].id, name='بنك أبراج النيل - CIB', type='bank', bank_name='البنك التجاري الدولي'),
     ]
     db.session.add_all(safes)
     db.session.flush()
@@ -96,6 +110,7 @@ def seed_database():
     # Contract 1: Cash payment
     contract1 = Contract(
         id=generate_uid('CT'),
+        project_id=projects[0].id,
         code='2024-0001',
         customer_id=customers[0].id,
         unit_id=units[0].id,
@@ -115,6 +130,7 @@ def seed_database():
     # Contract 2: Installments
     contract2 = Contract(
         id=generate_uid('CT'),
+        project_id=projects[1].id,
         code='2024-0002',
         customer_id=customers[1].id,
         unit_id=units[2].id,

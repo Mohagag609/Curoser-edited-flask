@@ -3,6 +3,7 @@ from acc.blueprints.contracts import bp
 from acc.extensions import db
 from acc.models import Contract, Unit, Customer, Broker, Installment, Voucher
 from acc.services.utils import generate_uid, log_action, Pagination, format_currency, get_today
+from acc.services.project_context import get_current_project, filter_by_project
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import or_, func
@@ -14,7 +15,8 @@ def index():
     q = request.args.get('q', '')
     status_filter = request.args.get('status', '')
     
-    query = Contract.query
+    # Start with filtered query by project
+    query = filter_by_project(Contract.query, Contract)
     
     if q:
         query = query.join(Contract.customer).join(Contract.unit).filter(
@@ -109,9 +111,16 @@ def add():
             flash('هذه الوحدة لديها عقد بالفعل.', 'error')
             return redirect(url_for('contracts.add'))
         
+        # Get current project
+        current_project = get_current_project()
+        if not current_project:
+            flash('الرجاء اختيار مشروع أولاً', 'error')
+            return redirect(url_for('projects.index'))
+        
         # Create contract
         contract = Contract(
             id=generate_uid('CT'),
+            project_id=current_project.id,
             code=generate_contract_number(),
             customer_id=customer_id,
             unit_id=unit_id,
@@ -144,7 +153,7 @@ def add():
         return redirect(url_for('contracts.detail', id=contract.id))
     
     # Get available units and customers
-    units = Unit.query.filter(Unit.status != 'مباعة').all()
+    units = filter_by_project(Unit.query, Unit).filter(Unit.status != 'مباعة').all()
     customers = Customer.query.filter_by(status='نشط').all()
     brokers = Broker.query.filter_by(status='نشط').all()
     

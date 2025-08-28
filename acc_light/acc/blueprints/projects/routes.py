@@ -3,6 +3,7 @@ from acc.blueprints.projects import bp
 from acc.models import Project, ProjectStage, Contractor, Unit
 from acc.extensions import db
 from acc.services.utils import generate_uid, log_action, Pagination, parse_number, get_today
+from acc.services.project_context import set_current_project
 from datetime import datetime
 
 @bp.route('/')
@@ -226,3 +227,15 @@ def update_stage(project_id, stage_id):
     
     flash('تم تحديث المرحلة بنجاح', 'success')
     return redirect(url_for('projects.detail', id=project_id))
+
+@bp.route('/set-project/<string:project_id>')
+def set_project(project_id):
+    """Set the current project"""
+    if set_current_project(project_id):
+        project = Project.query.get(project_id)
+        flash(f'تم تحديد المشروع: {project.name}', 'success')
+    else:
+        flash('خطأ في تحديد المشروع', 'error')
+    
+    # Redirect to the previous page or dashboard
+    return redirect(request.referrer or url_for('dashboard.index'))

@@ -3,6 +3,7 @@ from acc.blueprints.units import bp
 from acc.extensions import db
 from acc.models import Unit, Partner, PartnerGroup, PartnerGroupMember, UnitPartner, Contract
 from acc.services.utils import generate_uid, log_action, Pagination, format_currency
+from acc.services.project_context import get_current_project, filter_by_project
 from sqlalchemy import or_
 
 
@@ -12,7 +13,8 @@ def index():
     q = request.args.get('q', '')
     status_filter = request.args.get('status', '')
     
-    query = Unit.query
+    # Start with filtered query by project
+    query = filter_by_project(Unit.query, Unit)
     
     if q:
         query = query.filter(
@@ -80,9 +82,16 @@ def add():
             flash('وحدة بنفس الكود موجودة بالفعل.', 'error')
             return redirect(url_for('units.add'))
         
+        # Get current project
+        current_project = get_current_project()
+        if not current_project:
+            flash('الرجاء اختيار مشروع أولاً', 'error')
+            return redirect(url_for('projects.index'))
+        
         # Create unit
         unit = Unit(
             id=generate_uid('U'),
+            project_id=current_project.id,
             code=code,
             name=name,
             floor=floor,

@@ -1,10 +1,11 @@
 from acc.extensions import db
-from sqlalchemy import Column, String, Numeric, DateTime, func, Boolean
+from sqlalchemy import Column, String, Numeric, DateTime, func, Boolean, ForeignKey
 
 class Safe(db.Model):
     __tablename__ = 'safes'
     
     id = Column(String(20), primary_key=True)
+    project_id = Column(String(20), ForeignKey('projects.id'), nullable=True)  # nullable for backward compatibility
     name = Column(String(200), nullable=False, unique=True)
     type = Column(String(20), default='cash')  # cash / bank
     balance = Column(Numeric(15, 2), default=0)

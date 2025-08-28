@@ -6,10 +6,13 @@ class Voucher(db.Model):
     __tablename__ = 'vouchers'
     
     id = Column(String(20), primary_key=True)
+    project_id = Column(String(20), ForeignKey('projects.id'), nullable=True)  # nullable for backward compatibility
     type = Column(String(20), nullable=False)  # 'receipt' or 'payment'
     date = Column(Date, nullable=False)
     amount = Column(Numeric(15, 2), nullable=False)
     safe_id = Column(String(20), ForeignKey('safes.id'), nullable=False)
+    entity_type = Column(String(20))  # customer, supplier, contractor, partner
+    entity_id = Column(String(20))
     description = Column(Text)
     payer = Column(String(200))  # للقبض
     beneficiary = Column(String(200))  # للصرف

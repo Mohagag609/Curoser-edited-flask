@@ -3,6 +3,7 @@ from acc.blueprints.vouchers import bp
 from acc.models import Voucher, Safe, Customer, Supplier, Contractor, Partner
 from acc.extensions import db
 from acc.services.utils import generate_uid, log_action, Pagination, parse_number, get_today
+from acc.services.project_context import get_current_project, filter_by_project
 from datetime import datetime
 from sqlalchemy import func, or_
 
@@ -15,8 +16,8 @@ def index():
     from_date = request.args.get('from_date', '')
     to_date = request.args.get('to_date', '')
     
-    # Base query
-    query = Voucher.query
+    # Base query filtered by project
+    query = filter_by_project(Voucher.query, Voucher)
     
     # Search
     if search:
@@ -101,8 +102,15 @@ def add():
             flash('الرجاء إدخال مبلغ صحيح', 'error')
             return redirect(url_for('vouchers.add'))
         
+        # Get current project
+        current_project = get_current_project()
+        if not current_project:
+            flash('الرجاء اختيار مشروع أولاً', 'error')
+            return redirect(url_for('projects.index'))
+        
         voucher = Voucher(
             id=generate_uid('V'),
+            project_id=current_project.id,
             type=voucher_type,
             amount=amount,
             date=datetime.strptime(date, '%Y-%m-%d').date(),
@@ -131,7 +139,7 @@ def add():
         return redirect(url_for('vouchers.detail', id=voucher.id))
     
     # Get data for form
-    safes = Safe.query.order_by(Safe.is_default.desc(), Safe.name).all()
+    safes = filter_by_project(Safe.query, Safe).order_by(Safe.is_default.desc(), Safe.name).all()
     customers = Customer.query.order_by(Customer.name).all()
     suppliers = Supplier.query.order_by(Supplier.name).all()
     contractors = Contractor.query.order_by(Contractor.name).all()

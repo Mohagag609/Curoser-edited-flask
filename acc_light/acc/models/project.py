@@ -5,19 +5,24 @@ from sqlalchemy import Column, Integer, String, Text, Date, Numeric, ForeignKey,
 class Project(db.Model):
     __tablename__ = 'projects'
     
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(String(20), primary_key=True)
     name = Column(String(200), nullable=False)
-    code = Column(String(50), unique=True)
+    code = Column(String(50), unique=True, nullable=False)
     description = Column(Text)
     start_date = Column(Date)
     expected_end_date = Column(Date)
     actual_end_date = Column(Date)
-    status = Column(String(50), default='planning')
+    status = Column(String(50), default='نشط')
+    is_default = Column(db.Boolean, default=False)
     budget = Column(Numeric(15, 2))
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())
     
     # Relationships
+    units = db.relationship('Unit', backref='project', lazy='dynamic')
+    contracts = db.relationship('Contract', backref='project', lazy='dynamic')
+    safes = db.relationship('Safe', backref='project', lazy='dynamic')
+    vouchers = db.relationship('Voucher', backref='project', lazy='dynamic')
     stages = db.relationship('ProjectStage', backref='project', lazy='dynamic', cascade='all, delete-orphan')
     materials = db.relationship('ProjectMaterial', backref='project', lazy='dynamic', cascade='all, delete-orphan')
     
@@ -34,9 +39,9 @@ class Project(db.Model):
 class ProjectStage(db.Model):
     __tablename__ = 'project_stages'
     
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    project_id = Column(Integer, ForeignKey('projects.id'), nullable=False)
-    contractor_id = Column(Integer, ForeignKey('contractors.id'))
+    id = Column(String(20), primary_key=True)
+    project_id = Column(String(20), ForeignKey('projects.id'), nullable=False)
+    contractor_id = Column(String(20), ForeignKey('contractors.id'))
     name = Column(String(200), nullable=False)
     description = Column(Text)
     start_date = Column(Date)

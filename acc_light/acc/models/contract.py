@@ -6,6 +6,7 @@ class Contract(db.Model):
     __tablename__ = 'contracts'
     
     id = Column(String(20), primary_key=True)
+    project_id = Column(String(20), ForeignKey('projects.id'), nullable=True)  # nullable for backward compatibility
     code = Column(String(20), unique=True)
     unit_id = Column(String(20), ForeignKey('units.id'), nullable=False)
     customer_id = Column(String(20), ForeignKey('customers.id'), nullable=False)

@@ -1,11 +1,12 @@
 from acc.extensions import db
-from sqlalchemy import Column, String, Float, Numeric, Text, DateTime, func
+from sqlalchemy import Column, String, Float, Numeric, Text, DateTime, func, ForeignKey
 
 
 class Unit(db.Model):
     __tablename__ = 'units'
     
     id = Column(String(20), primary_key=True)
+    project_id = Column(String(20), ForeignKey('projects.id'), nullable=True)  # nullable for backward compatibility
     code = Column(String(50), unique=True, nullable=False)
     name = Column(String(100), nullable=False)
     floor = Column(String(20), nullable=False)

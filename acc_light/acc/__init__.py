@@ -16,9 +16,17 @@ def create_app(config_class=Config):
     @app.context_processor
     def inject_globals():
         from acc.services.utils import format_currency
+        from acc.services.project_context import get_current_project
+        from acc.models import Project
+        
+        current_project = get_current_project()
+        all_projects = Project.query.filter_by(status='نشط').order_by(Project.name).all()
+        
         return {
             'current_year': datetime.now().year,
-            'format_currency': format_currency
+            'format_currency': format_currency,
+            'current_project': current_project,
+            'all_projects': all_projects
         }
     
     # Register blueprints
