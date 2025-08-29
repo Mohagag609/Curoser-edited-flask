@@ -94,9 +94,10 @@
                                     <i class="fas fa-eye"></i>
                                 </a>
                                 {% if not phase.is_settled %}
-                                <a href="{{ url_for('settlement.phase_detail', id=phase.id) }}#settlement" 
-                                   class="btn btn-sm btn-primary">
+                                <a href="{{ url_for('settlement.settlement_view', id=phase.id) }}" 
+                                   class="btn btn-sm btn-primary" title="تسوية المرحلة">
                                     <i class="fas fa-calculator"></i>
+                                    تسوية
                                 </a>
                                 {% endif %}
                             </div>

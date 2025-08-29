@@ -1,7 +1,8 @@
 from flask import render_template, request, redirect, url_for, flash, jsonify
 from . import bp
 from acc.models import (Phase, Project, ProjectPartner, PhasePartner, PhasePartnerGroup,
-                       Partner, Expense, MaterialIssue, Material, PhaseSettlementLine)
+                       Partner, Expense, MaterialIssue, Material, PhaseSettlementLine,
+                       PhaseSettlement)
 from acc.extensions import db
 from acc.services.settlement_service import (compute_phase_settlement, settle_phase, 
                                            get_project_ledger, get_phase_expenses_details)
@@ -525,3 +526,33 @@ def delete_phase_partner(id):
     
     flash('تم حذف الشريك من المجموعة بنجاح', 'success')
     return redirect(url_for('settlement.phase_partners_index', phase_id=phase_id))
+
+
+@bp.route('/phases/<id>/settlement-view')
+def settlement_view(id):
+    """عرض صفحة تسوية المرحلة"""
+    phase = Phase.query.get_or_404(id)
+    
+    if phase.is_settled:
+        # إذا كانت المرحلة متسوية، عرض التسوية المحفوظة
+        settlement = phase.settlements.first()
+        if settlement:
+            return render_template('settlement/settlement_completed.html',
+                                 phase=phase,
+                                 settlement=settlement,
+                                 func=db.func,
+                                 Expense=Expense,
+                                 MaterialIssue=MaterialIssue,
+                                 format_currency=lambda x: f"{x:,.2f} جنيه")
+    
+    # حساب التسوية
+    calculation = compute_phase_settlement(id)
+    
+    if calculation.get('error'):
+        flash(calculation['error'], 'error')
+        return redirect(url_for('settlement.phase_detail', id=id))
+    
+    return render_template('settlement/settlement_preview.html',
+                         phase=phase,
+                         calculation=calculation,
+                         format_currency=lambda x: f"{x:,.2f} جنيه")
