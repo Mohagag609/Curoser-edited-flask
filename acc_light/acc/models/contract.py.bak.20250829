@@ -29,7 +29,7 @@ class Contract(db.Model):
     updated_at = Column(DateTime, onupdate=func.now())
     
     # Relationships
-    commission_safe = db.relationship('Safe', backref='commission_contracts')
+    commission_safe = db.relationship('Safe', backref='contracts')
     customer = db.relationship('Customer', foreign_keys=[customer_id], backref='contracts')
     unit = db.relationship('Unit', foreign_keys=[unit_id], backref='contracts')
     installments = db.relationship('Installment', 
