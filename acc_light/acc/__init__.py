@@ -2,6 +2,9 @@ from flask import Flask
 from datetime import datetime
 from config import Config
 from acc.extensions import db
+import logging
+from logging.handlers import RotatingFileHandler
+import os
 
 
 def create_app(config_class=Config):
@@ -10,6 +13,19 @@ def create_app(config_class=Config):
     
     # Initialize extensions
     db.init_app(app)
+    
+    # Configure logging
+    if not app.debug and not app.testing:
+        if not os.path.exists('logs'):
+            os.mkdir('logs')
+        file_handler = RotatingFileHandler('logs/acc.log', maxBytes=10240, backupCount=10)
+        file_handler.setFormatter(logging.Formatter(
+            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+        ))
+        file_handler.setLevel(logging.INFO)
+        app.logger.addHandler(file_handler)
+        app.logger.setLevel(logging.INFO)
+        app.logger.info('ACC application startup')
     
     # Template context processors
     @app.context_processor
@@ -85,5 +101,9 @@ def create_app(config_class=Config):
     
     from acc.blueprints.transfers import bp as transfers_bp
     app.register_blueprint(transfers_bp, url_prefix='/transfers')
+    
+    # Register error handlers
+    from acc.error_handlers import register_error_handlers
+    register_error_handlers(app)
     
     return app

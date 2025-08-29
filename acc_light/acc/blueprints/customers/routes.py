@@ -38,39 +38,68 @@ def index():
 @bp.route('/add', methods=['GET', 'POST'])
 def add():
     if request.method == 'POST':
-        name = request.form.get('name', '').strip()
-        phone = request.form.get('phone', '').strip()
-        national_id = request.form.get('national_id', '').strip()
-        address = request.form.get('address', '').strip()
-        status = request.form.get('status', 'نشط')
-        notes = request.form.get('notes', '').strip()
-        
-        if not name:
-            flash('الرجاء إدخال اسم العميل.', 'error')
+        try:
+            name = request.form.get('name', '').strip()
+            phone = request.form.get('phone', '').strip() or None
+            national_id = request.form.get('national_id', '').strip() or None
+            address = request.form.get('address', '').strip() or None
+            status = request.form.get('status', 'نشط')
+            notes = request.form.get('notes', '').strip() or None
+            
+            # Validation
+            if not name:
+                flash('❌ الرجاء إدخال اسم العميل', 'error')
+                return redirect(url_for('customers.add'))
+            
+            # Check if customer with same name exists
+            existing = Customer.query.filter_by(name=name).first()
+            if existing:
+                flash(f'⚠️ عميل بنفس الاسم "{name}" موجود بالفعل', 'warning')
+                return redirect(url_for('customers.add'))
+            
+            # Validate phone length if provided
+            if phone and len(phone) > 20:
+                flash('⚠️ رقم الهاتف طويل جداً (الحد الأقصى 20 رقم)', 'warning')
+                return redirect(url_for('customers.add'))
+            
+            # Create new customer
+            customer = Customer(
+                id=generate_uid('C'),
+                name=name,
+                phone=phone,
+                national_id=national_id,
+                address=address,
+                status=status,
+                notes=notes
+            )
+            
+            db.session.add(customer)
+            db.session.commit()
+            
+            # Log action after successful save
+            log_action('إضافة عميل جديد', {'id': customer.id, 'name': customer.name})
+            
+            flash(f'✅ تم إضافة العميل "{name}" بنجاح', 'success')
+            
+            # Check if it's an AJAX request
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({
+                    'success': True,
+                    'message': f'تم إضافة العميل "{name}" بنجاح',
+                    'redirect': url_for('customers.index')
+                })
+            
+            return redirect(url_for('customers.index'))
+            
+        except Exception as e:
+            db.session.rollback()
+            error_msg = f'❌ خطأ في إضافة العميل: {str(e)}'
+            flash(error_msg, 'error')
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'message': error_msg}), 500
+                
             return redirect(url_for('customers.add'))
-        
-        # Check if customer with same name exists
-        existing = Customer.query.filter_by(name=name).first()
-        if existing:
-            flash('عميل بنفس الاسم موجود بالفعل.', 'error')
-            return redirect(url_for('customers.add'))
-        
-        customer = Customer(
-            id=generate_uid('C'),
-            name=name,
-            phone=phone,
-            national_id=national_id,
-            address=address,
-            status=status,
-            notes=notes
-        )
-        
-        db.session.add(customer)
-        log_action('إضافة عميل جديد', {'id': customer.id, 'name': customer.name})
-        db.session.commit()
-        
-        flash('تم إضافة العميل بنجاح.', 'success')
-        return redirect(url_for('customers.index'))
     
     return render_template('customers/add.html')
 
@@ -148,19 +177,32 @@ def edit(id):
 
 @bp.route('/<string:id>/delete', methods=['POST'])
 def delete(id):
-    customer = Customer.query.get_or_404(id)
-    
-    # Check if customer has contracts
-    if customer.contracts.count() > 0:
-        flash('لا يمكن حذف هذا العميل لأنه مرتبط بعقود.', 'error')
+    try:
+        customer = Customer.query.get_or_404(id)
+        
+        # Check if customer has contracts
+        if len(customer.contracts) > 0:
+            flash('❌ لا يمكن حذف هذا العميل لأنه مرتبط بعقود.', 'error')
+            return redirect(url_for('customers.index'))
+        
+        # Store customer info before deletion
+        customer_name = customer.name
+        customer_id = customer.id
+        
+        # Delete the customer
+        db.session.delete(customer)
+        db.session.commit()
+        
+        # Log action after successful deletion
+        log_action('حذف عميل', {'id': customer_id, 'name': customer_name})
+        
+        flash(f'✅ تم حذف العميل "{customer_name}" بنجاح.', 'success')
         return redirect(url_for('customers.index'))
-    
-    log_action('حذف عميل', {'id': customer.id, 'name': customer.name})
-    db.session.delete(customer)
-    db.session.commit()
-    
-    flash('تم حذف العميل بنجاح.', 'success')
-    return redirect(url_for('customers.index'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'❌ خطأ في حذف العميل: {str(e)}', 'error')
+        return redirect(url_for('customers.index'))
 
 
 @bp.route('/search')
