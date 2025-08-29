@@ -1,8 +1,11 @@
 from flask import render_template, request, Response
 from acc.blueprints.reports import bp
-from acc.models import Unit, Customer, Contract, Installment, Voucher, Safe, Partner, Broker
+from acc.models import (Unit, Customer, Contract, Installment, Voucher, Safe, Partner, Broker,
+                       Project, Phase, Expense, MaterialIssue, PartnerLedger, PhaseSettlement,
+                       PhaseSettlementLine, ProjectPartner)
 from acc.extensions import db
 from acc.services.utils import get_today, format_currency
+from acc.services.project_context import get_current_project
 from datetime import datetime, timedelta
 from sqlalchemy import func, and_, or_
 import csv
@@ -381,3 +384,192 @@ def export_report(report_type):
     
     # Add BOM for Excel Arabic support
     return '\ufeff' + output.getvalue(), response.status_code, response.headers
+
+
+@bp.route('/project-expenses')
+def project_expenses():
+    """تقرير مصروفات المشاريع"""
+    project_id = request.args.get('project_id', '')
+    from_date = request.args.get('from_date', '')
+    to_date = request.args.get('to_date', '')
+    
+    # الاستعلام الأساسي للمشاريع
+    projects = Project.query.filter_by(status='نشط').order_by(Project.name).all()
+    
+    # البيانات حسب المشروع المحدد أو الحالي
+    selected_project = None
+    phases_data = []
+    total_expenses = 0
+    total_materials = 0
+    total_cost = 0
+    
+    if project_id:
+        selected_project = Project.query.get(project_id)
+    else:
+        selected_project = get_current_project()
+    
+    if selected_project:
+        # جلب المراحل
+        phases_query = Phase.query.filter_by(project_id=selected_project.id)
+        
+        # فلترة التاريخ
+        if from_date:
+            phases_query = phases_query.filter(Phase.start_date >= datetime.strptime(from_date, '%Y-%m-%d'))
+        if to_date:
+            phases_query = phases_query.filter(Phase.start_date <= datetime.strptime(to_date, '%Y-%m-%d'))
+        
+        phases = phases_query.order_by(Phase.start_date).all()
+        
+        for phase in phases:
+            phase_data = {
+                'phase': phase,
+                'expenses': phase.total_expenses(),
+                'materials': phase.total_materials(),
+                'total': phase.total_cost(),
+                'is_settled': phase.is_settled
+            }
+            phases_data.append(phase_data)
+            total_expenses += phase_data['expenses']
+            total_materials += phase_data['materials']
+            total_cost += phase_data['total']
+    
+    return render_template('reports/project_expenses.html',
+                         projects=projects,
+                         selected_project=selected_project,
+                         project_id=project_id,
+                         phases_data=phases_data,
+                         total_expenses=total_expenses,
+                         total_materials=total_materials,
+                         total_cost=total_cost,
+                         from_date=from_date,
+                         to_date=to_date)
+
+
+@bp.route('/partner-balances')
+def partner_balances():
+    """تقرير أرصدة الشركاء"""
+    project_id = request.args.get('project_id', '')
+    
+    # جلب جميع المشاريع
+    projects = Project.query.filter_by(status='نشط').order_by(Project.name).all()
+    
+    # البيانات
+    ledger_data = []
+    selected_project = None
+    
+    if project_id:
+        selected_project = Project.query.get(project_id)
+        ledgers = PartnerLedger.query.filter_by(project_id=project_id).all()
+        
+        for ledger in ledgers:
+            ledger_data.append({
+                'partner': ledger.partner,
+                'balance': float(ledger.balance),
+                'status': 'دائن' if ledger.balance < 0 else ('مدين' if ledger.balance > 0 else 'متوازن'),
+                'last_updated': ledger.last_updated,
+                'settlements_count': PhaseSettlement.query.join(
+                    PhaseSettlementLine
+                ).filter(
+                    PhaseSettlementLine.partner_id == ledger.partner_id,
+                    Phase.project_id == project_id
+                ).count()
+            })
+    
+    # حساب الإجماليات
+    total_debit = sum(item['balance'] for item in ledger_data if item['balance'] > 0)
+    total_credit = sum(abs(item['balance']) for item in ledger_data if item['balance'] < 0)
+    
+    # ترتيب حسب الرصيد
+    ledger_data.sort(key=lambda x: x['balance'], reverse=True)
+    
+    return render_template('reports/partner_balances.html',
+                         projects=projects,
+                         selected_project=selected_project,
+                         project_id=project_id,
+                         ledger_data=ledger_data,
+                         total_debit=total_debit,
+                         total_credit=total_credit)
+
+
+@bp.route('/phase-settlements')
+def phase_settlements():
+    """تقرير تسويات المراحل"""
+    project_id = request.args.get('project_id', '')
+    from_date = request.args.get('from_date', '')
+    to_date = request.args.get('to_date', '')
+    
+    # الاستعلام الأساسي
+    query = PhaseSettlement.query.join(Phase)
+    
+    # فلترة المشروع
+    if project_id:
+        query = query.filter(Phase.project_id == project_id)
+    
+    # فلترة التاريخ
+    if from_date:
+        query = query.filter(PhaseSettlement.settlement_date >= datetime.strptime(from_date, '%Y-%m-%d'))
+    if to_date:
+        query = query.filter(PhaseSettlement.settlement_date <= datetime.strptime(to_date + ' 23:59:59', '%Y-%m-%d %H:%M:%S'))
+    
+    # ترتيب حسب التاريخ
+    settlements = query.order_by(PhaseSettlement.settlement_date.desc()).all()
+    
+    # جلب المشاريع
+    projects = Project.query.filter_by(status='نشط').order_by(Project.name).all()
+    
+    # حساب الإجماليات
+    total_amount = sum(s.total_amount for s in settlements)
+    total_count = len(settlements)
+    
+    return render_template('reports/phase_settlements.html',
+                         settlements=settlements,
+                         projects=projects,
+                         project_id=project_id,
+                         from_date=from_date,
+                         to_date=to_date,
+                         total_amount=total_amount,
+                         total_count=total_count)
+
+
+@bp.route('/project-summary')
+def project_summary():
+    """تقرير ملخص المشروع"""
+    project_id = request.args.get('project_id', '')
+    
+    if not project_id:
+        current_project = get_current_project()
+        if current_project:
+            project_id = current_project.id
+    
+    project = None
+    summary_data = {}
+    
+    if project_id:
+        project = Project.query.get(project_id)
+        if project:
+            # حساب البيانات
+            summary_data = {
+                'project': project,
+                'units_count': project.units.count(),
+                'units_available': project.units.filter_by(status='متاحة').count(),
+                'units_sold': project.units.filter_by(status='مباعة').count(),
+                'units_reserved': project.units.filter_by(status='محجوزة').count(),
+                'contracts_count': project.contracts.count(),
+                'contracts_active': project.contracts.filter_by(status='نشط').count(),
+                'phases_count': Phase.query.filter_by(project_id=project_id).count(),
+                'phases_settled': Phase.query.filter_by(project_id=project_id).filter(Phase.settled_at.isnot(None)).count(),
+                'total_cost': project.calculate_total_cost(),
+                'budget_remaining': (project.budget or 0) - project.calculate_total_cost(),
+                'partners_count': ProjectPartner.query.filter_by(project_id=project_id, is_active=True).count(),
+                'safes_count': project.safes.count(),
+                'safes_balance': db.session.query(func.sum(Safe.balance)).filter_by(project_id=project_id).scalar() or 0
+            }
+    
+    # جلب جميع المشاريع
+    projects = Project.query.filter_by(status='نشط').order_by(Project.name).all()
+    
+    return render_template('reports/project_summary.html',
+                         project=project,
+                         projects=projects,
+                         project_id=project_id,
+                         summary_data=summary_data)

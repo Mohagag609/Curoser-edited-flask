@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}سجل التدقيق{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-gray-900">سجل التدقيق والعمليات</h2>
+    </div>
+    
+    <!-- فلاتر البحث -->
+    <div class="card mb-6">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <input type="text" name="search" value="{{ search }}" 
+                       placeholder="بحث في الوصف..."
+                       class="form-input">
+            </div>
+            
+            <div>
+                <input type="date" name="date_from" value="{{ date_from }}" 
+                       class="form-input" placeholder="من تاريخ">
+            </div>
+            
+            <div>
+                <input type="date" name="date_to" value="{{ date_to }}" 
+                       class="form-input" placeholder="إلى تاريخ">
+            </div>
+            
+            <div class="flex gap-2">
+                <button type="submit" class="btn btn-primary flex-1">
+                    <i class="fas fa-search"></i>
+                    بحث
+                </button>
+                <a href="{{ url_for('system.audit_log') }}" class="btn btn-secondary">
+                    <i class="fas fa-redo"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- جدول السجلات -->
+    <div class="card">
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>التاريخ والوقت</th>
+                        <th>العملية</th>
+                        <th>التفاصيل</th>
+                        <th>المستخدم</th>
+                        <th>IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs.items %}
+                    <tr>
+                        <td>
+                            <div class="text-sm">
+                                <div class="font-medium">{{ log.created_at.strftime('%Y-%m-%d') }}</div>
+                                <div class="text-gray-500">{{ log.created_at.strftime('%H:%M:%S') }}</div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="font-medium">{{ log.description }}</span>
+                        </td>
+                        <td>
+                            {% if log.details %}
+                                <details class="cursor-pointer">
+                                    <summary class="text-sm text-blue-600 hover:underline">عرض التفاصيل</summary>
+                                    <pre class="mt-2 text-xs bg-gray-100 p-2 rounded overflow-auto max-w-md">{{ log.details|tojson(indent=2) }}</pre>
+                                </details>
+                            {% else %}
+                                <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ log.user_id or 'النظام' }}</td>
+                        <td>
+                            <span class="text-sm text-gray-500">{{ log.ip_address or '-' }}</span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-8 text-gray-500">
+                            لا توجد سجلات
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if logs.pages > 1 %}
+        <div class="mt-6">
+            <nav class="flex justify-center">
+                <ul class="flex gap-1">
+                    {% if logs.has_prev %}
+                    <li>
+                        <a href="{{ url_for('system.audit_log', page=logs.prev_num, search=search, date_from=date_from, date_to=date_to) }}" 
+                           class="px-3 py-2 text-sm bg-white border rounded hover:bg-gray-50">
+                            السابق
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in logs.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            {% if page_num != logs.page %}
+                            <li>
+                                <a href="{{ url_for('system.audit_log', page=page_num, search=search, date_from=date_from, date_to=date_to) }}" 
+                                   class="px-3 py-2 text-sm bg-white border rounded hover:bg-gray-50">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                            {% else %}
+                            <li>
+                                <span class="px-3 py-2 text-sm bg-blue-500 text-white border rounded">
+                                    {{ page_num }}
+                                </span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                            <li><span class="px-3 py-2">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if logs.has_next %}
+                    <li>
+                        <a href="{{ url_for('system.audit_log', page=logs.next_num, search=search, date_from=date_from, date_to=date_to) }}" 
+                           class="px-3 py-2 text-sm bg-white border rounded hover:bg-gray-50">
+                            التالي
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            
+            <div class="text-center mt-2 text-sm text-gray-600">
+                صفحة {{ logs.page }} من {{ logs.pages }} ({{ logs.total }} سجل)
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -50,7 +50,7 @@ def seed_database():
         db.session.commit()
         
         # Keep customers in session
-        # customers = Customer.query.order_by(Customer.id).all()
+        customers = Customer.query.order_by(Customer.id).all()
         
         # Add some partners
         partners = [
@@ -63,7 +63,7 @@ def seed_database():
         db.session.commit()  # To get IDs
         
         # Keep partners in session
-        # partners = Partner.query.order_by(Partner.id).all()
+        partners = Partner.query.order_by(Partner.id).all()
         
         # Add partner groups
         group1 = PartnerGroup(id=generate_uid('PG'), name='مجموعة المستثمرين الرئيسيين')
@@ -92,7 +92,7 @@ def seed_database():
         db.session.commit()
         
         # Keep units in session
-        # units = Unit.query.order_by(Unit.id).all()
+        units = Unit.query.order_by(Unit.id).all()
         
         # Add partners to some units
         unit_partners = [
@@ -122,7 +122,7 @@ def seed_database():
     db.session.commit()
     
     # Keep brokers in session
-    # brokers = Broker.query.order_by(Broker.id).all()
+    brokers = Broker.query.order_by(Broker.id).all()
         
     # Add contracts
     # Contract 1: Cash payment

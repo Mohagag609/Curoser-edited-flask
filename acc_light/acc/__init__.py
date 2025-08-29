@@ -74,4 +74,7 @@ def create_app(config_class=Config):
     from acc.blueprints.system import bp as system_bp
     app.register_blueprint(system_bp, url_prefix='/system')
     
+    from acc.blueprints.settlement import bp as settlement_bp
+    app.register_blueprint(settlement_bp, url_prefix='/settlement')
+    
     return app
