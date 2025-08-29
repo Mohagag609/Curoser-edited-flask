@@ -357,6 +357,11 @@
         .whitespace-nowrap { white-space: nowrap; }
     </style>
     
+    <!-- مكتبات إضافية -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar.css') }}">
+    <script src="{{ url_for('static', filename='js/dark-mode.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/quick-switcher.js') }}"></script>
+    
     {% block extra_head %}{% endblock %}
 </head>
 <body class="min-h-screen bg-gray-50">

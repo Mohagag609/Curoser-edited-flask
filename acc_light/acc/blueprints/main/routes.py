@@ -2,6 +2,7 @@ from flask import render_template, request, redirect, url_for, flash, session
 from acc.blueprints.main import bp
 from acc.models import Project
 from acc.services.project_selection import set_current_project, get_current_project, clear_current_project
+from acc.services.auth import login_required
 from acc.extensions import db
 
 
@@ -13,6 +14,7 @@ def index():
 
 
 @bp.route('/select-project')
+@login_required
 def select_project():
     """صفحة اختيار المشروع"""
     # الحصول على جميع المشاريع النشطة

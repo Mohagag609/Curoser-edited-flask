@@ -1,6 +1,7 @@
 from flask import session, redirect, url_for, request
 from functools import wraps
 from acc.models import Project
+from acc.services.auth import login_required
 
 
 def get_current_project_id():
@@ -22,6 +23,7 @@ def clear_current_project():
 def project_required(f):
     """Decorator للتحقق من اختيار مشروع قبل الوصول للصفحة"""
     @wraps(f)
+    @login_required
     def decorated_function(*args, **kwargs):
         # الصفحات المستثناة من اختيار المشروع
         exempt_endpoints = [
