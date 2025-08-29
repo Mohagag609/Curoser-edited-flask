@@ -1,7 +1,7 @@
 from flask import render_template, request, redirect, url_for, flash, jsonify
 from . import bp
-from acc.models import (Phase, Project, ProjectPartner, Partner, Expense, MaterialIssue,
-                       Material, PhaseSettlementLine)
+from acc.models import (Phase, Project, ProjectPartner, PhasePartner, PhasePartnerGroup,
+                       Partner, Expense, MaterialIssue, Material, PhaseSettlementLine)
 from acc.extensions import db
 from acc.services.settlement_service import (compute_phase_settlement, settle_phase, 
                                            get_project_ledger, get_phase_expenses_details)
@@ -286,26 +286,45 @@ def project_ledger(project_id):
                          total_credit=total_credit)
 
 
-@bp.route('/project-partners')
-def project_partners_index():
-    """قائمة الشركاء في المشاريع"""
-    page = request.args.get('page', 1, type=int)
+@bp.route('/phase-partners')
+def phase_partners_index():
+    """قائمة شركاء المراحل"""
     project_id = request.args.get('project_id', '')
+    phase_id = request.args.get('phase_id', '')
     
-    query = ProjectPartner.query
+    # Get current project if not specified
+    current_project = get_current_project()
+    if not project_id and current_project:
+        project_id = current_project.id
     
+    # Get phases based on filters
+    phases_query = Phase.query
     if project_id:
-        query = query.filter_by(project_id=project_id)
+        phases_query = phases_query.filter_by(project_id=project_id)
+    phases = phases_query.order_by(Phase.start_date).all()
     
-    query = query.order_by(ProjectPartner.joined_at.desc())
+    # Get partner groups organized by phase
+    phase_groups = {}
+    if phase_id:
+        phase = Phase.query.get(phase_id)
+        if phase and phase.partner_groups.count() > 0:
+            phase_groups[phase] = phase.partner_groups.order_by(PhasePartnerGroup.share_percentage.desc()).all()
+    else:
+        for phase in phases:
+            if phase.partner_groups.count() > 0:
+                phase_groups[phase] = phase.partner_groups.order_by(PhasePartnerGroup.share_percentage.desc()).all()
     
-    project_partners = query.paginate(page=page, per_page=20, error_out=False)
     projects = Project.query.filter_by(status='نشط').order_by(Project.name).all()
     
-    return render_template('settlement/project_partners.html',
-                         project_partners=project_partners,
+    return render_template('settlement/phase_partners.html',
+                         phase_groups=phase_groups,
                          projects=projects,
-                         project_id=project_id)
+                         phases=phases,
+                         project_id=project_id,
+                         phase_id=phase_id,
+                         PhasePartner=PhasePartner,
+                         PhasePartnerGroup=PhasePartnerGroup,
+                         func=db.func)
 
 
 @bp.route('/project-partners/add', methods=['POST'])
@@ -339,3 +358,170 @@ def add_project_partner():
     
     flash('تم إضافة الشريك بنجاح', 'success')
     return redirect(request.referrer or url_for('settlement.project_partners_index'))
+
+
+@bp.route('/phase-partner-groups/add', methods=['GET', 'POST'])
+def add_phase_partner_group():
+    """إضافة مجموعة شركاء للمرحلة"""
+    if request.method == 'POST':
+        phase_id = request.form.get('phase_id')
+        name = request.form.get('name', '').strip()
+        share_percentage = float(request.form.get('share_percentage', 0))
+        
+        if not phase_id or not name:
+            flash('الرجاء إدخال جميع البيانات المطلوبة', 'error')
+            return redirect(url_for('settlement.phase_partners_index'))
+        
+        phase = Phase.query.get_or_404(phase_id)
+        
+        # Check total percentage
+        current_total = phase.partner_groups.with_entities(db.func.sum(PhasePartnerGroup.share_percentage)).scalar() or 0
+        if current_total + share_percentage > 100:
+            flash(f'لا يمكن إضافة المجموعة. النسبة الإجمالية ستتجاوز 100% (الحالية: {current_total}%)', 'error')
+            return redirect(url_for('settlement.add_phase_partner_group'))
+        
+        group = PhasePartnerGroup(
+            id=generate_uid('PPG'),
+            phase_id=phase_id,
+            name=name,
+            share_percentage=share_percentage
+        )
+        
+        db.session.add(group)
+        log_action('إضافة مجموعة شركاء', {'phase_id': phase_id, 'name': name})
+        db.session.commit()
+        
+        flash('تم إضافة مجموعة الشركاء بنجاح', 'success')
+        return redirect(url_for('settlement.phase_partners_index', phase_id=phase_id))
+    
+    phases = Phase.query.join(Project).filter(
+        Project.id == get_current_project().id if get_current_project() else True
+    ).order_by(Phase.start_date).all()
+    
+    return render_template('settlement/add_phase_partner_group.html', phases=phases)
+
+
+@bp.route('/phase-partner-groups/<id>/edit', methods=['GET', 'POST'])
+def edit_phase_partner_group(id):
+    """تعديل مجموعة شركاء"""
+    group = PhasePartnerGroup.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        group.name = request.form.get('name', '').strip()
+        new_percentage = float(request.form.get('share_percentage', 0))
+        
+        # Check total percentage
+        current_total = group.phase.partner_groups.filter(
+            PhasePartnerGroup.id != group.id
+        ).with_entities(db.func.sum(PhasePartnerGroup.share_percentage)).scalar() or 0
+        
+        if current_total + new_percentage > 100:
+            flash(f'لا يمكن تعديل النسبة. النسبة الإجمالية ستتجاوز 100% (الحالية للآخرين: {current_total}%)', 'error')
+            return redirect(url_for('settlement.edit_phase_partner_group', id=id))
+        
+        group.share_percentage = new_percentage
+        
+        log_action('تعديل مجموعة شركاء', {'group_id': id})
+        db.session.commit()
+        
+        flash('تم تعديل مجموعة الشركاء بنجاح', 'success')
+        return redirect(url_for('settlement.phase_partners_index', phase_id=group.phase_id))
+    
+    return render_template('settlement/edit_phase_partner_group.html', group=group)
+
+
+@bp.route('/phase-partners/add', methods=['GET', 'POST'])
+def add_phase_partner():
+    """إضافة شريك لمجموعة"""
+    group_id = request.args.get('group_id')
+    
+    if request.method == 'POST':
+        group_id = request.form.get('group_id')
+        partner_id = request.form.get('partner_id')
+        share_percentage = float(request.form.get('share_percentage', 0))
+        
+        if not group_id or not partner_id:
+            flash('الرجاء اختيار المجموعة والشريك', 'error')
+            return redirect(url_for('settlement.phase_partners_index'))
+        
+        group = PhasePartnerGroup.query.get_or_404(group_id)
+        
+        # Check if partner already in group
+        existing = PhasePartner.query.filter_by(group_id=group_id, partner_id=partner_id).first()
+        if existing:
+            flash('هذا الشريك موجود بالفعل في المجموعة', 'error')
+            return redirect(url_for('settlement.add_phase_partner', group_id=group_id))
+        
+        # Check total percentage in group
+        current_total = group.members.filter_by(is_active=True).with_entities(
+            db.func.sum(PhasePartner.share_percentage)
+        ).scalar() or 0
+        
+        if current_total + share_percentage > 100:
+            flash(f'لا يمكن إضافة الشريك. النسبة الإجمالية في المجموعة ستتجاوز 100% (الحالية: {current_total}%)', 'error')
+            return redirect(url_for('settlement.add_phase_partner', group_id=group_id))
+        
+        phase_partner = PhasePartner(
+            id=generate_uid('PP'),
+            group_id=group_id,
+            partner_id=partner_id,
+            share_percentage=share_percentage
+        )
+        
+        db.session.add(phase_partner)
+        log_action('إضافة شريك لمجموعة', {'group_id': group_id, 'partner_id': partner_id})
+        db.session.commit()
+        
+        flash('تم إضافة الشريك للمجموعة بنجاح', 'success')
+        return redirect(url_for('settlement.phase_partners_index', phase_id=group.phase_id))
+    
+    group = PhasePartnerGroup.query.get_or_404(group_id) if group_id else None
+    partners = Partner.query.order_by(Partner.name).all()
+    
+    return render_template('settlement/add_phase_partner.html', 
+                         group=group, 
+                         partners=partners)
+
+
+@bp.route('/phase-partners/<id>/edit', methods=['GET', 'POST'])
+def edit_phase_partner(id):
+    """تعديل شريك في مجموعة"""
+    phase_partner = PhasePartner.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        new_percentage = float(request.form.get('share_percentage', 0))
+        
+        # Check total percentage in group
+        current_total = phase_partner.group.members.filter(
+            PhasePartner.id != phase_partner.id,
+            PhasePartner.is_active == True
+        ).with_entities(db.func.sum(PhasePartner.share_percentage)).scalar() or 0
+        
+        if current_total + new_percentage > 100:
+            flash(f'لا يمكن تعديل النسبة. النسبة الإجمالية في المجموعة ستتجاوز 100% (الحالية للآخرين: {current_total}%)', 'error')
+            return redirect(url_for('settlement.edit_phase_partner', id=id))
+        
+        phase_partner.share_percentage = new_percentage
+        phase_partner.is_active = request.form.get('is_active') == 'on'
+        
+        log_action('تعديل شريك في مجموعة', {'partner_id': id})
+        db.session.commit()
+        
+        flash('تم تعديل بيانات الشريك بنجاح', 'success')
+        return redirect(url_for('settlement.phase_partners_index', phase_id=phase_partner.group.phase_id))
+    
+    return render_template('settlement/edit_phase_partner.html', phase_partner=phase_partner)
+
+
+@bp.route('/phase-partners/<id>/delete')
+def delete_phase_partner(id):
+    """حذف شريك من مجموعة"""
+    phase_partner = PhasePartner.query.get_or_404(id)
+    phase_id = phase_partner.group.phase_id
+    
+    db.session.delete(phase_partner)
+    log_action('حذف شريك من مجموعة', {'partner_id': id})
+    db.session.commit()
+    
+    flash('تم حذف الشريك من المجموعة بنجاح', 'success')
+    return redirect(url_for('settlement.phase_partners_index', phase_id=phase_id))

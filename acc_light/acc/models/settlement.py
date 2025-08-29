@@ -48,25 +48,50 @@ class Phase(db.Model):
         return f'<Phase {self.name}>'
 
 
-class ProjectPartner(db.Model):
-    """ربط الشركاء بالمشاريع"""
-    __tablename__ = 'project_partners'
+class PhasePartnerGroup(db.Model):
+    """مجموعات الشركاء في المراحل"""
+    __tablename__ = 'phase_partner_groups'
     
     id = Column(String(20), primary_key=True)
-    project_id = Column(String(20), ForeignKey('projects.id'), nullable=False)
+    phase_id = Column(String(20), ForeignKey('phases.id'), nullable=False)
+    name = Column(String(200), nullable=False)  # اسم المجموعة
+    share_percentage = Column(Numeric(5, 2), default=0)  # نسبة المجموعة في المرحلة
+    created_at = Column(DateTime, default=func.now())
+    
+    # Relationships
+    phase = db.relationship('Phase', backref='partner_groups')
+    members = db.relationship('PhasePartner', backref='group', cascade='all, delete-orphan')
+    
+    def __repr__(self):
+        return f'<PhasePartnerGroup {self.name} in phase {self.phase_id}>'
+
+
+class PhasePartner(db.Model):
+    """شركاء المراحل (أعضاء المجموعات)"""
+    __tablename__ = 'phase_partners'
+    
+    id = Column(String(20), primary_key=True)
+    group_id = Column(String(20), ForeignKey('phase_partner_groups.id'), nullable=False)
     partner_id = Column(String(20), ForeignKey('partners.id'), nullable=False)
-    share_percentage = Column(Numeric(5, 2), default=0)  # نسبة الشريك في المشروع
+    share_percentage = Column(Numeric(5, 2), default=0)  # نسبة الشريك داخل المجموعة
     joined_at = Column(DateTime, default=func.now())
-    left_at = Column(DateTime)  # تاريخ الخروج من المشروع
+    left_at = Column(DateTime)  # تاريخ الخروج من المجموعة
     is_active = Column(Boolean, default=True)
     
     # Unique constraint
     __table_args__ = (
-        db.UniqueConstraint('project_id', 'partner_id', name='_project_partner_uc'),
+        db.UniqueConstraint('group_id', 'partner_id', name='_phase_partner_uc'),
     )
     
+    # Relationships
+    partner = db.relationship('Partner', backref='phase_partnerships')
+    
     def __repr__(self):
-        return f'<ProjectPartner {self.partner_id} in {self.project_id}>'
+        return f'<PhasePartner {self.partner_id} in group {self.group_id}>'
+
+
+# For backward compatibility
+ProjectPartner = PhasePartner
 
 
 class Expense(db.Model):

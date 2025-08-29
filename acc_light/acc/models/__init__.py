@@ -12,8 +12,9 @@ from acc.models.supplier import Supplier
 from acc.models.contractor import Contractor
 from acc.models.project import Project, ProjectStage
 from acc.models.material import Material, ProjectMaterial
-from acc.models.settlement import (Phase, ProjectPartner, Expense, MaterialIssue,
-                                   PartnerLedger, PhaseSettlement, PhaseSettlementLine)
+from acc.models.settlement import (Phase, ProjectPartner, PhasePartner, PhasePartnerGroup,
+                                   Expense, MaterialIssue, PartnerLedger, PhaseSettlement, 
+                                   PhaseSettlementLine)
 from acc.models.inter_project_transfer import InterProjectTransfer
 
 __all__ = [
@@ -21,6 +22,7 @@ __all__ = [
     'UnitPartner', 'PartnerDebt', 'Broker', 'BrokerDue', 'Contract',
     'Installment', 'Safe', 'SafeTransfer', 'Voucher', 'AuditLog', 'Settings',
         'Supplier', 'Contractor', 'Project', 'ProjectStage', 'Material', 'ProjectMaterial',
-    'Phase', 'ProjectPartner', 'Expense', 'MaterialIssue', 'PartnerLedger',
-    'PhaseSettlement', 'PhaseSettlementLine', 'InterProjectTransfer'
+    'Phase', 'ProjectPartner', 'PhasePartner', 'PhasePartnerGroup', 'Expense', 
+    'MaterialIssue', 'PartnerLedger', 'PhaseSettlement', 'PhaseSettlementLine', 
+    'InterProjectTransfer'
 ]

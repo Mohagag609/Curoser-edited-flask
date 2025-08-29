@@ -404,10 +404,10 @@
                         <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">المراحل</span>
                     </a>
                     
-                    <a href="{{ url_for('settlement.project_partners_index') }}" 
-                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if 'project_partners' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
+                    <a href="{{ url_for('settlement.phase_partners_index') }}" 
+                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if 'phase_partners' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
                         <i class="fas fa-user-friends text-lg" :class="{ 'mx-auto': !sidebarOpen }"></i>
-                        <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">شركاء المشروع</span>
+                        <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">شركاء المراحل</span>
                     </a>
                 </div>
                 
