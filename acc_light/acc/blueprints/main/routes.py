@@ -1,7 +1,7 @@
 from flask import render_template, request, redirect, url_for, flash, session
 from acc.blueprints.main import bp
 from acc.models import Project
-from acc.services.project_selection import set_current_project, get_current_project, clear_current_project
+from acc.services.project_selection import get_current_project, clear_current_project
 from acc.services.auth import login_required
 from acc.extensions import db
 
@@ -39,7 +39,10 @@ def set_project(project_id):
         flash('لا يمكن اختيار مشروع غير نشط', 'error')
         return redirect(url_for('main.select_project'))
     
-    set_current_project(project_id)
+    # تعيين المشروع مباشرة في الجلسة
+    session['current_project_id'] = project_id
+    session.permanent = True
+    
     flash(f'تم اختيار مشروع: {project.name}', 'success')
     
     # العودة للصفحة المطلوبة أو لوحة التحكم

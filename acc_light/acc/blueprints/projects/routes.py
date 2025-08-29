@@ -3,7 +3,7 @@ from acc.blueprints.projects import bp
 from acc.models import Project, ProjectStage, Contractor, Unit
 from acc.extensions import db
 from acc.services.utils import generate_uid, log_action, Pagination, parse_number, get_today
-from acc.services.project_context import set_current_project
+from acc.services.project_selection import set_current_project
 from acc.services.code_generator import generate_project_code
 from datetime import datetime
 
