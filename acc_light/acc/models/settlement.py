@@ -18,6 +18,7 @@ class Phase(db.Model):
     updated_at = Column(DateTime, onupdate=func.now())
     
     # Relationships
+    project = db.relationship('Project', backref='phases')
     expenses = db.relationship('Expense', backref='phase', lazy='dynamic', cascade='all, delete-orphan')
     material_issues = db.relationship('MaterialIssue', backref='phase', lazy='dynamic', cascade='all, delete-orphan')
     settlements = db.relationship('PhaseSettlement', backref='phase', lazy='dynamic', cascade='all, delete-orphan')

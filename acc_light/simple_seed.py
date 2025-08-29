@@ -85,7 +85,7 @@ with app.app_context():
         id=generate_uid('U'),
         code='U001',
         project_id=project.id,
-        type='شقة',
+        unit_type='شقة',
         floor_number=1,
         area=100,
         rooms=2,
