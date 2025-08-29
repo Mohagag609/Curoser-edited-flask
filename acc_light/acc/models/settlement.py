@@ -22,6 +22,7 @@ class Phase(db.Model):
     expenses = db.relationship('Expense', backref='phase', lazy='dynamic', cascade='all, delete-orphan')
     material_issues = db.relationship('MaterialIssue', backref='phase', lazy='dynamic', cascade='all, delete-orphan')
     settlements = db.relationship('PhaseSettlement', backref='phase', lazy='dynamic', cascade='all, delete-orphan')
+    # partner_groups relationship is defined in PhasePartnerGroup model
     
     @property
     def is_settled(self):
@@ -59,8 +60,8 @@ class PhasePartnerGroup(db.Model):
     created_at = Column(DateTime, default=func.now())
     
     # Relationships
-    phase = db.relationship('Phase', backref='partner_groups')
-    members = db.relationship('PhasePartner', backref='group', cascade='all, delete-orphan')
+    phase = db.relationship('Phase', backref=db.backref('partner_groups', lazy='dynamic'))
+    members = db.relationship('PhasePartner', backref='group', lazy='dynamic', cascade='all, delete-orphan')
     
     def __repr__(self):
         return f'<PhasePartnerGroup {self.name} in phase {self.phase_id}>'
