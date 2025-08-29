@@ -17,7 +17,20 @@
         <p class="text-gray-600">أدخل بيانات العقد الجديد وحدد طريقة الدفع</p>
     </div>
     
-    <form method="post" action="{{ url_for('contracts.add') }}" id="contract-form">
+    <!-- Auto Code Notice -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+            <i class="fas fa-info-circle text-blue-600 ml-2"></i>
+            <p class="text-blue-800">سيتم توليد رقم العقد تلقائياً عند الحفظ</p>
+        </div>
+    </div>
+    
+    <form method="post" action="{{ url_for('contracts.add') }}" id="contract-form"
+          data-ajax="true"
+          data-loading-message="جاري إنشاء العقد..."
+          data-success-message="تم إنشاء العقد بنجاح!"
+          data-error-message="حدث خطأ أثناء إنشاء العقد"
+          data-redirect-on-success="true">
         <!-- Basic Information -->
         <div class="card mb-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-6 pb-4 border-b">المعلومات الأساسية</h3>
@@ -222,13 +235,14 @@
         
         <!-- Action Buttons -->
         <div class="flex gap-3">
-            <button type="submit" class="btn btn-primary">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
+            <button type="submit" class="btn btn-add">
+                <i class="fas fa-save"></i>
                 إنشاء العقد
             </button>
-            <a href="{{ url_for('contracts.index') }}" class="btn btn-secondary">إلغاء</a>
+            <a href="{{ url_for('contracts.index') }}" class="btn btn-secondary">
+                <i class="fas fa-times"></i>
+                إلغاء
+            </a>
         </div>
     </form>
 </div>
