@@ -6,7 +6,7 @@ from acc.services.utils import generate_uid, log_action, Pagination, format_curr
 from sqlalchemy import or_, func
 from .simple_export import simple_export_json, simple_export_csv, simple_import_json, simple_import_csv
 from .excel_export import export_excel_html, export_report_excel
-from .excel_import import import_excel_as_csv
+from .simple_excel_reader import read_excel_simple, parse_excel_data
 
 
 @bp.route('/')
@@ -298,10 +298,22 @@ def import_data():
         # استخدام الوظائف المناسبة حسب نوع الملف
         if file_ext in ['xlsx', 'xls']:
             try:
-                customers_data = import_excel_as_csv(file)
+                # قراءة محتوى الملف
+                file.seek(0)  # التأكد من أننا في بداية الملف
+                file_content = file.read()
+                
+                # محاولة قراءة كـ Excel حقيقي
+                try:
+                    excel_data = read_excel_simple(file_content)
+                    customers_data = parse_excel_data(excel_data)
+                except:
+                    # إذا فشل، نحاول قراءته كـ CSV
+                    file.seek(0)
+                    customers_data = simple_import_csv(file)
+                    
             except Exception as e:
                 flash(f'خطأ في قراءة ملف Excel: {str(e)}', 'error')
-                flash('يُرجى التأكد من أن الملف بتنسيق صحيح أو حفظه كـ CSV', 'info')
+                flash('يُرجى التأكد من أن الملف بتنسيق صحيح', 'info')
                 return redirect(url_for('customers.import_data'))
         elif file_ext == 'json':
             customers_data = simple_import_json(file)
