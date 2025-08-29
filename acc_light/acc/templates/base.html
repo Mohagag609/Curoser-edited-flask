@@ -140,12 +140,6 @@
             padding: 1.5rem;
         }
         
-        .dark .card {
-            background-color: #1e293b;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
-            border: 1px solid #334155;
-        }
-        
         /* Badge styles */
         .badge {
             display: inline-flex;
@@ -365,14 +359,13 @@
     
     <!-- مكتبات إضافية -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar.css') }}">
-    <script src="{{ url_for('static', filename='js/dark-mode.js') }}"></script>
     <script src="{{ url_for('static', filename='js/quick-switcher.js') }}"></script>
     
     {% block extra_head %}{% endblock %}
 </head>
-<body class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+<body class="min-h-screen bg-gray-50 text-gray-900">
     <!-- Navigation -->
-    <nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+    <nav class="bg-white shadow-sm border-b border-gray-200">
         <div class="container mx-auto px-4">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center space-x-reverse space-x-4">
