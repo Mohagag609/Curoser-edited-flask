@@ -86,11 +86,8 @@ with app.app_context():
         code='U001',
         project_id=project.id,
         unit_type='شقة',
-        floor_number=1,
         area=100,
-        rooms=2,
-        bathrooms=1,
-        total_price=1000000,
+        price=1000000,
         status='متاحة'
     )
     db.session.add(unit)

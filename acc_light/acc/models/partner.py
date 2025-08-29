@@ -21,7 +21,7 @@ class Partner(db.Model):
                                   backref='creditor', lazy='dynamic')
     debts_due = db.relationship('PartnerDebt', foreign_keys='PartnerDebt.debtor_id', 
                                    backref='debtor', lazy='dynamic')
-    project_partnerships = db.relationship('ProjectPartner', backref='partner', lazy='dynamic')
+    # phase_partnerships relationship is defined in PhasePartner model
     
     def __repr__(self):
         return f'<Partner {self.name}>'

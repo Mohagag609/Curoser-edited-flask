@@ -26,7 +26,7 @@ class Project(db.Model):
     vouchers = db.relationship('Voucher', backref='project', lazy='dynamic')
     stages = db.relationship('ProjectStage', backref='project', lazy='dynamic', cascade='all, delete-orphan')
     materials = db.relationship('ProjectMaterial', backref='project', lazy='dynamic', cascade='all, delete-orphan')
-    partners = db.relationship('ProjectPartner', backref='project', lazy='dynamic', cascade='all, delete-orphan')
+    # partners relationship removed - now using phase_partners through phases
     
     def has_feature(self, feature):
         """التحقق من توفر ميزة معينة حسب نوع المشروع"""

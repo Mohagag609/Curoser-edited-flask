@@ -90,8 +90,29 @@ class PhasePartner(db.Model):
         return f'<PhasePartner {self.partner_id} in group {self.group_id}>'
 
 
-# For backward compatibility
-ProjectPartner = PhasePartner
+class ProjectPartner(db.Model):
+    """شركاء المشاريع (للتوافق مع الكود القديم)"""
+    __tablename__ = 'project_partners'
+    
+    id = Column(String(20), primary_key=True)
+    project_id = Column(String(20), ForeignKey('projects.id'), nullable=False)
+    partner_id = Column(String(20), ForeignKey('partners.id'), nullable=False)
+    share_percentage = Column(Numeric(5, 2), default=0)
+    joined_at = Column(DateTime, default=func.now())
+    left_at = Column(DateTime)
+    is_active = Column(Boolean, default=True)
+    
+    # Unique constraint
+    __table_args__ = (
+        db.UniqueConstraint('project_id', 'partner_id', name='_project_partner_uc'),
+    )
+    
+    # Relationships
+    project = db.relationship('Project', backref='project_partners')
+    partner = db.relationship('Partner', backref='project_partnerships')
+    
+    def __repr__(self):
+        return f'<ProjectPartner {self.partner_id} in {self.project_id}>'
 
 
 class Expense(db.Model):
