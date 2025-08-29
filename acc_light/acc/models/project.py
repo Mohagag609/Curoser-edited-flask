@@ -32,6 +32,8 @@ class Project(db.Model):
     def calculate_total_cost(self):
         """Calculate total cost from stages and materials"""
         stages_cost = db.session.query(func.sum(ProjectStage.cost)).filter_by(project_id=self.id).scalar() or 0
+        # Import here to avoid circular import
+        from acc.models.material import ProjectMaterial
         materials_cost = db.session.query(func.sum(ProjectMaterial.total_price)).filter_by(project_id=self.id).scalar() or 0
         return stages_cost + materials_cost
 
