@@ -1,101 +1,176 @@
 {% extends "base.html" %}
 
-{% block title %}{{ customer.name }} - {{ super() }}{% endblock %}
+{% block title %}{{ customer.name }}{% endblock %}
+{% block page_title %}بيانات العميل{% endblock %}
 
 {% block content %}
-<div class="mb-8">
-    <!-- Header -->
-    <div class="card mb-6">
-        <div class="flex justify-between items-start">
-            <div>
-                <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ customer.name }}</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                    <div>
-                        <span class="text-gray-500">الهاتف:</span>
-                        <span class="font-medium">{{ customer.phone }}</span>
+<div class="space-y-6">
+    <!-- Customer Info Card -->
+    <div class="card bg-gradient-to-br from-blue-50 to-white">
+        <div class="flex flex-col md:flex-row justify-between items-start gap-4">
+            <div class="flex-1">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-blue-600 text-xl"></i>
                     </div>
                     <div>
-                        <span class="text-gray-500">الرقم القومي:</span>
-                        <span class="font-medium">{{ customer.national_id or '-' }}</span>
+                        <h2 class="text-2xl font-bold text-gray-900">{{ customer.name }}</h2>
+                        <p class="text-sm text-gray-500">كود العميل: {{ customer.id }}</p>
                     </div>
-                    <div>
-                        <span class="text-gray-500">الحالة:</span>
-                        {% if customer.status == 'نشط' %}
-                            <span class="badge badge-success">{{ customer.status }}</span>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-phone text-gray-400"></i>
+                        <span class="text-gray-600">الهاتف:</span>
+                        {% if customer.phone %}
+                            <a href="tel:{{ customer.phone }}" class="font-medium text-blue-600 hover:text-blue-800">{{ customer.phone }}</a>
                         {% else %}
-                            <span class="badge badge-warning">{{ customer.status }}</span>
+                            <span class="text-gray-400">-</span>
                         {% endif %}
                     </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-id-card text-gray-400"></i>
+                        <span class="text-gray-600">الرقم القومي:</span>
+                        <span class="font-medium">{{ customer.national_id or '-' }}</span>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-toggle-on text-gray-400"></i>
+                        <span class="text-gray-600">الحالة:</span>
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                            {% if customer.status == 'نشط' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                            {{ customer.status }}
+                        </span>
+                    </div>
+                    
+                    {% if customer.address %}
+                    <div class="flex items-start gap-2 md:col-span-2 lg:col-span-3">
+                        <i class="fas fa-map-marker-alt text-gray-400 mt-1"></i>
+                        <span class="text-gray-600">العنوان:</span>
+                        <span class="font-medium">{{ customer.address }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if customer.notes %}
+                    <div class="flex items-start gap-2 md:col-span-2 lg:col-span-3">
+                        <i class="fas fa-sticky-note text-gray-400 mt-1"></i>
+                        <span class="text-gray-600">ملاحظات:</span>
+                        <span class="font-medium">{{ customer.notes }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="flex items-center gap-2 md:col-span-2 lg:col-span-3">
+                        <i class="fas fa-calendar text-gray-400"></i>
+                        <span class="text-gray-600">تاريخ التسجيل:</span>
+                        <span class="font-medium">{{ customer.created_at.strftime('%Y-%m-%d') if customer.created_at else '-' }}</span>
+                    </div>
                 </div>
-                {% if customer.address %}
-                <div class="mt-2">
-                    <span class="text-gray-500">العنوان:</span>
-                    <span class="font-medium">{{ customer.address }}</span>
-                </div>
-                {% endif %}
-                {% if customer.notes %}
-                <div class="mt-2">
-                    <span class="text-gray-500">ملاحظات:</span>
-                    <span class="font-medium">{{ customer.notes }}</span>
-                </div>
-                {% endif %}
             </div>
-            <div class="flex gap-2">
-                <a href="{{ url_for('customers.edit', id=customer.id) }}" class="btn btn-primary">تعديل</a>
-                <a href="{{ url_for('customers.index') }}" class="btn btn-secondary">رجوع</a>
+            
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ url_for('customers.edit', id=customer.id) }}" class="btn-primary">
+                    <i class="fas fa-edit ml-2"></i>
+                    تعديل
+                </a>
+                <a href="{{ url_for('customers.index') }}" class="btn-secondary">
+                    <i class="fas fa-arrow-right ml-2"></i>
+                    رجوع
+                </a>
             </div>
         </div>
     </div>
     
     <!-- Financial Summary -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div class="card">
-            <h3 class="text-sm font-medium text-gray-500 mb-2">إجمالي قيمة العقود</h3>
-            <p class="text-2xl font-bold text-gray-900">{{ format_currency(total_value) }}</p>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="card bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-600 text-sm font-medium">إجمالي قيمة العقود</p>
+                    <p class="text-2xl font-bold text-purple-800 mt-2">{{ format_currency(total_value) }}</p>
+                </div>
+                <div class="text-purple-600">
+                    <i class="fas fa-file-contract text-3xl opacity-30"></i>
+                </div>
+            </div>
         </div>
         
-        <div class="card">
-            <h3 class="text-sm font-medium text-gray-500 mb-2">إجمالي المدفوع</h3>
-            <p class="text-2xl font-bold text-green-600">{{ format_currency(total_paid) }}</p>
+        <div class="card bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-600 text-sm font-medium">إجمالي المدفوع</p>
+                    <p class="text-2xl font-bold text-green-800 mt-2">{{ format_currency(total_paid) }}</p>
+                </div>
+                <div class="text-green-600">
+                    <i class="fas fa-check-circle text-3xl opacity-30"></i>
+                </div>
+            </div>
         </div>
         
-        <div class="card">
-            <h3 class="text-sm font-medium text-gray-500 mb-2">إجمالي المديونية</h3>
-            <p class="text-2xl font-bold text-red-600">{{ format_currency(total_debt) }}</p>
+        <div class="card bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-red-600 text-sm font-medium">إجمالي المديونية</p>
+                    <p class="text-2xl font-bold text-red-800 mt-2">{{ format_currency(total_debt) }}</p>
+                </div>
+                <div class="text-red-600">
+                    <i class="fas fa-exclamation-triangle text-3xl opacity-30"></i>
+                </div>
+            </div>
         </div>
     </div>
     
-    <!-- Contracts -->
+    <!-- Contracts Table -->
     <div class="card">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">عقود العميل</h3>
-        <div class="table-container">
-            <table class="table">
-                <thead>
+        <div class="card-header">
+            <h3 class="text-lg font-semibold text-gray-900">
+                <i class="fas fa-file-contract text-purple-500 ml-2"></i>
+                عقود العميل
+            </h3>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
                     <tr>
-                        <th>كود العقد</th>
-                        <th>الوحدة</th>
-                        <th>السعر</th>
-                        <th>تاريخ البدء</th>
-                        <th>الإجراءات</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">كود العقد</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الوحدة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">السعر</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">تاريخ البدء</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="bg-white divide-y divide-gray-200">
                     {% for contract in contracts %}
-                    <tr>
-                        <td>{{ contract.code }}</td>
-                        <td>{{ contract.unit.get_display_name() }}</td>
-                        <td>{{ format_currency(contract.total_price) }}</td>
-                        <td>{{ contract.start_date }}</td>
-                        <td>
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ contract.code }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ contract.unit.get_display_name() }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <span class="text-green-600 font-semibold">{{ format_currency(contract.total_price) }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ contract.start_date }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if contract.status == 'نشط' %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ contract.status }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <a href="{{ url_for('contracts.detail', id=contract.id) }}" 
-                               class="text-blue-600 hover:text-blue-800">
-                                عرض التفاصيل
+                               class="text-blue-600 hover:text-blue-900">
+                                <i class="fas fa-eye ml-1"></i>
+                                عرض
                             </a>
                         </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="5" class="text-center text-gray-500">لا توجد عقود لهذا العميل</td>
+                        <td colspan="6" class="px-6 py-10 text-center text-gray-500">
+                            <i class="fas fa-file-contract text-4xl text-gray-300 mb-3 block"></i>
+                            لا توجد عقود لهذا العميل
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>

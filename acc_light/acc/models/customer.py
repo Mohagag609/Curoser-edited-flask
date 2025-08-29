@@ -8,7 +8,7 @@ class Customer(db.Model):
     
     id = Column(String(20), primary_key=True)
     name = Column(String(200), nullable=False)
-    phone = Column(String(20), nullable=False)
+    phone = Column(String(20), nullable=True)  # جعل رقم الهاتف اختياري
     national_id = Column(String(20))
     address = Column(Text)
     status = Column(String(20), default='نشط')

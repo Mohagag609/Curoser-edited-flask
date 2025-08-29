@@ -1,31 +1,225 @@
 {% extends "base.html" %}
 
-{% block title %}العملاء - {{ super() }}{% endblock %}
+{% block title %}العملاء{% endblock %}
+{% block page_title %}العملاء{% endblock %}
 
 {% block content %}
-<div class="mb-8">
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-gray-900">العملاء</h2>
-        <a href="{{ url_for('customers.add') }}" class="btn btn-primary">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-            </svg>
-            إضافة عميل جديد
-        </a>
+<div class="space-y-6">
+    <!-- Header with Actions -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div class="flex flex-wrap gap-3">
+            <a href="{{ url_for('customers.add') }}" class="btn-primary">
+                <i class="fas fa-plus ml-2"></i>
+                إضافة عميل جديد
+            </a>
+            
+            <!-- Export Dropdown -->
+            <div class="relative" x-data="{ open: false }">
+                <button @click="open = !open" class="btn-secondary">
+                    <i class="fas fa-download ml-2"></i>
+                    تصدير
+                    <i class="fas fa-chevron-down mr-2 text-xs"></i>
+                </button>
+                <div x-show="open" @click.away="open = false" x-transition
+                     class="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                    <div class="py-1">
+
+                        <a href="{{ url_for('customers.export', format='csv') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-file-csv ml-2 text-blue-600"></i>
+                            CSV
+                        </a>
+                        <a href="{{ url_for('customers.export', format='json') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-file-code ml-2 text-purple-600"></i>
+                            JSON
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <a href="{{ url_for('customers.import_data') }}" class="btn-secondary">
+                <i class="fas fa-upload ml-2"></i>
+                استيراد
+            </a>
+            
+            <a href="{{ url_for('customers.report') }}" class="btn-secondary">
+                <i class="fas fa-chart-bar ml-2"></i>
+                تقارير
+            </a>
+        </div>
     </div>
     
-    <!-- Search Bar -->
-    <div class="card mb-6">
-        <div class="flex gap-4">
-            {% include '_partials/search_bar.html' with context %}
-            {% set search_url = url_for('customers.search') %}
-            {% set target_id = 'customers-table' %}
+    <!-- Search and Filters -->
+    <div class="card">
+        <div class="p-4">
+            <form method="GET" action="{{ url_for('customers.index') }}" class="flex flex-col sm:flex-row gap-4">
+                <div class="flex-1">
+                    <input type="text" name="q" value="{{ q }}" 
+                           placeholder="بحث بالاسم، الهاتف، الرقم القومي، أو العنوان..."
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-search ml-2"></i>
+                    بحث
+                </button>
+                {% if q %}
+                <a href="{{ url_for('customers.index') }}" class="btn-secondary">
+                    <i class="fas fa-times ml-2"></i>
+                    إلغاء
+                </a>
+                {% endif %}
+            </form>
         </div>
     </div>
     
     <!-- Customers Table -->
-    <div id="customers-table">
-        {% include 'customers/_table.html' %}
+    <div class="card overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gradient-to-l from-gray-50 to-gray-100">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الكود</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الاسم</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الهاتف</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الرقم القومي</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الحالة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for customer in customers %}
+                    <tr class="hover:bg-gray-50 transition-colors duration-200">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ customer.id }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{{ url_for('customers.detail', id=customer.id) }}" 
+                               class="text-blue-600 hover:text-blue-900 font-medium">
+                                {{ customer.name }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if customer.phone %}
+                                <a href="tel:{{ customer.phone }}" class="hover:text-blue-600">{{ customer.phone }}</a>
+                            {% else %}
+                                <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ customer.national_id or '-' }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if customer.status == 'نشط' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ customer.status }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex gap-2">
+                                <a href="{{ url_for('customers.detail', id=customer.id) }}" 
+                                   class="text-blue-600 hover:text-blue-900"
+                                   title="عرض">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('customers.edit', id=customer.id) }}" 
+                                   class="text-yellow-600 hover:text-yellow-900"
+                                   title="تعديل">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button onclick="confirmDelete('{{ customer.id }}', '{{ customer.name }}')"
+                                        class="text-red-600 hover:text-red-900"
+                                        title="حذف">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-10 text-center text-gray-500">
+                            <i class="fas fa-users text-4xl text-gray-300 mb-3 block"></i>
+                            لا يوجد عملاء حالياً
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if pagination.pages > 1 %}
+        <div class="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                {% if pagination.has_prev %}
+                <a href="{{ url_for('customers.index', page=pagination.prev_num, q=q) }}" class="btn-secondary">
+                    السابق
+                </a>
+                {% endif %}
+                {% if pagination.has_next %}
+                <a href="{{ url_for('customers.index', page=pagination.next_num, q=q) }}" class="btn-primary mr-auto">
+                    التالي
+                </a>
+                {% endif %}
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        عرض <span class="font-medium">{{ (pagination.page - 1) * pagination.per_page + 1 }}</span>
+                        إلى <span class="font-medium">{{ min(pagination.page * pagination.per_page, pagination.total) }}</span>
+                        من <span class="font-medium">{{ pagination.total }}</span> نتيجة
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        {% if pagination.has_prev %}
+                        <a href="{{ url_for('customers.index', page=1, q=q) }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                        <a href="{{ url_for('customers.index', page=pagination.prev_num, q=q) }}" class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                        {% endif %}
+                        
+                        {% for page_num in pagination.iter_pages(left_edge=1, left_current=1, right_current=1, right_edge=1) %}
+                            {% if page_num %}
+                                {% if page_num != pagination.page %}
+                                <a href="{{ url_for('customers.index', page=page_num, q=q) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    {{ page_num }}
+                                </a>
+                                {% else %}
+                                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">
+                                    {{ page_num }}
+                                </span>
+                                {% endif %}
+                            {% else %}
+                                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if pagination.has_next %}
+                        <a href="{{ url_for('customers.index', page=pagination.next_num, q=q) }}" class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                        <a href="{{ url_for('customers.index', page=pagination.pages, q=q) }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
+
+<!-- Delete Confirmation Modal -->
+<form id="deleteForm" method="POST" action="" style="display: none;">
+</form>
+
+<script>
+function confirmDelete(id, name) {
+    if (confirm(`هل أنت متأكد من حذف العميل "${name}"؟`)) {
+        const form = document.getElementById('deleteForm');
+        form.action = `/customers/${id}/delete`;
+        form.submit();
+    }
+}
+</script>
 {% endblock %}

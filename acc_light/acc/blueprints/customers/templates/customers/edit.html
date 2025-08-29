@@ -22,13 +22,13 @@
                 </div>
                 
                 <div>
-                    <label class="form-label" for="phone">رقم الهاتف *</label>
+                    <label class="form-label" for="phone">رقم الهاتف</label>
                     <input type="text" 
                            id="phone" 
                            name="phone" 
-                           value="{{ customer.phone }}"
-                           class="form-input" 
-                           required>
+                           value="{{ customer.phone or '' }}"
+                           class="form-input"
+                           placeholder="اختياري">
                 </div>
                 
                 <div>
@@ -44,7 +44,7 @@
                     <label class="form-label" for="status">الحالة</label>
                     <select id="status" name="status" class="form-select">
                         <option value="نشط" {% if customer.status == 'نشط' %}selected{% endif %}>نشط</option>
-                        <option value="موقوف" {% if customer.status == 'موقوف' %}selected{% endif %}>موقوف</option>
+                        <option value="غير نشط" {% if customer.status == 'غير نشط' or customer.status == 'موقوف' %}selected{% endif %}>غير نشط</option>
                     </select>
                 </div>
                 
