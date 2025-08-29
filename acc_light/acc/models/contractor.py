@@ -16,7 +16,7 @@ class Contractor(db.Model):
     updated_at = Column(DateTime, onupdate=func.now())
     
     # Relationships
-    project_stages = db.relationship('ProjectStage', backref='contractor', lazy='dynamic')
+    # project_stages relationship is handled by ProjectStage model
     
     def __repr__(self):
         return f'<Contractor {self.name}>'

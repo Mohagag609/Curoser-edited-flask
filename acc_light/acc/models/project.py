@@ -53,7 +53,7 @@ class ProjectStage(db.Model):
     updated_at = Column(DateTime, onupdate=func.now())
     
     # Relationships
-    contractor = db.relationship('Contractor', backref='project_stages')
+    contractor = db.relationship('Contractor', foreign_keys=[contractor_id], backref='stages')
     
     def __repr__(self):
         return f'<ProjectStage {self.name}>'

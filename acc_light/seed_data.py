@@ -33,6 +33,8 @@ def seed_database():
         
         # Re-query projects to keep them in session
         projects = Project.query.order_by(Project.id).all()
+        project1_id = projects[0].id
+        project2_id = projects[1].id
         
         # Add some customers
         customers = [
@@ -102,9 +104,6 @@ def seed_database():
         
     # Add safes
     from acc.models import Safe
-    project1_id = projects[0].id
-    project2_id = projects[1].id
-    
     safes = [
         Safe(id=generate_uid('SF'), project_id=project1_id, name='خزينة الحياة', type='cash', is_default=True),
         Safe(id=generate_uid('SF'), project_id=project1_id, name='بنك الحياة - الأهلي', type='bank', bank_name='البنك الأهلي المصري'),
