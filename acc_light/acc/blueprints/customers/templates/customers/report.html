@@ -136,7 +136,31 @@
     
     <!-- أزرار التصدير -->
     <div class="flex flex-wrap gap-3 justify-center">
-        <a href="{{ url_for('customers.index') }}" class="btn-secondary">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-download text-green-500 ml-2"></i>
+                تصدير التقارير
+            </h3>
+            <div class="flex flex-wrap gap-3">
+                <a href="{{ url_for('customers.export_report', type='summary') }}" 
+                   class="inline-flex items-center px-4 py-2 border border-green-600 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-green-50 transition-colors">
+                    <i class="fas fa-file-excel ml-2"></i>
+                    تصدير الإحصائيات
+                </a>
+                <a href="{{ url_for('customers.export_report', type='top_customers') }}" 
+                   class="inline-flex items-center px-4 py-2 border border-blue-600 text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50 transition-colors">
+                    <i class="fas fa-file-excel ml-2"></i>
+                    تصدير الأكثر شراءً
+                </a>
+                <a href="{{ url_for('customers.export_report', type='debtors') }}" 
+                   class="inline-flex items-center px-4 py-2 border border-red-600 text-sm font-medium rounded-md text-red-600 bg-white hover:bg-red-50 transition-colors">
+                    <i class="fas fa-file-excel ml-2"></i>
+                    تصدير المدينون
+                </a>
+            </div>
+        </div>
+        
+        <a href="{{ url_for('customers.index') }}" class="btn-secondary self-center">
             <i class="fas fa-arrow-right ml-2"></i>
             رجوع
         </a>

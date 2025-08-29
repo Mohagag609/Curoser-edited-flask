@@ -15,10 +15,10 @@
                 <label class="block text-sm font-medium text-gray-700 mb-2">
                     اختر ملف للاستيراد
                 </label>
-                <input type="file" name="file" required accept=".json,.csv"
+                <input type="file" name="file" required accept=".xls,.xlsx,.json,.csv"
                        class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none">
                 <p class="mt-1 text-sm text-gray-500">
-                    الصيغ المدعومة: JSON (.json), CSV (.csv)
+                    الصيغ المدعومة: Excel (.xlsx, .xls), JSON (.json), CSV (.csv)
                 </p>
             </div>
             
@@ -41,6 +41,10 @@
                     تحميل نماذج فارغة
                 </h4>
                 <div class="flex flex-wrap gap-2">
+                    <a href="{{ url_for('customers.export', format='excel') }}" class="inline-flex items-center px-3 py-1 border border-green-600 text-sm leading-4 font-medium rounded text-green-600 bg-white hover:bg-green-50">
+                        <i class="fas fa-file-excel ml-1"></i>
+                        Excel
+                    </a>
                     <a href="{{ url_for('customers.export', format='csv') }}" class="inline-flex items-center px-3 py-1 border border-blue-600 text-sm leading-4 font-medium rounded text-blue-600 bg-white hover:bg-blue-50">
                         <i class="fas fa-file-csv ml-1"></i>
                         CSV

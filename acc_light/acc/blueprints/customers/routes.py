@@ -5,6 +5,8 @@ from acc.models import Customer, Contract, Voucher, Installment
 from acc.services.utils import generate_uid, log_action, Pagination, format_currency
 from sqlalchemy import or_, func
 from .simple_export import simple_export_json, simple_export_csv, simple_import_json, simple_import_csv
+from .excel_export import export_excel_html, export_report_excel
+from .excel_import import import_excel_as_csv
 
 
 @bp.route('/')
@@ -260,8 +262,7 @@ def export(format):
     customers = Customer.query.order_by(Customer.name).all()
     
     if format == 'excel':
-        flash('تصدير Excel يتطلب تثبيت مكتبات إضافية. يمكنك استخدام CSV كبديل.', 'info')
-        return redirect(url_for('customers.index'))
+        return export_excel_html(customers)
     elif format == 'json':
         return simple_export_json(customers)
     elif format == 'csv':
@@ -296,8 +297,12 @@ def import_data():
         
         # استخدام الوظائف المناسبة حسب نوع الملف
         if file_ext in ['xlsx', 'xls']:
-            flash('استيراد Excel يتطلب تثبيت مكتبات إضافية. يمكنك استخدام CSV كبديل.', 'info')
-            return redirect(url_for('customers.import_data'))
+            try:
+                customers_data = import_excel_as_csv(file)
+            except Exception as e:
+                flash(f'خطأ في قراءة ملف Excel: {str(e)}', 'error')
+                flash('يُرجى التأكد من أن الملف بتنسيق صحيح أو حفظه كـ CSV', 'info')
+                return redirect(url_for('customers.import_data'))
         elif file_ext == 'json':
             customers_data = simple_import_json(file)
         elif file_ext == 'csv':
@@ -356,3 +361,128 @@ def import_data():
     except Exception as e:
         flash(f'خطأ في معالجة الملف: {str(e)}', 'error')
         return redirect(url_for('customers.import_data'))
+
+
+@bp.route('/report/export/<type>')
+def export_report(type):
+    """تصدير التقارير إلى Excel"""
+    if type == 'summary':
+        # إحصائيات عامة
+        total_customers = Customer.query.count()
+        active_customers = Customer.query.filter_by(status='نشط').count()
+        inactive_customers = Customer.query.filter_by(status='غير نشط').count()
+        
+        summary = {
+            'إجمالي العملاء': total_customers,
+            'العملاء النشطون': active_customers,
+            'العملاء غير النشطين': inactive_customers
+        }
+        
+        # إعداد البيانات للجدول
+        headers = ['النوع', 'العدد', 'النسبة']
+        rows = []
+        
+        if total_customers > 0:
+            rows.append(['العملاء النشطون', active_customers, f'{(active_customers/total_customers*100):.1f}%'])
+            rows.append(['العملاء غير النشطين', inactive_customers, f'{(inactive_customers/total_customers*100):.1f}%'])
+            rows.append(['الإجمالي', total_customers, '100%'])
+        
+        return export_report_excel('تقرير إحصائيات العملاء', headers, rows, summary)
+    
+    elif type == 'top_customers':
+        # العملاء الأكثر شراءً
+        top_customers = db.session.query(
+            Customer,
+            func.count(Contract.id).label('contracts_count'),
+            func.sum(Contract.total_price).label('total_value')
+        ).join(Contract).group_by(Customer.id).order_by(
+            func.sum(Contract.total_price).desc()
+        ).limit(20).all()
+        
+        headers = ['اسم العميل', 'عدد العقود', 'إجمالي القيمة', 'الحالة']
+        rows = []
+        
+        total_sum = sum(item[2] or 0 for item in top_customers)
+        
+        for item in top_customers:
+            rows.append([
+                item[0].name,
+                item[1],
+                format_currency(item[2] or 0),
+                item[0].status
+            ])
+        
+        summary = {'إجمالي القيمة': format_currency(total_sum)}
+        
+        return export_report_excel('تقرير العملاء الأكثر شراءً', headers, rows, summary)
+    
+    elif type == 'debtors':
+        # العملاء المدينون
+        debtors = []
+        customers_with_contracts = db.session.query(Customer).join(Contract).distinct().all()
+        
+        for customer in customers_with_contracts:
+            total_value = 0
+            total_paid = 0
+            
+            for contract in customer.contracts:
+                total_value += contract.total_price or 0
+                
+                # حساب المدفوعات
+                installment_ids = [i.id for i in Installment.query.filter_by(unit_id=contract.unit_id).all()]
+                voucher_query = db.session.query(func.sum(Voucher.amount)).filter(
+                    Voucher.type == 'receipt'
+                )
+                
+                if installment_ids:
+                    voucher_query = voucher_query.filter(
+                        or_(
+                            Voucher.linked_ref == contract.id,
+                            Voucher.linked_ref.in_(installment_ids)
+                        )
+                    )
+                else:
+                    voucher_query = voucher_query.filter(Voucher.linked_ref == contract.id)
+                    
+                paid = voucher_query.scalar() or 0
+                total_paid += paid
+            
+            debt = total_value - total_paid
+            if debt > 0:
+                debtors.append({
+                    'customer': customer,
+                    'total_value': total_value,
+                    'total_paid': total_paid,
+                    'debt': debt,
+                    'payment_percentage': (total_paid / total_value * 100) if total_value > 0 else 0
+                })
+        
+        debtors.sort(key=lambda x: x['debt'], reverse=True)
+        
+        headers = ['اسم العميل', 'إجمالي القيمة', 'المدفوع', 'المتبقي', 'نسبة السداد']
+        rows = []
+        
+        total_debt = sum(d['debt'] for d in debtors)
+        total_value_sum = sum(d['total_value'] for d in debtors)
+        total_paid_sum = sum(d['total_paid'] for d in debtors)
+        
+        for debtor in debtors[:50]:  # أول 50 مدين
+            rows.append([
+                debtor['customer'].name,
+                format_currency(debtor['total_value']),
+                format_currency(debtor['total_paid']),
+                format_currency(debtor['debt']),
+                f"{debtor['payment_percentage']:.1f}%"
+            ])
+        
+        summary = {
+            'إجمالي المديونية': format_currency(total_debt),
+            'إجمالي القيمة': format_currency(total_value_sum),
+            'إجمالي المدفوع': format_currency(total_paid_sum)
+        }
+        
+        return export_report_excel('تقرير العملاء المدينون', headers, rows, summary)
+    
+    else:
+        flash('نوع التقرير غير مدعوم', 'error')
+        return redirect(url_for('customers.report'))

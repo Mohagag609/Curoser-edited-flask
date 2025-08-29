@@ -51,11 +51,19 @@ def simple_import_json(file):
 def simple_import_csv(file):
     """استيراد العملاء من CSV"""
     content = file.read()
-    # محاولة فك الترميز
-    try:
-        text = content.decode('utf-8-sig')  # UTF-8 with BOM
-    except:
-        text = content.decode('utf-8')
+    # محاولة فك الترميز بطرق مختلفة
+    encodings = ['utf-8-sig', 'utf-8', 'windows-1256', 'iso-8859-1', 'cp1252']
+    text = None
+    
+    for encoding in encodings:
+        try:
+            text = content.decode(encoding)
+            break
+        except UnicodeDecodeError:
+            continue
+    
+    if text is None:
+        raise ValueError("لا يمكن قراءة الملف. تأكد من أن الترميز صحيح.")
     
     reader = csv.DictReader(io.StringIO(text))
     
