@@ -395,11 +395,17 @@ def add_phase_partner_group():
         flash('تم إضافة مجموعة الشركاء بنجاح', 'success')
         return redirect(url_for('settlement.phase_partners_index', phase_id=phase_id))
     
-    phases = Phase.query.join(Project).filter(
-        Project.id == get_current_project().id if get_current_project() else True
-    ).order_by(Phase.start_date).all()
+    # Get phases for current project
+    current_project = get_current_project()
+    if current_project:
+        phases = Phase.query.filter_by(project_id=current_project.id).order_by(Phase.start_date).all()
+    else:
+        phases = Phase.query.order_by(Phase.start_date).all()
     
-    return render_template('settlement/add_phase_partner_group.html', phases=phases)
+    return render_template('settlement/add_phase_partner_group.html', 
+                         phases=phases,
+                         func=db.func,
+                         PhasePartnerGroup=PhasePartnerGroup)
 
 
 @bp.route('/phase-partner-groups/<id>/edit', methods=['GET', 'POST'])
@@ -428,7 +434,10 @@ def edit_phase_partner_group(id):
         flash('تم تعديل مجموعة الشركاء بنجاح', 'success')
         return redirect(url_for('settlement.phase_partners_index', phase_id=group.phase_id))
     
-    return render_template('settlement/edit_phase_partner_group.html', group=group)
+    return render_template('settlement/edit_phase_partner_group.html', 
+                         group=group,
+                         func=db.func,
+                         PhasePartnerGroup=PhasePartnerGroup)
 
 
 @bp.route('/phase-partners/add', methods=['GET', 'POST'])
@@ -481,7 +490,9 @@ def add_phase_partner():
     
     return render_template('settlement/add_phase_partner.html', 
                          group=group, 
-                         partners=partners)
+                         partners=partners,
+                         func=db.func,
+                         PhasePartner=PhasePartner)
 
 
 @bp.route('/phase-partners/<id>/edit', methods=['GET', 'POST'])
@@ -511,7 +522,10 @@ def edit_phase_partner(id):
         flash('تم تعديل بيانات الشريك بنجاح', 'success')
         return redirect(url_for('settlement.phase_partners_index', phase_id=phase_partner.group.phase_id))
     
-    return render_template('settlement/edit_phase_partner.html', phase_partner=phase_partner)
+    return render_template('settlement/edit_phase_partner.html', 
+                         phase_partner=phase_partner,
+                         func=db.func,
+                         PhasePartner=PhasePartner)
 
 
 @bp.route('/phase-partners/<id>/delete')
