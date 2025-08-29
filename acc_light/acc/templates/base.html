@@ -42,6 +42,9 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
     
+    <!-- Toast CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}">
+    
     <!-- Custom Styles -->
     <style>
         body {
@@ -595,6 +598,33 @@
             }
         });
     </script>
+    
+    <!-- Toast JS -->
+    <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
+    
+    <!-- Form Handler JS -->
+    <script src="{{ url_for('static', filename='js/form-handler.js') }}"></script>
+    
+    <!-- Convert Flask messages to toasts -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    {% for category, message in messages %}
+                        {% if category == 'error' %}
+                            toast.error('{{ message|e }}');
+                        {% elif category == 'success' %}
+                            toast.success('{{ message|e }}');
+                        {% elif category == 'warning' %}
+                            toast.warning('{{ message|e }}');
+                        {% else %}
+                            toast.info('{{ message|e }}');
+                        {% endif %}
+                    {% endfor %}
+                });
+            </script>
+        {% endif %}
+    {% endwith %}
     
     {% block extra_scripts %}{% endblock %}
 </body>

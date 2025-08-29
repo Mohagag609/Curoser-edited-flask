@@ -12,7 +12,10 @@ def read_excel_simple(file_content):
     """
     try:
         # Excel files are actually zip files
-        zip_file = zipfile.ZipFile(io.BytesIO(file_content))
+        try:
+            zip_file = zipfile.ZipFile(io.BytesIO(file_content))
+        except zipfile.BadZipFile:
+            raise ValueError("الملف ليس ملف Excel صالح. يُرجى التأكد من أن الملف بصيغة .xlsx")
         
         # البحث عن ملف shared strings
         shared_strings = []

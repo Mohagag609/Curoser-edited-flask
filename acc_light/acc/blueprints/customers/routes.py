@@ -324,22 +324,32 @@ def import_data():
             return redirect(url_for('customers.import_data'))
         
         # معالجة البيانات المستوردة
+        skipped_names = []
+        
         for index, data in enumerate(customers_data):
             try:
                 name = data.get('name', '').strip()
                 if not name:
+                    errors.append(f"السطر {index + 2}: الاسم مطلوب ولكنه مفقود")
                     continue
                 
                 # التحقق من وجود العميل
                 existing = Customer.query.filter_by(name=name).first()
                 if existing:
                     skipped_count += 1
+                    skipped_names.append(name)
+                    continue
+                
+                # التحقق من صحة البيانات
+                phone = data.get('phone')
+                if phone and len(str(phone)) > 20:
+                    errors.append(f"السطر {index + 2}: رقم الهاتف طويل جداً (أكثر من 20 حرف)")
                     continue
                 
                 customer = Customer(
                     id=generate_uid('C'),
                     name=name,
-                    phone=data.get('phone'),
+                    phone=phone,
                     national_id=data.get('national_id'),
                     address=data.get('address'),
                     status=data.get('status', 'نشط'),
@@ -357,18 +367,13 @@ def import_data():
             log_action('استيراد عملاء', {'imported': imported_count, 'skipped': skipped_count})
             db.session.commit()
         
-        # عرض النتائج
-        if imported_count > 0:
-            flash(f'تم استيراد {imported_count} عميل بنجاح', 'success')
-        if skipped_count > 0:
-            flash(f'تم تخطي {skipped_count} عميل (موجود مسبقاً)', 'info')
-        if errors:
-            for error in errors[:5]:  # عرض أول 5 أخطاء فقط
-                flash(error, 'error')
-            if len(errors) > 5:
-                flash(f'... و {len(errors) - 5} أخطاء أخرى', 'error')
-        
-        return redirect(url_for('customers.index'))
+        # عرض صفحة النتائج التفصيلية
+        return render_template('customers/import_result.html',
+                             imported_count=imported_count,
+                             skipped_count=skipped_count,
+                             skipped_names=skipped_names,
+                             error_count=len(errors),
+                             errors=errors)
         
     except Exception as e:
         flash(f'خطأ في معالجة الملف: {str(e)}', 'error')

@@ -9,7 +9,12 @@
     </div>
     
     <div class="card">
-        <form method="post" action="{{ url_for('customers.add') }}">
+        <form method="post" action="{{ url_for('customers.add') }}" 
+              data-ajax="true" 
+              data-loading-message="جاري إضافة العميل..."
+              data-success-message="تم إضافة العميل بنجاح"
+              data-error-message="فشل في إضافة العميل"
+              data-reset-on-success="true">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label class="form-label" for="name">اسم العميل *</label>
