@@ -95,12 +95,16 @@ def seed_database():
         units = Unit.query.order_by(Unit.id).all()
         
         # Add partners to some units
-        unit_partners = [
-            UnitPartner(id=generate_uid('UP'), unit_id=units[0].id, partner_id=partners[0].id, percentage=60),
-            UnitPartner(id=generate_uid('UP'), unit_id=units[0].id, partner_id=partners[1].id, percentage=40),
-            UnitPartner(id=generate_uid('UP'), unit_id=units[2].id, partner_id=partners[2].id, percentage=100),
-        ]
-        db.session.add_all(unit_partners)
+        if units and partners:
+            unit_partners = []
+            if len(partners) >= 2:
+                unit_partners.append(UnitPartner(id=generate_uid('UP'), unit_id=units[0].id, partner_id=partners[0].id, percentage=60))
+                unit_partners.append(UnitPartner(id=generate_uid('UP'), unit_id=units[0].id, partner_id=partners[1].id, percentage=40))
+            if len(units) > 2 and len(partners) > 2:
+                unit_partners.append(UnitPartner(id=generate_uid('UP'), unit_id=units[2].id, partner_id=partners[2].id, percentage=100))
+            if unit_partners:
+                db.session.add_all(unit_partners)
+                db.session.commit()
         
     # Add safes
     from acc.models import Safe
@@ -129,16 +133,16 @@ def seed_database():
     contract1 = Contract(id=generate_uid('CT'), 
         project_id=project1_id,
         code='2024-0001',
-        customer_id=customers[0].id,
-        unit_id=units[0].id,
+        customer_id=customers[0].id if customers else generate_uid('C'),
+        unit_id=units[0].id if units else generate_uid('U'),
         start_date=datetime.now().date() - timedelta(days=30),
         payment_type='cash',
-        total_price=units[0].total_price,
+        total_price=units[0].total_price if units else 1000000,
         discount_amount=50000,
         down_payment=0,
-        broker_name=brokers[0].name,
+        broker_name=brokers[0].name if brokers else 'سمسار افتراضي',
         broker_percent=2.5,
-        broker_amount=units[0].total_price * 0.025,
+        broker_amount=(units[0].total_price if units else 1000000) * 0.025,
         maintenance_deposit=10000,
         installment_count=0
     )
@@ -148,16 +152,16 @@ def seed_database():
     contract2 = Contract(id=generate_uid('CT'), 
         project_id=project2_id,
         code='2024-0002',
-        customer_id=customers[1].id,
-        unit_id=units[2].id,
+        customer_id=customers[1].id if len(customers) > 1 else generate_uid('C'),
+        unit_id=units[2].id if len(units) > 2 else generate_uid('U'),
         start_date=datetime.now().date() - timedelta(days=15),
         payment_type='installment',
-        total_price=units[2].total_price,
+        total_price=units[2].total_price if len(units) > 2 else 1500000,
         discount_amount=0,
         down_payment=400000,
-        broker_name=brokers[1].name,
+        broker_name=brokers[1].name if len(brokers) > 1 else 'سمسار افتراضي',
         broker_percent=3.0,
-        broker_amount=units[2].total_price * 0.03,
+        broker_amount=(units[2].total_price if len(units) > 2 else 1500000) * 0.03,
         maintenance_deposit=20000,
         installment_type='شهري',
         installment_count=24

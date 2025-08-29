@@ -9,7 +9,9 @@ class Material(db.Model):
     name = Column(String(200), nullable=False)
     code = Column(String(50), unique=True)
     unit = Column(String(50))  # متر، كيلو، قطعة
+    unit_cost = Column(Numeric(15, 2), default=0)  # سعر الوحدة الافتراضي
     category = Column(String(100))
+    description = Column(Text)
     min_stock = Column(Float, default=0)
     current_stock = Column(Float, default=0)
     created_at = Column(DateTime, default=func.now())

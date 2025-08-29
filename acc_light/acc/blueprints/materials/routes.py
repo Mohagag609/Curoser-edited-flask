@@ -74,7 +74,7 @@ def add():
             id=generate_uid('M'),
             name=name,
             unit=unit,
-            unit_cost=unit_cost,
+            unit_cost=unit_cost if unit_cost else 0,
             description=description
         )
         
