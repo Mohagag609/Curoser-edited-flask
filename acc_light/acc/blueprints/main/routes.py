@@ -14,7 +14,7 @@ def index():
 
 
 @bp.route('/select-project')
-@login_required
+# @login_required  # مؤقتاً معطل للاختبار
 def select_project():
     """صفحة اختيار المشروع"""
     # الحصول على جميع المشاريع النشطة

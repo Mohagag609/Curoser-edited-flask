@@ -4,6 +4,7 @@ from acc.models import Project, ProjectStage, Contractor, Unit
 from acc.extensions import db
 from acc.services.utils import generate_uid, log_action, Pagination, parse_number, get_today
 from acc.services.project_context import set_current_project
+from acc.services.code_generator import generate_project_code
 from datetime import datetime
 
 @bp.route('/')
@@ -54,7 +55,6 @@ def index():
 def add():
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
-        code = request.form.get('code', '').strip()
         project_type = request.form.get('project_type', 'عقاري')
         budget = parse_number(request.form.get('budget', 0))
         start_date = request.form.get('start_date', '').strip()
@@ -65,15 +65,8 @@ def add():
             flash('الرجاء إدخال اسم المشروع', 'error')
             return redirect(url_for('projects.add'))
         
-        if not code:
-            flash('الرجاء إدخال كود المشروع', 'error')
-            return redirect(url_for('projects.add'))
-        
-        # Check if code already exists
-        existing = Project.query.filter_by(code=code).first()
-        if existing:
-            flash('كود المشروع موجود بالفعل', 'error')
-            return redirect(url_for('projects.add'))
+        # Generate code automatically
+        code = generate_project_code()
         
         project = Project(
             id=generate_uid('PRJ'),

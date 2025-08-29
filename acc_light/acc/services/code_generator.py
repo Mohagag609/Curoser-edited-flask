@@ -141,6 +141,11 @@ def generate_contract_code():
     from acc.models import Contract
     return get_next_code(Contract, 'CNT', 3)
 
+def generate_project_code():
+    """Generate next project code (PRJ001, PRJ002, etc.)"""
+    from acc.models import Project
+    return get_next_code(Project, 'PRJ', 3)
+
 def generate_voucher_code(voucher_type):
     """
     Generate voucher code based on type
