@@ -1,11 +1,15 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify
+from flask import render_template, request, redirect, url_for, flash, jsonify, Response
 from acc.blueprints.treasury import bp
 from acc.models import Safe, SafeTransfer, Voucher
 from acc.extensions import db
-from acc.services.utils import generate_uid, log_action, Pagination, parse_number, get_today
+from acc.services.utils import generate_uid, log_action, Pagination, parse_number, get_today, format_currency
 from acc.services.project_context import get_current_project, filter_by_project
+from acc.services.code_generator import generate_safe_code
 from datetime import datetime
 from sqlalchemy import func
+import io
+import csv
+import json
 
 @bp.route('/')
 def index():
@@ -68,6 +72,7 @@ def add_safe():
         safe = Safe(
             id=generate_uid('SF'),
             project_id=current_project.id,
+            code=generate_safe_code(),
             name=name,
             type=safe_type,
             bank_name=bank_name if safe_type == 'bank' else None,
@@ -76,12 +81,32 @@ def add_safe():
             notes=notes
         )
         
-        db.session.add(safe)
-        log_action('إضافة خزينة جديدة', {'id': safe.id, 'name': safe.name})
-        db.session.commit()
-        
-        flash('تم إضافة الخزينة بنجاح', 'success')
-        return redirect(url_for('treasury.safe_detail', id=safe.id))
+        try:
+            db.session.add(safe)
+            log_action('إضافة خزينة جديدة', {'id': safe.id, 'name': safe.name})
+            db.session.commit()
+            
+            flash(f'✅ تم إضافة الخزينة بنجاح! رقم الخزينة: {safe.code}', 'success')
+            
+            # Handle AJAX request
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({
+                    'success': True,
+                    'message': f'تم إضافة الخزينة بنجاح! رقم الخزينة: {safe.code}',
+                    'redirect': url_for('treasury.safe_detail', id=safe.id)
+                })
+                
+            return redirect(url_for('treasury.safe_detail', id=safe.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            error_msg = f'❌ حدث خطأ أثناء إضافة الخزينة: {str(e)}'
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'message': error_msg}), 500
+                
+            flash(error_msg, 'error')
+            return redirect(url_for('treasury.add_safe'))
     
     return render_template('treasury/add_safe.html')
 
@@ -296,3 +321,121 @@ def api_safes():
         'balance': float(s.balance),
         'is_default': s.is_default
     } for s in safes])
+
+
+@bp.route('/export/<format>')
+def export(format):
+    """تصدير بيانات الخزائن"""
+    safes = filter_by_project(Safe.query, Safe).order_by(Safe.name).all()
+    
+    # Update balances
+    for safe in safes:
+        safe.update_balance()
+    
+    if format == 'excel':
+        output = io.StringIO()
+        output.write('<html><head><meta charset="utf-8"></head><body>')
+        output.write('<table border="1">')
+        output.write('<tr>')
+        output.write('<th>رقم الخزينة</th>')
+        output.write('<th>اسم الخزينة</th>')
+        output.write('<th>النوع</th>')
+        output.write('<th>البنك</th>')
+        output.write('<th>رقم الحساب</th>')
+        output.write('<th>الرصيد</th>')
+        output.write('<th>خزينة افتراضية</th>')
+        output.write('</tr>')
+        
+        for safe in safes:
+            output.write('<tr>')
+            output.write(f'<td>{safe.code}</td>')
+            output.write(f'<td>{safe.name}</td>')
+            output.write(f'<td>{"نقدي" if safe.type == "cash" else "بنكي"}</td>')
+            output.write(f'<td>{safe.bank_name or ""}</td>')
+            output.write(f'<td>{safe.account_number or ""}</td>')
+            output.write(f'<td>{format_currency(safe.balance)}</td>')
+            output.write(f'<td>{"نعم" if safe.is_default else "لا"}</td>')
+            output.write('</tr>')
+        
+        output.write('</table></body></html>')
+        
+        response = Response(output.getvalue(), content_type='application/vnd.ms-excel')
+        response.headers['Content-Disposition'] = f'attachment; filename=safes_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xls'
+        return response
+    
+    elif format == 'csv':
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(['رقم الخزينة', 'اسم الخزينة', 'النوع', 'البنك', 'رقم الحساب', 'الرصيد', 'خزينة افتراضية'])
+        
+        for safe in safes:
+            writer.writerow([
+                safe.code,
+                safe.name,
+                'نقدي' if safe.type == 'cash' else 'بنكي',
+                safe.bank_name or '',
+                safe.account_number or '',
+                safe.balance,
+                'نعم' if safe.is_default else 'لا'
+            ])
+        
+        output.seek(0)
+        response = Response(output.getvalue(), content_type='text/csv; charset=utf-8-sig')
+        response.headers['Content-Disposition'] = f'attachment; filename=safes_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+        return response
+    
+    elif format == 'json':
+        data = []
+        for safe in safes:
+            data.append({
+                'code': safe.code,
+                'name': safe.name,
+                'type': safe.type,
+                'bank_name': safe.bank_name,
+                'account_number': safe.account_number,
+                'balance': float(safe.balance),
+                'is_default': safe.is_default
+            })
+        
+        return jsonify(data)
+    
+    return redirect(url_for('treasury.index'))
+
+
+@bp.route('/report')
+def report():
+    """صفحة التقارير"""
+    current_project = get_current_project()
+    
+    # إحصائيات عامة
+    safes = filter_by_project(Safe.query, Safe).all()
+    for safe in safes:
+        safe.update_balance()
+    
+    total_safes = len(safes)
+    cash_safes = [s for s in safes if s.type == 'cash']
+    bank_safes = [s for s in safes if s.type == 'bank']
+    
+    total_cash = sum(s.balance for s in cash_safes)
+    total_bank = sum(s.balance for s in bank_safes)
+    total_balance = total_cash + total_bank
+    
+    # الحركات الأخيرة
+    recent_transfers = SafeTransfer.query.order_by(SafeTransfer.date.desc()).limit(10).all()
+    
+    # إحصائيات الحركات
+    transfers_count = SafeTransfer.query.count()
+    transfers_total = db.session.query(func.sum(SafeTransfer.amount)).scalar() or 0
+    
+    return render_template('treasury/report.html',
+                         total_safes=total_safes,
+                         cash_safes=len(cash_safes),
+                         bank_safes=len(bank_safes),
+                         total_cash=total_cash,
+                         total_bank=total_bank,
+                         total_balance=total_balance,
+                         recent_transfers=recent_transfers,
+                         transfers_count=transfers_count,
+                         transfers_total=transfers_total,
+                         safes=safes,
+                         format_currency=format_currency)

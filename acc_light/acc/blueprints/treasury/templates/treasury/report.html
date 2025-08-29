@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}تقارير الخزينة - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto p-6">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-900">تقارير الخزينة</h2>
+                <p class="text-gray-600 mt-1">إحصائيات وتقارير شاملة عن الخزائن والحركات</p>
+            </div>
+            <a href="{{ url_for('treasury.index') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i>
+                رجوع
+            </a>
+        </div>
+    </div>
+
+    <!-- إحصائيات عامة -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+        <h3 class="text-xl font-bold text-gray-900 mb-6">إحصائيات عامة</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-700 text-sm font-medium">إجمالي الخزائن</p>
+                        <p class="text-3xl font-bold text-blue-900 mt-2">{{ total_safes }}</p>
+                    </div>
+                    <div class="bg-blue-200 p-3 rounded-full">
+                        <i class="fas fa-vault text-blue-700 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-700 text-sm font-medium">خزائن نقدية</p>
+                        <p class="text-3xl font-bold text-green-900 mt-2">{{ cash_safes }}</p>
+                        <p class="text-sm text-green-700 mt-1">{{ format_currency(total_cash) }}</p>
+                    </div>
+                    <div class="bg-green-200 p-3 rounded-full">
+                        <i class="fas fa-money-bill text-green-700 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-purple-700 text-sm font-medium">حسابات بنكية</p>
+                        <p class="text-3xl font-bold text-purple-900 mt-2">{{ bank_safes }}</p>
+                        <p class="text-sm text-purple-700 mt-1">{{ format_currency(total_bank) }}</p>
+                    </div>
+                    <div class="bg-purple-200 p-3 rounded-full">
+                        <i class="fas fa-university text-purple-700 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-orange-700 text-sm font-medium">إجمالي الأرصدة</p>
+                        <p class="text-2xl font-bold text-orange-900 mt-2">{{ format_currency(total_balance) }}</p>
+                    </div>
+                    <div class="bg-orange-200 p-3 rounded-full">
+                        <i class="fas fa-coins text-orange-700 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-4 flex justify-end">
+            <button onclick="exportReport('general')" class="btn btn-export">
+                <i class="fas fa-file-excel"></i>
+                تصدير Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- تفاصيل الخزائن -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+        <h3 class="text-xl font-bold text-gray-900 mb-6">تفاصيل الخزائن</h3>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead>
+                    <tr class="bg-gray-50">
+                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-700">رقم الخزينة</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-700">اسم الخزينة</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-700">النوع</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-700">البنك</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-700">الرصيد</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-700">الحالة</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for safe in safes %}
+                    <tr>
+                        <td class="px-4 py-3 text-sm">{{ safe.code }}</td>
+                        <td class="px-4 py-3 text-sm font-medium">{{ safe.name }}</td>
+                        <td class="px-4 py-3 text-sm">
+                            {% if safe.type == 'cash' %}
+                                <span class="badge badge-success">نقدي</span>
+                            {% else %}
+                                <span class="badge badge-info">بنكي</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-sm">{{ safe.bank_name or '-' }}</td>
+                        <td class="px-4 py-3 text-sm font-medium {% if safe.balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            {{ format_currency(safe.balance) }}
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            {% if safe.is_default %}
+                                <span class="badge badge-secondary">افتراضية</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="mt-4 flex justify-end">
+            <button onclick="exportReport('safes')" class="btn btn-export">
+                <i class="fas fa-file-excel"></i>
+                تصدير Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- إحصائيات التحويلات -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+        <h3 class="text-xl font-bold text-gray-900 mb-6">إحصائيات التحويلات</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="p-4 bg-gray-50 rounded-lg">
+                <p class="text-gray-700 font-medium">عدد التحويلات</p>
+                <p class="text-2xl font-bold text-gray-900">{{ transfers_count }}</p>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg">
+                <p class="text-gray-700 font-medium">إجمالي المبالغ المحولة</p>
+                <p class="text-2xl font-bold text-gray-900">{{ format_currency(transfers_total) }}</p>
+            </div>
+        </div>
+
+        <!-- آخر التحويلات -->
+        {% if recent_transfers %}
+        <h4 class="font-medium text-gray-900 mb-4">آخر التحويلات</h4>
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead>
+                    <tr class="bg-gray-50">
+                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-700">التاريخ</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-700">من خزينة</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-700">إلى خزينة</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-700">المبلغ</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-700">الوصف</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for transfer in recent_transfers %}
+                    <tr>
+                        <td class="px-4 py-3 text-sm">{{ transfer.date.strftime('%Y-%m-%d') }}</td>
+                        <td class="px-4 py-3 text-sm">{{ transfer.from_safe.name }}</td>
+                        <td class="px-4 py-3 text-sm">{{ transfer.to_safe.name }}</td>
+                        <td class="px-4 py-3 text-sm font-medium">{{ format_currency(transfer.amount) }}</td>
+                        <td class="px-4 py-3 text-sm">{{ transfer.description or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+        
+        <div class="mt-4 flex justify-end">
+            <button onclick="exportReport('transfers')" class="btn btn-export">
+                <i class="fas fa-file-excel"></i>
+                تصدير Excel
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function exportReport(type) {
+    // This would be implemented to call the appropriate export endpoint
+    alert('تصدير تقرير ' + type);
+}
+</script>
+{% endblock %}

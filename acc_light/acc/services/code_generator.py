@@ -146,6 +146,11 @@ def generate_project_code():
     from acc.models import Project
     return get_next_code(Project, 'PRJ', 3)
 
+def generate_safe_code():
+    """Generate next safe code (SAF001, SAF002, etc.)"""
+    from acc.models.treasury import Safe
+    return get_next_code(Safe, 'SAF', 3)
+
 def generate_voucher_code(voucher_type):
     """
     Generate voucher code based on type
