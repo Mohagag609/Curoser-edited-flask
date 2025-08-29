@@ -5,20 +5,32 @@
 
 {% block content %}
 <div class="space-y-6">
+    <!-- Header with Back Button -->
+    <div class="flex items-center gap-4 mb-4">
+        <a href="{{ url_for('dashboard.index') }}" class="modern-btn modern-btn-back modern-btn-sm">
+            <i class="fas fa-arrow-right"></i>
+            <span>الرئيسية</span>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">إدارة العملاء</h1>
+            <p class="text-sm text-gray-600">إدارة بيانات العملاء والتقارير</p>
+        </div>
+    </div>
+    
     <!-- Header with Actions -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div class="flex flex-wrap gap-3">
-            <a href="{{ url_for('customers.add') }}" class="btn btn-add">
-                <i class="fas fa-plus ml-2"></i>
+            <a href="{{ url_for('customers.add') }}" class="modern-btn modern-btn-add">
+                <i class="fas fa-plus"></i>
                 إضافة عميل جديد
             </a>
             
             <!-- Export Dropdown -->
             <div class="relative" x-data="{ open: false }">
-                <button @click="open = !open" class="btn btn-export">
-                    <i class="fas fa-download ml-2"></i>
+                <button @click="open = !open" class="modern-btn modern-btn-export">
+                    <i class="fas fa-download"></i>
                     تصدير
-                    <i class="fas fa-chevron-down mr-2 text-xs"></i>
+                    <i class="fas fa-chevron-down text-xs"></i>
                 </button>
                 <div x-show="open" @click.away="open = false" x-transition
                      class="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
@@ -39,45 +51,28 @@
                 </div>
             </div>
             
-            <a href="{{ url_for('customers.import_data') }}" class="btn btn-import">
-                <i class="fas fa-upload ml-2"></i>
+            <a href="{{ url_for('customers.import_data') }}" class="modern-btn modern-btn-import">
+                <i class="fas fa-upload"></i>
                 استيراد
             </a>
             
-            <a href="{{ url_for('customers.report') }}" class="btn btn-report">
-                <i class="fas fa-chart-bar ml-2"></i>
+            <a href="{{ url_for('customers.report') }}" class="modern-btn modern-btn-secondary">
+                <i class="fas fa-chart-bar"></i>
                 تقارير
             </a>
         </div>
     </div>
     
-    <!-- Search and Filters -->
-    <div class="card">
-        <div class="p-4">
-            <form method="GET" action="{{ url_for('customers.index') }}" class="flex flex-col sm:flex-row gap-4">
-                <div class="flex-1">
-                    <input type="text" name="q" value="{{ q }}" 
-                           placeholder="بحث بالاسم، الهاتف، الرقم القومي، أو العنوان..."
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                </div>
-                <button type="submit" class="btn btn-view">
-                    <i class="fas fa-search ml-2"></i>
-                    بحث
-                </button>
-                {% if q %}
-                <a href="{{ url_for('customers.index') }}" class="btn btn-secondary">
-                    <i class="fas fa-times ml-2"></i>
-                    إلغاء
-                </a>
-                {% endif %}
-            </form>
-        </div>
-    </div>
+    <!-- Enhanced Search Bar -->
+    {% set search_url = url_for('customers.search') %}
+    {% include 'shared/search_bar.html' %}
     
-    <!-- Customers Table -->
-    <div class="card overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+    <!-- Results Container -->
+    <div id="results-container">
+        <!-- Customers Table -->
+        <div class="card overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gradient-to-l from-gray-50 to-gray-100">
                     <tr>
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الكود</th>
@@ -117,14 +112,14 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div class="flex gap-2">
+                            <div class="modern-btn-group">
                                 <a href="{{ url_for('customers.detail', id=customer.id) }}" 
-                                   class="btn-view btn-sm">
+                                   class="modern-btn modern-btn-view modern-btn-sm">
                                     <i class="fas fa-eye"></i>
                                     <span>عرض</span>
                                 </a>
                                 <a href="{{ url_for('customers.edit', id=customer.id) }}" 
-                                   class="btn-edit btn-sm">
+                                   class="modern-btn modern-btn-edit modern-btn-sm">
                                     <i class="fas fa-edit"></i>
                                     <span>تعديل</span>
                                 </a>
@@ -133,7 +128,7 @@
                                         data-delete-url="{{ url_for('customers.delete', id=customer.id) }}"
                                         data-confirm-message="هل أنت متأكد من حذف العميل '{{ customer.name }}'؟"
                                         data-remove-element="tr"
-                                        class="btn-delete btn-sm">
+                                        class="modern-btn modern-btn-delete modern-btn-sm">
                                     <i class="fas fa-trash"></i>
                                     <span>حذف</span>
                                 </button>
@@ -216,11 +211,12 @@
         </div>
         {% endif %}
     </div>
+    </div> <!-- End Results Container -->
 </div>
 
 <!-- Floating Action Button -->
-<a href="{{ url_for('customers.add') }}" class="fab">
-    <i class="fas fa-plus text-2xl"></i>
+<a href="{{ url_for('customers.add') }}" class="modern-fab">
+    <i class="fas fa-plus text-xl"></i>
 </a>
 
 {% endblock %}

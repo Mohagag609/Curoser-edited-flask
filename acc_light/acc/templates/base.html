@@ -47,6 +47,7 @@
     
     <!-- Button Styles -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/buttons.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern-buttons.css') }}">
     
     <!-- Custom Styles -->
     <style>
@@ -607,6 +608,9 @@
     
     <!-- Form Handler JS -->
     <script src="{{ url_for('static', filename='js/form-handler.js') }}"></script>
+    
+    <!-- Advanced Search JS -->
+    <script src="{{ url_for('static', filename='js/advanced-search.js') }}"></script>
     
     <!-- Convert Flask messages to toasts -->
     {% with messages = get_flashed_messages(with_categories=true) %}

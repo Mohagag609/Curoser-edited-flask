@@ -3,6 +3,7 @@ from acc.blueprints.customers import bp
 from acc.extensions import db
 from acc.models import Customer, Contract, Voucher, Installment
 from acc.services.utils import generate_uid, log_action, Pagination, format_currency
+from acc.services.import_handler import ImportHandler
 from sqlalchemy import or_, func
 from .simple_export import simple_export_json, simple_export_csv, simple_import_json, simple_import_csv
 from .excel_export import export_excel_html, export_report_excel
@@ -227,27 +228,51 @@ def delete(id):
 
 @bp.route('/search')
 def search():
-    """HTMX endpoint for live search"""
+    """Advanced search endpoint for AJAX"""
     q = request.args.get('q', '')
+    status = request.args.get('status', '')
     page = request.args.get('page', 1, type=int)
     
     query = Customer.query
     
+    # Text search
     if q:
+        search_term = f'%{q}%'
         query = query.filter(
             or_(
-                Customer.name.contains(q),
-                Customer.phone.contains(q),
-                Customer.national_id.contains(q)
+                Customer.name.ilike(search_term),
+                Customer.phone.ilike(search_term),
+                Customer.national_id.ilike(search_term),
+                Customer.address.ilike(search_term),
+                Customer.code.ilike(search_term)
             )
         )
     
-    query = query.order_by(Customer.name)
-    pagination = Pagination(query, page)
+    # Status filter
+    if status:
+        query = query.filter(Customer.status == status)
     
-    return render_template('customers/_table.html',
+    # Order by
+    query = query.order_by(Customer.created_at.desc())
+    
+    # Pagination
+    pagination = Pagination(query, page, per_page=20)
+    
+    # Check if AJAX request
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        # Return only the table part
+        return render_template('customers/_results.html',
+                             customers=pagination.items,
+                             pagination=pagination,
+                             q=q,
+                             status=status)
+    
+    # Otherwise return full page
+    return render_template('customers/index.html',
                          customers=pagination.items,
-                         pagination=pagination)
+                         pagination=pagination,
+                         q=q,
+                         status=status)
 
 
 @bp.route('/report')
@@ -341,58 +366,42 @@ def import_data():
         return render_template('customers/import.html')
     
     if 'file' not in request.files:
-        flash('الرجاء اختيار ملف', 'error')
+        flash('❌ الرجاء اختيار ملف', 'error')
         return redirect(url_for('customers.import_data'))
     
     file = request.files['file']
     if file.filename == '':
-        flash('الرجاء اختيار ملف', 'error')
+        flash('❌ الرجاء اختيار ملف', 'error')
         return redirect(url_for('customers.import_data'))
     
-    file_ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
-    
     try:
-        imported_count = 0
-        skipped_count = 0
-        errors = []
-        customers_data = []
+        # قراءة محتوى الملف
+        file_content = file.read()
         
-        # استخدام الوظائف المناسبة حسب نوع الملف
-        if file_ext in ['xlsx', 'xls']:
-            try:
-                # قراءة محتوى الملف
-                file.seek(0)  # التأكد من أننا في بداية الملف
-                file_content = file.read()
-                
-                # محاولة قراءة كـ Excel حقيقي
-                try:
-                    excel_data = read_excel_simple(file_content)
-                    customers_data = parse_excel_data(excel_data)
-                except:
-                    # إذا فشل، نحاول قراءته كـ CSV
-                    file.seek(0)
-                    customers_data = simple_import_csv(file)
-                    
-            except Exception as e:
-                flash(f'خطأ في قراءة ملف Excel: {str(e)}', 'error')
-                flash('يُرجى التأكد من أن الملف بتنسيق صحيح', 'info')
-                return redirect(url_for('customers.import_data'))
-        elif file_ext == 'json':
-            customers_data = simple_import_json(file)
-        elif file_ext == 'csv':
-            customers_data = simple_import_csv(file)
-        else:
-            flash('صيغة الملف غير مدعومة. الرجاء استخدام Excel, JSON أو CSV', 'error')
+        # استخدام ImportHandler الجديد
+        data, import_errors, file_type = ImportHandler.import_file(file_content, file.filename)
+        
+        if import_errors and not data:
+            # إذا كانت هناك أخطاء فقط ولا توجد بيانات
+            for error in import_errors[:5]:  # عرض أول 5 أخطاء فقط
+                flash(f'❌ {error}', 'error')
+            if len(import_errors) > 5:
+                flash(f'... و {len(import_errors) - 5} أخطاء أخرى', 'error')
             return redirect(url_for('customers.import_data'))
         
-        # معالجة البيانات المستوردة
+        imported_count = 0
+        skipped_count = 0
+        failed_count = 0
+        errors = []
         skipped_names = []
         
-        for index, data in enumerate(customers_data):
+        # معالجة البيانات المستوردة
+        for index, item in enumerate(data):
             try:
-                name = data.get('name', '').strip()
+                name = item.get('name', '').strip()
                 if not name:
-                    errors.append(f"السطر {index + 2}: الاسم مطلوب ولكنه مفقود")
+                    failed_count += 1
+                    errors.append(f"السطر {index + 2}: الاسم مطلوب")
                     continue
                 
                 # التحقق من وجود العميل
@@ -403,26 +412,30 @@ def import_data():
                     continue
                 
                 # التحقق من صحة البيانات
-                phone = data.get('phone')
-                if phone and len(str(phone)) > 20:
-                    errors.append(f"السطر {index + 2}: رقم الهاتف طويل جداً (أكثر من 20 حرف)")
+                phone = item.get('phone', '').strip()
+                if phone and len(phone) > 20:
+                    failed_count += 1
+                    errors.append(f"السطر {index + 2}: رقم الهاتف طويل جداً")
                     continue
                 
+                # إنشاء عميل جديد
                 customer = Customer(
                     id=generate_uid('C'),
+                    code=generate_customer_code(),
                     name=name,
-                    phone=phone,
-                    national_id=data.get('national_id'),
-                    address=data.get('address'),
-                    status=data.get('status', 'نشط'),
-                    notes=data.get('notes')
+                    phone=phone if phone else None,
+                    national_id=item.get('national_id', '').strip() or None,
+                    address=item.get('address', '').strip() or None,
+                    status=item.get('status', 'نشط').strip(),
+                    notes=item.get('notes', '').strip() or None
                 )
                 
                 db.session.add(customer)
                 imported_count += 1
                 
             except Exception as e:
-                errors.append(f"خطأ في السطر {index + 2}: {str(e)}")
+                failed_count += 1
+                errors.append(f"السطر {index + 2}: {str(e)}")
         
         # حفظ التغييرات
         if imported_count > 0:
