@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="mb-8">
-    <h2 class="text-2xl font-bold text-gray-900 mb-4">لوحة التحكم</h2>
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">لوحة التحكم</h2>
     
     <!-- Date Filter -->
     <div class="card mb-6">
@@ -24,24 +24,24 @@
     
     <!-- KPIs Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="card">
-            <h3 class="text-sm font-medium text-gray-500 mb-2">إجمالي المبيعات</h3>
-            <p class="text-2xl font-bold text-gray-900">{{ format_currency(total_sales) }}</p>
+        <div class="card bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-800">
+            <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">إجمالي المبيعات</h3>
+            <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ format_currency(total_sales) }}</p>
         </div>
         
-        <div class="card">
-            <h3 class="text-sm font-medium text-gray-500 mb-2">إجمالي المتحصلات</h3>
-            <p class="text-2xl font-bold text-green-600">{{ format_currency(total_receipts) }}</p>
+        <div class="card bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-800">
+            <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">إجمالي المتحصلات</h3>
+            <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ format_currency(total_receipts) }}</p>
         </div>
         
-        <div class="card">
-            <h3 class="text-sm font-medium text-gray-500 mb-2">إجمالي المديونية</h3>
-            <p class="text-2xl font-bold text-red-600">{{ format_currency(total_debt) }}</p>
+        <div class="card bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-800">
+            <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">إجمالي المديونية</h3>
+            <p class="text-2xl font-bold text-red-600 dark:text-red-400">{{ format_currency(total_debt) }}</p>
         </div>
         
-        <div class="card">
-            <h3 class="text-sm font-medium text-gray-500 mb-2">إجمالي المصروفات</h3>
-            <p class="text-2xl font-bold text-yellow-600">{{ format_currency(total_expenses) }}</p>
+        <div class="card bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 border-yellow-200 dark:border-yellow-800">
+            <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">إجمالي المصروفات</h3>
+            <p class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ format_currency(total_expenses) }}</p>
         </div>
     </div>
     
@@ -50,8 +50,8 @@
         <!-- Upcoming Installments -->
         {% if current_project.has_feature('installments') %}
         <div class="lg:col-span-2">
-            <div class="card">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">الأقساط القادمة</h3>
+            <div class="card dark:bg-gray-800 dark:border-gray-700">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">الأقساط القادمة</h3>
                 <div class="table-container">
                     <table class="table">
                         <thead>

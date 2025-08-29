@@ -36,7 +36,7 @@ def create_app(config_class=Config):
     app.register_blueprint(main_bp)
     
     from acc.blueprints.dashboard import bp as dashboard_bp
-    app.register_blueprint(dashboard_bp)
+    app.register_blueprint(dashboard_bp, url_prefix='/dashboard')
     
     from acc.blueprints.customers import bp as customers_bp
     app.register_blueprint(customers_bp, url_prefix='/customers')

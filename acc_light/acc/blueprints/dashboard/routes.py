@@ -5,7 +5,8 @@ from acc.blueprints.dashboard import bp
 from acc.extensions import db
 from acc.models import Unit, Contract, Voucher, Installment, Customer, Partner
 from acc.services.utils import format_currency
-from acc.services.project_selection import project_required
+from acc.services.project_selection import project_required, get_current_project
+from acc.services.project_context import filter_by_project
 
 
 @bp.route('/')
@@ -15,10 +16,13 @@ def index():
     from_date = request.args.get('from_date')
     to_date = request.args.get('to_date')
     
-    # Base queries
-    contracts_query = Contract.query
-    vouchers_query = Voucher.query
-    installments_query = Installment.query
+    # Get current project
+    current_project = get_current_project()
+    
+    # Base queries - filter by current project
+    contracts_query = filter_by_project(Contract.query, Contract)
+    vouchers_query = filter_by_project(Voucher.query, Voucher)
+    installments_query = filter_by_project(Installment.query, Installment)
     
     # Apply date filters
     if from_date:
@@ -43,11 +47,13 @@ def index():
         total_debt += unit.calculate_remaining()
     
     # Unit counts
+    # Unit stats - filter by current project
+    units_query = filter_by_project(Unit.query, Unit)
     unit_counts = {
-        'total': Unit.query.count(),
-        'available': Unit.query.filter_by(status='متاحة').count(),
-        'sold': Unit.query.filter_by(status='مباعة').count(),
-        'reserved': Unit.query.filter_by(status='محجوزة').count(),
+        'total': units_query.count(),
+        'available': units_query.filter_by(status='متاحة').count(),
+        'sold': units_query.filter_by(status='مباعة').count(),
+        'reserved': units_query.filter_by(status='محجوزة').count(),
     }
     
     # Upcoming installments

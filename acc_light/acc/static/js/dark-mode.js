@@ -160,5 +160,17 @@ class DarkMode {
 
 // تهيئة Dark Mode
 document.addEventListener('DOMContentLoaded', () => {
-    new DarkMode();
+    window.darkMode = new DarkMode();
+});
+
+// مراقبة التغييرات في DOM لتطبيق Dark Mode على العناصر الجديدة
+const observer = new MutationObserver(() => {
+    if (window.darkMode && window.darkMode.isDark) {
+        window.darkMode.apply();
+    }
+});
+
+observer.observe(document.body, {
+    childList: true,
+    subtree: true
 });

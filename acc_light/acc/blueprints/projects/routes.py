@@ -97,11 +97,12 @@ def add():
             return redirect(url_for('projects.add'))
         
         flash('تم إضافة المشروع بنجاح', 'success')
-        try:
-            return redirect(url_for('projects.detail', id=project.id))
-        except Exception:
-            # If detail page has issues, redirect to index
-            return redirect(url_for('projects.index'))
+        
+        # اختيار المشروع الجديد مباشرة
+        set_current_project(project.id)
+        
+        # التوجيه للوحة التحكم
+        return redirect('/dashboard')
     
     # Get data for form
     return render_template('projects/add.html',
