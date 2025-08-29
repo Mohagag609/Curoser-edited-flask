@@ -31,6 +31,7 @@ class PartnerGroup(db.Model):
     __tablename__ = 'partner_groups'
     
     id = Column(String(20), primary_key=True)
+    code = Column(String(20), unique=True, nullable=False)
     name = Column(String(200), nullable=False)
     notes = Column(db.Text)
     created_at = Column(DateTime, default=func.now())

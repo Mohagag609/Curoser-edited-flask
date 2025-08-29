@@ -1,56 +1,79 @@
 {% extends "base.html" %}
 
-{% block title %}إضافة شريك - {{ super() }}{% endblock %}
+{% block title %}إضافة شريك جديد{% endblock %}
+{% block page_title %}إضافة شريك جديد{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-3xl font-bold text-gray-900">إضافة شريك جديد</h2>
-        <a href="{{ url_for('partners.index') }}" class="btn btn-secondary">
-            <i class="fas fa-arrow-right"></i>
-            العودة للشركاء
-        </a>
-    </div>
-    
-    <!-- Form -->
-    <div class="card max-w-3xl mx-auto">
-        <form method="post" action="{{ url_for('partners.add') }}">
+<div class="max-w-2xl mx-auto">
+    <div class="card">
+        <form method="post" action="{{ url_for('partners.add') }}" 
+              data-ajax="true" 
+              data-loading-message="جاري إضافة الشريك..."
+              data-success-message="تم إضافة الشريك بنجاح"
+              data-error-message="فشل في إضافة الشريك"
+              data-reset-on-success="true">
+            
+            <!-- سيتم إنشاء الكود تلقائياً -->
+            <div class="mb-4 p-3 bg-indigo-50 rounded-lg text-center">
+                <i class="fas fa-info-circle text-indigo-600 ml-2"></i>
+                <span class="text-indigo-700">سيتم إنشاء كود الشريك تلقائياً عند الحفظ</span>
+            </div>
+            
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="md:col-span-2">
-                    <label class="form-label">اسم الشريك <span class="text-red-500">*</span></label>
-                    <input type="text" name="name" required class="form-input" autofocus>
+                    <label class="form-label" for="name">اسم الشريك *</label>
+                    <input type="text" 
+                           id="name" 
+                           name="name" 
+                           class="form-input" 
+                           required
+                           autofocus>
                 </div>
                 
                 <div>
-                    <label class="form-label">رقم الهاتف</label>
-                    <input type="text" name="phone" class="form-input" dir="ltr">
+                    <label class="form-label" for="phone">رقم الهاتف</label>
+                    <input type="text" 
+                           id="phone" 
+                           name="phone" 
+                           class="form-input"
+                           placeholder="اختياري">
                 </div>
                 
                 <div>
-                    <label class="form-label">الرقم القومي</label>
-                    <input type="text" name="national_id" class="form-input" dir="ltr">
+                    <label class="form-label" for="national_id">الرقم القومي</label>
+                    <input type="text" 
+                           id="national_id" 
+                           name="national_id" 
+                           class="form-input"
+                           placeholder="اختياري">
                 </div>
                 
                 <div class="md:col-span-2">
-                    <label class="form-label">العنوان</label>
-                    <textarea name="address" rows="2" class="form-input"></textarea>
+                    <label class="form-label" for="address">العنوان</label>
+                    <input type="text" 
+                           id="address" 
+                           name="address" 
+                           class="form-input">
                 </div>
                 
                 <div class="md:col-span-2">
-                    <label class="form-label">ملاحظات</label>
-                    <textarea name="notes" rows="3" class="form-input"></textarea>
+                    <label class="form-label" for="notes">ملاحظات</label>
+                    <textarea id="notes" 
+                              name="notes" 
+                              rows="3" 
+                              class="form-input"></textarea>
                 </div>
             </div>
             
-            <div class="mt-6 flex justify-end gap-2">
+            <div class="mt-6 flex gap-3">
+                <button type="submit" class="btn btn-add">
+                    <i class="fas fa-save ml-2"></i>
+                    حفظ الشريك
+                </button>
                 <a href="{{ url_for('partners.index') }}" class="btn btn-secondary">
+                    <i class="fas fa-times ml-2"></i>
                     إلغاء
                 </a>
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i>
-                    حفظ
-                </button>
             </div>
         </form>
     </div>

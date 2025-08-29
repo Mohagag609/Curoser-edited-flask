@@ -1,96 +1,229 @@
 {% extends "base.html" %}
 
-{% block title %}إدارة الموردين - {{ super() }}{% endblock %}
+{% block title %}الموردين{% endblock %}
+{% block page_title %}الموردين{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
-        <div>
-            <h2 class="text-3xl font-bold text-gray-900">إدارة الموردين</h2>
-            <p class="text-gray-600 mt-1">إدارة الموردين والمعاملات المالية</p>
-        </div>
-        <a href="{{ url_for('suppliers.add') }}" class="btn btn-primary">
-            <i class="fas fa-plus"></i>
-            إضافة مورد
-        </a>
-    </div>
-    
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-blue-100">إجمالي الموردين</p>
-                    <p class="text-3xl font-bold mt-2">{{ total_suppliers }}</p>
+<div class="space-y-6">
+    <!-- Header with Actions -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div class="flex flex-wrap gap-3">
+            <a href="{{ url_for('suppliers.add') }}" class="btn btn-add">
+                <i class="fas fa-plus ml-2"></i>
+                إضافة مورد جديد
+            </a>
+            
+            <!-- Export Dropdown -->
+            <div class="relative" x-data="{ open: false }">
+                <button @click="open = !open" class="btn btn-export">
+                    <i class="fas fa-download ml-2"></i>
+                    تصدير
+                    <i class="fas fa-chevron-down mr-2 text-xs"></i>
+                </button>
+                <div x-show="open" @click.away="open = false" x-transition
+                     class="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                    <div class="py-1">
+                        <a href="{{ url_for('suppliers.export', format='excel') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-file-excel ml-2 text-green-600"></i>
+                            Excel
+                        </a>
+                        <a href="{{ url_for('suppliers.export', format='csv') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-file-csv ml-2 text-blue-600"></i>
+                            CSV
+                        </a>
+                        <a href="{{ url_for('suppliers.export', format='json') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-file-code ml-2 text-purple-600"></i>
+                            JSON
+                        </a>
+                    </div>
                 </div>
-                <i class="fas fa-truck text-3xl opacity-50"></i>
             </div>
-        </div>
-        
-        <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-red-100">إجمالي المدفوعات</p>
-                    <p class="text-2xl font-bold mt-2">{{ format_currency(total_payments) }}</p>
-                </div>
-                <i class="fas fa-money-check-alt text-3xl opacity-50"></i>
-            </div>
+            
+            <a href="{{ url_for('suppliers.import_data') }}" class="btn btn-import">
+                <i class="fas fa-upload ml-2"></i>
+                استيراد
+            </a>
+            
+            <a href="{{ url_for('suppliers.report') }}" class="btn btn-report">
+                <i class="fas fa-chart-bar ml-2"></i>
+                تقارير
+            </a>
         </div>
     </div>
     
-    <!-- Search -->
-    <div class="card mb-6">
-        {% include '_partials/search_bar.html' %}
-    </div>
-    
-    <!-- Table -->
+    <!-- Search and Filters -->
     <div class="card">
-        <div class="table-container">
-            <table class="table">
-                <thead>
+        <div class="p-4">
+            <form method="GET" action="{{ url_for('suppliers.index') }}" class="flex flex-col sm:flex-row gap-4">
+                <div class="flex-1">
+                    <input type="text" name="q" value="{{ q }}" 
+                           placeholder="بحث بالاسم، الهاتف، البريد الإلكتروني، أو العنوان..."
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <button type="submit" class="btn btn-view">
+                    <i class="fas fa-search ml-2"></i>
+                    بحث
+                </button>
+                {% if q %}
+                <a href="{{ url_for('suppliers.index') }}" class="btn btn-secondary">
+                    <i class="fas fa-times ml-2"></i>
+                    إلغاء
+                </a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    
+    <!-- Suppliers Table -->
+    <div class="card overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gradient-to-l from-gray-50 to-gray-100">
                     <tr>
-                        <th>الاسم</th>
-                        <th>الهاتف</th>
-                        <th>البريد الإلكتروني</th>
-                        <th>العنوان</th>
-                        <th>الإجراءات</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الكود</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الاسم</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الهاتف</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">البريد الإلكتروني</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">العنوان</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الإجراءات</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="bg-white divide-y divide-gray-200">
                     {% for supplier in suppliers %}
-                    <tr>
-                        <td>
-                            <a href="{{ url_for('suppliers.detail', id=supplier.id) }}" class="text-blue-600 hover:underline font-medium">
+                    <tr class="hover:bg-gray-50 transition-colors duration-200">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
+                            <span class="bg-purple-50 text-purple-700 px-2 py-1 rounded-md">{{ supplier.code }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{{ url_for('suppliers.detail', id=supplier.id) }}" 
+                               class="text-blue-600 hover:text-blue-900 font-medium">
                                 {{ supplier.name }}
                             </a>
                         </td>
-                        <td>{{ supplier.phone or '-' }}</td>
-                        <td>{{ supplier.email or '-' }}</td>
-                        <td>{{ supplier.address[:30] + '...' if supplier.address and supplier.address|length > 30 else supplier.address or '-' }}</td>
-                        <td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if supplier.phone %}
+                                <a href="tel:{{ supplier.phone }}" class="hover:text-blue-600">{{ supplier.phone }}</a>
+                            {% else %}
+                                <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if supplier.email %}
+                                <a href="mailto:{{ supplier.email }}" class="hover:text-blue-600">{{ supplier.email }}</a>
+                            {% else %}
+                                <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-900">
+                            <div class="max-w-xs truncate" title="{{ supplier.address }}">
+                                {{ supplier.address or '-' }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex gap-2">
-                                <a href="{{ url_for('suppliers.detail', id=supplier.id) }}" class="btn btn-sm btn-secondary">
+                                <a href="{{ url_for('suppliers.detail', id=supplier.id) }}" 
+                                   class="btn-icon btn-icon-view"
+                                   title="عرض">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                <a href="{{ url_for('suppliers.edit', id=supplier.id) }}" class="btn btn-sm btn-primary">
+                                <a href="{{ url_for('suppliers.edit', id=supplier.id) }}" 
+                                   class="btn-icon btn-icon-edit"
+                                   title="تعديل">
                                     <i class="fas fa-edit"></i>
                                 </a>
+                                <button type="button"
+                                        data-confirm-delete="true"
+                                        data-delete-url="{{ url_for('suppliers.delete', id=supplier.id) }}"
+                                        data-confirm-message="هل أنت متأكد من حذف المورد '{{ supplier.name }}'؟"
+                                        data-remove-element="tr"
+                                        class="btn-icon btn-icon-delete"
+                                        title="حذف">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="5" class="text-center text-gray-500">لا يوجد موردين</td>
+                        <td colspan="6" class="px-6 py-10 text-center text-gray-500">
+                            <i class="fas fa-truck text-4xl text-gray-300 mb-3 block"></i>
+                            لا يوجد موردين حالياً
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
         
-        {% if pagination.pages > 1 %}
-            {% include '_partials/pagination.html' %}
+        <!-- Pagination -->
+        {% if pagination and pagination.pages > 1 %}
+        <div class="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                {% if pagination.has_prev %}
+                <a href="{{ url_for('suppliers.index', page=pagination.prev_num, q=q) }}" class="btn btn-secondary">
+                    السابق
+                </a>
+                {% endif %}
+                {% if pagination.has_next %}
+                <a href="{{ url_for('suppliers.index', page=pagination.next_num, q=q) }}" class="btn btn-primary mr-auto">
+                    التالي
+                </a>
+                {% endif %}
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        عرض <span class="font-medium">{{ (pagination.page - 1) * pagination.per_page + 1 }}</span>
+                        إلى <span class="font-medium">{{ min(pagination.page * pagination.per_page, pagination.total) }}</span>
+                        من <span class="font-medium">{{ pagination.total }}</span> نتيجة
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        {% if pagination.has_prev %}
+                        <a href="{{ url_for('suppliers.index', page=1, q=q) }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                        <a href="{{ url_for('suppliers.index', page=pagination.prev_num, q=q) }}" class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                        {% endif %}
+                        
+                        {% for page_num in pagination.iter_pages(left_edge=1, left_current=1, right_current=1, right_edge=1) %}
+                            {% if page_num %}
+                                {% if page_num != pagination.page %}
+                                <a href="{{ url_for('suppliers.index', page=page_num, q=q) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    {{ page_num }}
+                                </a>
+                                {% else %}
+                                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">
+                                    {{ page_num }}
+                                </span>
+                                {% endif %}
+                            {% else %}
+                                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if pagination.has_next %}
+                        <a href="{{ url_for('suppliers.index', page=pagination.next_num, q=q) }}" class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                        <a href="{{ url_for('suppliers.index', page=pagination.pages, q=q) }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
         {% endif %}
     </div>
 </div>
+
+<!-- Floating Action Button -->
+<a href="{{ url_for('suppliers.add') }}" class="fab">
+    <i class="fas fa-plus text-2xl"></i>
+</a>
+
 {% endblock %}

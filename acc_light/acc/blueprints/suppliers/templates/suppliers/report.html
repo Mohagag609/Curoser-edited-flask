@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}تقارير الموردين{% endblock %}
+{% block page_title %}تقارير الموردين{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Statistics Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="card bg-gradient-to-br from-purple-50 to-purple-100">
+            <div class="p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-purple-600 text-sm font-medium">إجمالي الموردين</p>
+                        <p class="text-3xl font-bold text-purple-900 mt-2">{{ total_suppliers }}</p>
+                    </div>
+                    <div class="bg-purple-200 rounded-full p-3">
+                        <i class="fas fa-truck text-purple-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card bg-gradient-to-br from-green-50 to-green-100">
+            <div class="p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-600 text-sm font-medium">الموردين النشطين</p>
+                        <p class="text-3xl font-bold text-green-900 mt-2">{{ active_suppliers }}</p>
+                    </div>
+                    <div class="bg-green-200 rounded-full p-3">
+                        <i class="fas fa-check-circle text-green-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card bg-gradient-to-br from-blue-50 to-blue-100">
+            <div class="p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-600 text-sm font-medium">معدل النشاط</p>
+                        <p class="text-3xl font-bold text-blue-900 mt-2">
+                            {% if total_suppliers > 0 %}
+                                {{ ((active_suppliers / total_suppliers) * 100)|round|int }}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="bg-blue-200 rounded-full p-3">
+                        <i class="fas fa-chart-line text-blue-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Suppliers -->
+    {% if top_suppliers %}
+    <div class="card">
+        <div class="card-header flex justify-between items-center">
+            <h3 class="text-lg font-semibold">أكبر الموردين</h3>
+            <button onclick="exportReport('top')" class="btn btn-sm btn-export">
+                <i class="fas fa-file-excel ml-2"></i>
+                تصدير Excel
+            </button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gradient-to-l from-gray-50 to-gray-100">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">#</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الكود</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">المورد</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">عدد المواد</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">إجمالي المشتريات</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">النسبة</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% set total_all = top_suppliers|sum(attribute='2') %}
+                    {% for supplier, materials_count, total_amount in top_suppliers %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ loop.index }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <span class="bg-purple-50 text-purple-700 px-2 py-1 rounded-md">{{ supplier.code }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{{ url_for('suppliers.detail', id=supplier.id) }}" 
+                               class="text-blue-600 hover:text-blue-900 font-medium">
+                                {{ supplier.name }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                            <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full">{{ materials_count }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                            {{ format_currency(total_amount or 0) }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <div class="flex items-center">
+                                <div class="flex-1 bg-gray-200 rounded-full h-2 ml-3">
+                                    <div class="bg-gradient-to-l from-purple-500 to-purple-600 h-2 rounded-full" 
+                                         style="width: {{ ((total_amount or 0) / total_all * 100) if total_all > 0 else 0 }}%"></div>
+                                </div>
+                                <span class="text-gray-700 font-medium">
+                                    {{ ((total_amount or 0) / total_all * 100)|round(1) if total_all > 0 else 0 }}%
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="bg-gray-50">
+                    <tr>
+                        <td colspan="3" class="px-6 py-3 text-right font-semibold">الإجمالي</td>
+                        <td class="px-6 py-3 text-center font-semibold">{{ top_suppliers|sum(attribute='1') }}</td>
+                        <td class="px-6 py-3 font-bold text-green-700">{{ format_currency(total_all) }}</td>
+                        <td class="px-6 py-3 text-center font-semibold">100%</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Back Button -->
+    <div class="flex justify-center">
+        <a href="{{ url_for('suppliers.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-right ml-2"></i>
+            العودة لقائمة الموردين
+        </a>
+    </div>
+</div>
+
+<script>
+function exportReport(type) {
+    // This would be implemented to export specific report data
+    toast.info('جاري تصدير التقرير...');
+    // Add actual export logic here
+}
+</script>
+{% endblock %}

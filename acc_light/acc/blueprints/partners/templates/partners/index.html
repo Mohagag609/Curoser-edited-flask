@@ -1,122 +1,230 @@
 {% extends "base.html" %}
 
-{% block title %}إدارة الشركاء - {{ super() }}{% endblock %}
+{% block title %}الشركاء{% endblock %}
+{% block page_title %}الشركاء{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
-        <div>
-            <h2 class="text-3xl font-bold text-gray-900">إدارة الشركاء</h2>
-            <p class="text-gray-600 mt-1">إدارة الشركاء والمجموعات</p>
-        </div>
-        <div class="flex gap-2">
+<div class="space-y-6">
+    <!-- Header with Actions -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div class="flex flex-wrap gap-3">
+            <a href="{{ url_for('partners.add') }}" class="btn btn-add">
+                <i class="fas fa-plus ml-2"></i>
+                إضافة شريك جديد
+            </a>
+            
+            <!-- Export Dropdown -->
+            <div class="relative" x-data="{ open: false }">
+                <button @click="open = !open" class="btn btn-export">
+                    <i class="fas fa-download ml-2"></i>
+                    تصدير
+                    <i class="fas fa-chevron-down mr-2 text-xs"></i>
+                </button>
+                <div x-show="open" @click.away="open = false" x-transition
+                     class="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                    <div class="py-1">
+                        <a href="{{ url_for('partners.export', format='excel') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-file-excel ml-2 text-green-600"></i>
+                            Excel
+                        </a>
+                        <a href="{{ url_for('partners.export', format='csv') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-file-csv ml-2 text-blue-600"></i>
+                            CSV
+                        </a>
+                        <a href="{{ url_for('partners.export', format='json') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-file-code ml-2 text-purple-600"></i>
+                            JSON
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <a href="{{ url_for('partners.import_data') }}" class="btn btn-import">
+                <i class="fas fa-upload ml-2"></i>
+                استيراد
+            </a>
+            
+            <a href="{{ url_for('partners.report') }}" class="btn btn-report">
+                <i class="fas fa-chart-bar ml-2"></i>
+                تقارير
+            </a>
+            
             <a href="{{ url_for('partners.groups') }}" class="btn btn-secondary">
-                <i class="fas fa-users"></i>
+                <i class="fas fa-users ml-2"></i>
                 المجموعات
             </a>
-            <a href="{{ url_for('partners.add') }}" class="btn btn-primary">
-                <i class="fas fa-plus"></i>
-                إضافة شريك
-            </a>
         </div>
     </div>
     
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-blue-100">إجمالي الشركاء</p>
-                    <p class="text-3xl font-bold mt-2">{{ total_partners }}</p>
-                </div>
-                <i class="fas fa-user-tie text-3xl opacity-50"></i>
-            </div>
-        </div>
-        
-        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-purple-100">المجموعات</p>
-                    <p class="text-3xl font-bold mt-2">{{ total_groups }}</p>
-                </div>
-                <i class="fas fa-layer-group text-3xl opacity-50"></i>
-            </div>
-        </div>
-        
-        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-green-100">شركاء لديهم وحدات</p>
-                    <p class="text-3xl font-bold mt-2">{{ partners_with_units }}</p>
-                </div>
-                <i class="fas fa-building text-3xl opacity-50"></i>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Search -->
-    <div class="card mb-6">
-        {% include '_partials/search_bar.html' %}
-    </div>
-    
-    <!-- Table -->
+    <!-- Search and Filters -->
     <div class="card">
-        <div class="table-container">
-            <table class="table">
-                <thead>
+        <div class="p-4">
+            <form method="GET" action="{{ url_for('partners.index') }}" class="flex flex-col sm:flex-row gap-4">
+                <div class="flex-1">
+                    <input type="text" name="q" value="{{ q }}" 
+                           placeholder="بحث بالاسم، الهاتف، الرقم القومي، أو العنوان..."
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <button type="submit" class="btn btn-view">
+                    <i class="fas fa-search ml-2"></i>
+                    بحث
+                </button>
+                {% if q %}
+                <a href="{{ url_for('partners.index') }}" class="btn btn-secondary">
+                    <i class="fas fa-times ml-2"></i>
+                    إلغاء
+                </a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    
+    <!-- Partners Table -->
+    <div class="card overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gradient-to-l from-gray-50 to-gray-100">
                     <tr>
-                        <th>الاسم</th>
-                        <th>الهاتف</th>
-                        <th>الرقم القومي</th>
-                        <th>عدد الوحدات</th>
-                        <th>عدد المجموعات</th>
-                        <th>الإجراءات</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الكود</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الاسم</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الهاتف</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الرقم القومي</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">العنوان</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الإجراءات</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="bg-white divide-y divide-gray-200">
                     {% for partner in partners %}
-                    <tr>
-                        <td>
-                            <a href="{{ url_for('partners.detail', id=partner.id) }}" class="text-blue-600 hover:underline font-medium">
+                    <tr class="hover:bg-gray-50 transition-colors duration-200">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
+                            <span class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-md">{{ partner.code }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{{ url_for('partners.detail', id=partner.id) }}" 
+                               class="text-blue-600 hover:text-blue-900 font-medium">
                                 {{ partner.name }}
                             </a>
                         </td>
-                        <td>{{ partner.phone or '-' }}</td>
-                        <td>{{ partner.national_id or '-' }}</td>
-                        <td>
-                            <span class="badge badge-secondary">
-                                {{ partner.unit_partners.count() }}
-                            </span>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if partner.phone %}
+                                <a href="tel:{{ partner.phone }}" class="hover:text-blue-600">{{ partner.phone }}</a>
+                            {% else %}
+                                <span class="text-gray-400">-</span>
+                            {% endif %}
                         </td>
-                        <td>
-                            <span class="badge badge-secondary">
-                                {{ partner.group_memberships.count() }}
-                            </span>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ partner.national_id or '-' }}
                         </td>
-                        <td>
+                        <td class="px-6 py-4 text-sm text-gray-900">
+                            <div class="max-w-xs truncate" title="{{ partner.address }}">
+                                {{ partner.address or '-' }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex gap-2">
-                                <a href="{{ url_for('partners.detail', id=partner.id) }}" class="btn btn-sm btn-secondary">
+                                <a href="{{ url_for('partners.detail', id=partner.id) }}" 
+                                   class="btn-icon btn-icon-view"
+                                   title="عرض">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                <a href="{{ url_for('partners.edit', id=partner.id) }}" class="btn btn-sm btn-primary">
+                                <a href="{{ url_for('partners.edit', id=partner.id) }}" 
+                                   class="btn-icon btn-icon-edit"
+                                   title="تعديل">
                                     <i class="fas fa-edit"></i>
                                 </a>
+                                <button type="button"
+                                        data-confirm-delete="true"
+                                        data-delete-url="{{ url_for('partners.delete', id=partner.id) }}"
+                                        data-confirm-message="هل أنت متأكد من حذف الشريك '{{ partner.name }}'؟"
+                                        data-remove-element="tr"
+                                        class="btn-icon btn-icon-delete"
+                                        title="حذف">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6" class="text-center text-gray-500">لا يوجد شركاء</td>
+                        <td colspan="6" class="px-6 py-10 text-center text-gray-500">
+                            <i class="fas fa-handshake text-4xl text-gray-300 mb-3 block"></i>
+                            لا يوجد شركاء حالياً
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
         
-        {% if pagination.pages > 1 %}
-            {% include '_partials/pagination.html' %}
+        <!-- Pagination -->
+        {% if pagination and pagination.pages > 1 %}
+        <div class="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                {% if pagination.has_prev %}
+                <a href="{{ url_for('partners.index', page=pagination.prev_num, q=q) }}" class="btn btn-secondary">
+                    السابق
+                </a>
+                {% endif %}
+                {% if pagination.has_next %}
+                <a href="{{ url_for('partners.index', page=pagination.next_num, q=q) }}" class="btn btn-primary mr-auto">
+                    التالي
+                </a>
+                {% endif %}
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        عرض <span class="font-medium">{{ (pagination.page - 1) * pagination.per_page + 1 }}</span>
+                        إلى <span class="font-medium">{{ min(pagination.page * pagination.per_page, pagination.total) }}</span>
+                        من <span class="font-medium">{{ pagination.total }}</span> نتيجة
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        {% if pagination.has_prev %}
+                        <a href="{{ url_for('partners.index', page=1, q=q) }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                        <a href="{{ url_for('partners.index', page=pagination.prev_num, q=q) }}" class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                        {% endif %}
+                        
+                        {% for page_num in pagination.iter_pages(left_edge=1, left_current=1, right_current=1, right_edge=1) %}
+                            {% if page_num %}
+                                {% if page_num != pagination.page %}
+                                <a href="{{ url_for('partners.index', page=page_num, q=q) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    {{ page_num }}
+                                </a>
+                                {% else %}
+                                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">
+                                    {{ page_num }}
+                                </span>
+                                {% endif %}
+                            {% else %}
+                                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if pagination.has_next %}
+                        <a href="{{ url_for('partners.index', page=pagination.next_num, q=q) }}" class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                        <a href="{{ url_for('partners.index', page=pagination.pages, q=q) }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
         {% endif %}
     </div>
 </div>
+
+<!-- Floating Action Button -->
+<a href="{{ url_for('partners.add') }}" class="fab">
+    <i class="fas fa-plus text-2xl"></i>
+</a>
+
 {% endblock %}

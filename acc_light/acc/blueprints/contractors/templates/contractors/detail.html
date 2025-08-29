@@ -1,211 +1,167 @@
 {% extends "base.html" %}
 
-{% block title %}{{ contractor.name }} - {{ super() }}{% endblock %}
+{% block title %}{{ contractor.name }} - المقاولين{% endblock %}
+{% block page_title %}تفاصيل المقاول{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
+<div class="max-w-4xl mx-auto space-y-6">
     <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex justify-between items-start">
         <div>
-            <h2 class="text-3xl font-bold text-gray-900">{{ contractor.name }}</h2>
-            <p class="text-gray-600 mt-1">
+            <h2 class="text-2xl font-bold text-gray-900">{{ contractor.name }}</h2>
+            <div class="mt-2 flex gap-2">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800">
+                    <i class="fas fa-barcode ml-2"></i>
+                    {{ contractor.code }}
+                </span>
                 {% if contractor.specialty %}
-                    <i class="fas fa-tools"></i> {{ contractor.specialty }}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                    <i class="fas fa-tools ml-2"></i>
+                    {{ contractor.specialty }}
+                </span>
                 {% endif %}
-            </p>
+            </div>
         </div>
         <div class="flex gap-2">
-            <a href="{{ url_for('contractors.edit', id=contractor.id) }}" class="btn btn-primary">
-                <i class="fas fa-edit"></i>
+            <a href="{{ url_for('contractors.edit', id=contractor.id) }}" class="btn btn-edit">
+                <i class="fas fa-edit ml-2"></i>
                 تعديل
             </a>
-            <a href="{{ url_for('contractors.index') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-right"></i>
-                العودة للمقاولين
-            </a>
+            <button type="button"
+                    data-confirm-delete="true"
+                    data-delete-url="{{ url_for('contractors.delete', id=contractor.id) }}"
+                    data-confirm-message="هل أنت متأكد من حذف المقاول '{{ contractor.name }}'؟"
+                    data-redirect-url="{{ url_for('contractors.index') }}"
+                    class="btn btn-delete">
+                <i class="fas fa-trash ml-2"></i>
+                حذف
+            </button>
         </div>
     </div>
     
-    <!-- Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div class="card">
-            <h3 class="text-sm font-medium text-gray-500 mb-2">إجمالي المشاريع</h3>
-            <p class="text-2xl font-bold text-gray-900">{{ total_projects }}</p>
+    <!-- Basic Info -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="text-lg font-semibold">المعلومات الأساسية</h3>
         </div>
-        <div class="card">
-            <h3 class="text-sm font-medium text-gray-500 mb-2">مشاريع جارية</h3>
-            <p class="text-2xl font-bold text-green-600">{{ active_projects }}</p>
-        </div>
-        <div class="card">
-            <h3 class="text-sm font-medium text-gray-500 mb-2">إجمالي المدفوعات</h3>
-            <p class="text-2xl font-bold text-red-600">{{ format_currency(total_payments) }}</p>
-        </div>
-        <div class="card">
-            <h3 class="text-sm font-medium text-gray-500 mb-2">الرصيد</h3>
-            <p class="text-2xl font-bold {% if balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
-                {{ format_currency(balance) }}
-            </p>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="text-sm font-medium text-gray-600">الكود</label>
+                    <p class="mt-1 text-lg font-semibold text-orange-600">{{ contractor.code }}</p>
+                </div>
+                
+                <div>
+                    <label class="text-sm font-medium text-gray-600">الاسم</label>
+                    <p class="mt-1 text-lg">{{ contractor.name }}</p>
+                </div>
+                
+                <div>
+                    <label class="text-sm font-medium text-gray-600">رقم الهاتف</label>
+                    <p class="mt-1 text-lg">
+                        {% if contractor.phone %}
+                            <a href="tel:{{ contractor.phone }}" class="text-blue-600 hover:text-blue-900">
+                                <i class="fas fa-phone ml-2"></i>{{ contractor.phone }}
+                            </a>
+                        {% else %}
+                            <span class="text-gray-400">غير محدد</span>
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <div>
+                    <label class="text-sm font-medium text-gray-600">البريد الإلكتروني</label>
+                    <p class="mt-1 text-lg">
+                        {% if contractor.email %}
+                            <a href="mailto:{{ contractor.email }}" class="text-blue-600 hover:text-blue-900">
+                                <i class="fas fa-envelope ml-2"></i>{{ contractor.email }}
+                            </a>
+                        {% else %}
+                            <span class="text-gray-400">غير محدد</span>
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <div>
+                    <label class="text-sm font-medium text-gray-600">التخصص</label>
+                    <p class="mt-1 text-lg">{{ contractor.specialty or 'غير محدد' }}</p>
+                </div>
+                
+                <div>
+                    <label class="text-sm font-medium text-gray-600">العنوان</label>
+                    <p class="mt-1 text-lg">{{ contractor.address or 'غير محدد' }}</p>
+                </div>
+                
+                {% if contractor.notes %}
+                <div class="md:col-span-2">
+                    <label class="text-sm font-medium text-gray-600">ملاحظات</label>
+                    <p class="mt-1 text-gray-700 whitespace-pre-wrap">{{ contractor.notes }}</p>
+                </div>
+                {% endif %}
+                
+                <div>
+                    <label class="text-sm font-medium text-gray-600">تاريخ التسجيل</label>
+                    <p class="mt-1 text-lg">{{ contractor.created_at.strftime('%Y-%m-%d') if contractor.created_at else '-' }}</p>
+                </div>
+                
+                {% if contractor.updated_at %}
+                <div>
+                    <label class="text-sm font-medium text-gray-600">آخر تحديث</label>
+                    <p class="mt-1 text-lg">{{ contractor.updated_at.strftime('%Y-%m-%d') }}</p>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
     
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Projects -->
-        <div class="lg:col-span-2">
-            <div class="card">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-gray-900">المشاريع</h3>
-                    <a href="{{ url_for('projects.add') }}?contractor_id={{ contractor.id }}" class="btn btn-sm btn-primary">
-                        <i class="fas fa-plus"></i>
-                        مشروع جديد
-                    </a>
+    <!-- Statistics -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="text-lg font-semibold">الإحصائيات</h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 text-center">
+                    <div class="text-3xl font-bold text-blue-700">{{ projects_count }}</div>
+                    <div class="text-sm text-blue-600 mt-2">عدد المشاريع</div>
                 </div>
                 
-                <div class="table-container">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>اسم المشروع</th>
-                                <th>تاريخ البداية</th>
-                                <th>تاريخ النهاية المتوقع</th>
-                                <th>الحالة</th>
-                                <th>الإجراءات</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for project in projects %}
-                            <tr>
-                                <td>
-                                    <a href="{{ url_for('projects.detail', id=project.id) }}" class="text-blue-600 hover:underline">
-                                        {{ project.name }}
-                                    </a>
-                                </td>
-                                <td>{{ project.start_date }}</td>
-                                <td>{{ project.expected_end_date or '-' }}</td>
-                                <td>
-                                    {% if project.status == 'جاري' %}
-                                        <span class="badge badge-warning">{{ project.status }}</span>
-                                    {% elif project.status == 'مكتمل' %}
-                                        <span class="badge badge-success">{{ project.status }}</span>
-                                    {% elif project.status == 'متوقف' %}
-                                        <span class="badge badge-danger">{{ project.status }}</span>
-                                    {% else %}
-                                        <span class="badge badge-secondary">{{ project.status }}</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <a href="{{ url_for('projects.detail', id=project.id) }}" class="btn btn-sm btn-secondary">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="5" class="text-center text-gray-500">لا توجد مشاريع</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-6 text-center">
+                    <div class="text-3xl font-bold text-green-700">{{ format_currency(total_value) }}</div>
+                    <div class="text-sm text-green-600 mt-2">إجمالي قيمة المشاريع</div>
                 </div>
-            </div>
-            
-            <!-- Recent Vouchers -->
-            <div class="card mt-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">آخر السندات</h3>
                 
-                <div class="table-container">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>التاريخ</th>
-                                <th>النوع</th>
-                                <th>البيان</th>
-                                <th>المبلغ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for voucher in vouchers %}
-                            <tr>
-                                <td>{{ voucher.date }}</td>
-                                <td>
-                                    {% if voucher.type == 'receipt' %}
-                                        <span class="badge badge-success">قبض</span>
-                                    {% else %}
-                                        <span class="badge badge-danger">صرف</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ voucher.description }}</td>
-                                <td class="font-semibold {% if voucher.type == 'receipt' %}text-green-600{% else %}text-red-600{% endif %}">
-                                    {% if voucher.type == 'receipt' %}+{% else %}-{% endif %}
-                                    {{ format_currency(voucher.amount) }}
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="4" class="text-center text-gray-500">لا توجد سندات</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-6 text-center">
+                    <div class="text-3xl font-bold text-orange-700">
+                        {% if projects_count > 0 %}
+                            {{ format_currency(total_value / projects_count) }}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </div>
+                    <div class="text-sm text-orange-600 mt-2">متوسط قيمة المشروع</div>
                 </div>
             </div>
         </div>
-        
-        <!-- Info & Actions -->
-        <div>
-            <div class="card">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">معلومات المقاول</h3>
-                
-                <div class="space-y-3">
-                    <div>
-                        <label class="form-label">الاسم</label>
-                        <p class="text-lg">{{ contractor.name }}</p>
-                    </div>
-                    
-                    <div>
-                        <label class="form-label">رقم الهاتف</label>
-                        <p class="text-lg">{{ contractor.phone or '-' }}</p>
-                    </div>
-                    
-                    <div>
-                        <label class="form-label">البريد الإلكتروني</label>
-                        <p class="text-lg">{{ contractor.email or '-' }}</p>
-                    </div>
-                    
-                    <div>
-                        <label class="form-label">التخصص</label>
-                        <p class="text-lg">{{ contractor.specialty or '-' }}</p>
-                    </div>
-                    
-                    <div>
-                        <label class="form-label">العنوان</label>
-                        <p>{{ contractor.address or '-' }}</p>
-                    </div>
-                    
-                    {% if contractor.notes %}
-                    <div>
-                        <label class="form-label">ملاحظات</label>
-                        <p class="text-gray-600">{{ contractor.notes }}</p>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-            
-            <!-- Quick Actions -->
-            <div class="card mt-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">إجراءات سريعة</h3>
-                
-                <div class="space-y-2">
-                    <a href="{{ url_for('vouchers.add') }}?entity_type=contractor&entity_id={{ contractor.id }}" class="btn btn-primary w-full">
-                        <i class="fas fa-plus"></i>
-                        إضافة سند
-                    </a>
-                    <a href="{{ url_for('projects.add') }}?contractor_id={{ contractor.id }}" class="btn btn-secondary w-full">
-                        <i class="fas fa-project-diagram"></i>
-                        مشروع جديد
-                    </a>
-                </div>
-            </div>
+    </div>
+    
+    <!-- Projects (Placeholder) -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="text-lg font-semibold">المشاريع</h3>
         </div>
+        <div class="p-6 text-center text-gray-500">
+            <i class="fas fa-building text-4xl text-gray-300 mb-3 block"></i>
+            سيتم عرض المشاريع المرتبطة بالمقاول هنا
+        </div>
+    </div>
+    
+    <!-- Back Button -->
+    <div class="flex justify-center">
+        <a href="{{ url_for('contractors.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-right ml-2"></i>
+            العودة للقائمة
+        </a>
     </div>
 </div>
 {% endblock %}

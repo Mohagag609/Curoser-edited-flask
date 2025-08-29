@@ -6,6 +6,7 @@ class Broker(db.Model):
     __tablename__ = 'brokers'
     
     id = Column(String(20), primary_key=True)
+    code = Column(String(20), unique=True, nullable=False)
     name = Column(String(200), nullable=False, unique=True)
     phone = Column(String(20))
     status = Column(String(20), default='نشط')

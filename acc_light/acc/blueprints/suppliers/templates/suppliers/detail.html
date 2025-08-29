@@ -1,149 +1,180 @@
 {% extends "base.html" %}
 
-{% block title %}{{ supplier.name }} - {{ super() }}{% endblock %}
+{% block title %}{{ supplier.name }} - الموردين{% endblock %}
+{% block page_title %}تفاصيل المورد{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
+<div class="max-w-4xl mx-auto space-y-6">
     <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex justify-between items-start">
         <div>
-            <h2 class="text-3xl font-bold text-gray-900">{{ supplier.name }}</h2>
-            <p class="text-gray-600 mt-1">تفاصيل المورد</p>
+            <h2 class="text-2xl font-bold text-gray-900">{{ supplier.name }}</h2>
+            <div class="mt-2">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                    <i class="fas fa-barcode ml-2"></i>
+                    {{ supplier.code }}
+                </span>
+            </div>
         </div>
         <div class="flex gap-2">
-            <a href="{{ url_for('suppliers.edit', id=supplier.id) }}" class="btn btn-primary">
-                <i class="fas fa-edit"></i>
+            <a href="{{ url_for('suppliers.edit', id=supplier.id) }}" class="btn btn-edit">
+                <i class="fas fa-edit ml-2"></i>
                 تعديل
             </a>
-            <a href="{{ url_for('suppliers.index') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-right"></i>
-                العودة للموردين
-            </a>
+            <button type="button"
+                    data-confirm-delete="true"
+                    data-delete-url="{{ url_for('suppliers.delete', id=supplier.id) }}"
+                    data-confirm-message="هل أنت متأكد من حذف المورد '{{ supplier.name }}'؟"
+                    data-redirect-url="{{ url_for('suppliers.index') }}"
+                    class="btn btn-delete">
+                <i class="fas fa-trash ml-2"></i>
+                حذف
+            </button>
         </div>
     </div>
     
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Supplier Info & Financial Summary -->
-        <div>
-            <!-- Info -->
-            <div class="card">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">معلومات المورد</h3>
-                
-                <div class="space-y-3">
-                    <div>
-                        <label class="form-label">الاسم</label>
-                        <p class="text-lg">{{ supplier.name }}</p>
-                    </div>
-                    
-                    <div>
-                        <label class="form-label">رقم الهاتف</label>
-                        <p class="text-lg">{{ supplier.phone or '-' }}</p>
-                    </div>
-                    
-                    <div>
-                        <label class="form-label">البريد الإلكتروني</label>
-                        <p class="text-lg">{{ supplier.email or '-' }}</p>
-                    </div>
-                    
-                    <div>
-                        <label class="form-label">العنوان</label>
-                        <p>{{ supplier.address or '-' }}</p>
-                    </div>
-                    
-                    {% if supplier.notes %}
-                    <div>
-                        <label class="form-label">ملاحظات</label>
-                        <p class="text-gray-600">{{ supplier.notes }}</p>
-                    </div>
-                    {% endif %}
+    <!-- Basic Info -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="text-lg font-semibold">المعلومات الأساسية</h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="text-sm font-medium text-gray-600">الكود</label>
+                    <p class="mt-1 text-lg font-semibold text-purple-600">{{ supplier.code }}</p>
                 </div>
-            </div>
-            
-            <!-- Financial Summary -->
-            <div class="card mt-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">الملخص المالي</h3>
                 
-                <div class="space-y-3">
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600">إجمالي المدفوعات</span>
-                        <span class="text-lg font-semibold text-red-600">{{ format_currency(total_payments) }}</span>
-                    </div>
-                    
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600">إجمالي المقبوضات</span>
-                        <span class="text-lg font-semibold text-green-600">{{ format_currency(total_receipts) }}</span>
-                    </div>
-                    
-                    <hr class="my-3">
-                    
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600">الرصيد</span>
-                        <span class="text-xl font-bold {% if balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
-                            {{ format_currency(balance) }}
-                        </span>
-                    </div>
+                <div>
+                    <label class="text-sm font-medium text-gray-600">الاسم</label>
+                    <p class="mt-1 text-lg">{{ supplier.name }}</p>
                 </div>
-            </div>
-            
-            <!-- Quick Actions -->
-            <div class="card mt-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">إجراءات سريعة</h3>
                 
-                <a href="{{ url_for('vouchers.add') }}?entity_type=supplier&entity_id={{ supplier.id }}" class="btn btn-primary w-full">
-                    <i class="fas fa-plus"></i>
-                    إضافة سند
-                </a>
+                <div>
+                    <label class="text-sm font-medium text-gray-600">رقم الهاتف</label>
+                    <p class="mt-1 text-lg">
+                        {% if supplier.phone %}
+                            <a href="tel:{{ supplier.phone }}" class="text-blue-600 hover:text-blue-900">
+                                <i class="fas fa-phone ml-2"></i>{{ supplier.phone }}
+                            </a>
+                        {% else %}
+                            <span class="text-gray-400">غير محدد</span>
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <div>
+                    <label class="text-sm font-medium text-gray-600">البريد الإلكتروني</label>
+                    <p class="mt-1 text-lg">
+                        {% if supplier.email %}
+                            <a href="mailto:{{ supplier.email }}" class="text-blue-600 hover:text-blue-900">
+                                <i class="fas fa-envelope ml-2"></i>{{ supplier.email }}
+                            </a>
+                        {% else %}
+                            <span class="text-gray-400">غير محدد</span>
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="text-sm font-medium text-gray-600">العنوان</label>
+                    <p class="mt-1 text-lg">{{ supplier.address or 'غير محدد' }}</p>
+                </div>
+                
+                {% if supplier.notes %}
+                <div class="md:col-span-2">
+                    <label class="text-sm font-medium text-gray-600">ملاحظات</label>
+                    <p class="mt-1 text-gray-700 whitespace-pre-wrap">{{ supplier.notes }}</p>
+                </div>
+                {% endif %}
+                
+                <div>
+                    <label class="text-sm font-medium text-gray-600">تاريخ التسجيل</label>
+                    <p class="mt-1 text-lg">{{ supplier.created_at.strftime('%Y-%m-%d') if supplier.created_at else '-' }}</p>
+                </div>
+                
+                {% if supplier.updated_at %}
+                <div>
+                    <label class="text-sm font-medium text-gray-600">آخر تحديث</label>
+                    <p class="mt-1 text-lg">{{ supplier.updated_at.strftime('%Y-%m-%d') }}</p>
+                </div>
+                {% endif %}
             </div>
         </div>
-        
-        <!-- Vouchers -->
-        <div class="lg:col-span-2">
-            <div class="card">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">السندات</h3>
+    </div>
+    
+    <!-- Statistics -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="text-lg font-semibold">الإحصائيات</h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 text-center">
+                    <div class="text-3xl font-bold text-blue-700">{{ materials_count }}</div>
+                    <div class="text-sm text-blue-600 mt-2">عدد المواد المشتراة</div>
+                </div>
                 
-                <div class="table-container">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>التاريخ</th>
-                                <th>النوع</th>
-                                <th>البيان</th>
-                                <th>المبلغ</th>
-                                <th>الإجراءات</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for voucher in vouchers %}
-                            <tr>
-                                <td>{{ voucher.date }}</td>
-                                <td>
-                                    {% if voucher.type == 'receipt' %}
-                                        <span class="badge badge-success">قبض</span>
-                                    {% else %}
-                                        <span class="badge badge-danger">صرف</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ voucher.description }}</td>
-                                <td class="font-semibold {% if voucher.type == 'receipt' %}text-green-600{% else %}text-red-600{% endif %}">
-                                    {% if voucher.type == 'receipt' %}+{% else %}-{% endif %}
-                                    {{ format_currency(voucher.amount) }}
-                                </td>
-                                <td>
-                                    <a href="{{ url_for('vouchers.detail', id=voucher.id) }}" class="btn btn-sm btn-secondary">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="5" class="text-center text-gray-500">لا توجد سندات</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-6 text-center">
+                    <div class="text-3xl font-bold text-green-700">{{ format_currency(total_amount) }}</div>
+                    <div class="text-sm text-green-600 mt-2">إجمالي المشتريات</div>
+                </div>
+                
+                <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-6 text-center">
+                    <div class="text-3xl font-bold text-purple-700">
+                        {% if materials_count > 0 %}
+                            {{ format_currency(total_amount / materials_count) }}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </div>
+                    <div class="text-sm text-purple-600 mt-2">متوسط سعر المواد</div>
                 </div>
             </div>
         </div>
+    </div>
+    
+    <!-- Recent Materials -->
+    {% if supplier.project_materials.count() > 0 %}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="text-lg font-semibold">آخر المواد المشتراة</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المادة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المشروع</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الكمية</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">السعر</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجمالي</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التاريخ</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for pm in supplier.project_materials.order_by('created_at desc').limit(5) %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">{{ pm.material.name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">{{ pm.project.name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">{{ pm.quantity }} {{ pm.material.unit }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">{{ format_currency(pm.unit_price) }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">{{ format_currency(pm.total_amount) }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ pm.created_at.strftime('%Y-%m-%d') if pm.created_at else '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Back Button -->
+    <div class="flex justify-center">
+        <a href="{{ url_for('suppliers.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-right ml-2"></i>
+            العودة للقائمة
+        </a>
     </div>
 </div>
 {% endblock %}

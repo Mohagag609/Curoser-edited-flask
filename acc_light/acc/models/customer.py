@@ -7,6 +7,7 @@ class Customer(db.Model):
     __tablename__ = 'customers'
     
     id = Column(String(20), primary_key=True)
+    code = Column(String(20), unique=True, nullable=False)  # كود العميل
     name = Column(String(200), nullable=False)
     phone = Column(String(20), nullable=True)  # جعل رقم الهاتف اختياري
     national_id = Column(String(20))

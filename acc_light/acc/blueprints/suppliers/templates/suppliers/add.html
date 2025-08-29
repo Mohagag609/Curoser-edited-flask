@@ -1,56 +1,79 @@
 {% extends "base.html" %}
 
-{% block title %}إضافة مورد - {{ super() }}{% endblock %}
+{% block title %}إضافة مورد جديد{% endblock %}
+{% block page_title %}إضافة مورد جديد{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-3xl font-bold text-gray-900">إضافة مورد جديد</h2>
-        <a href="{{ url_for('suppliers.index') }}" class="btn btn-secondary">
-            <i class="fas fa-arrow-right"></i>
-            العودة للموردين
-        </a>
-    </div>
-    
-    <!-- Form -->
-    <div class="card max-w-3xl mx-auto">
-        <form method="post" action="{{ url_for('suppliers.add') }}">
+<div class="max-w-2xl mx-auto">
+    <div class="card">
+        <form method="post" action="{{ url_for('suppliers.add') }}" 
+              data-ajax="true" 
+              data-loading-message="جاري إضافة المورد..."
+              data-success-message="تم إضافة المورد بنجاح"
+              data-error-message="فشل في إضافة المورد"
+              data-reset-on-success="true">
+            
+            <!-- سيتم إنشاء الكود تلقائياً -->
+            <div class="mb-4 p-3 bg-purple-50 rounded-lg text-center">
+                <i class="fas fa-info-circle text-purple-600 ml-2"></i>
+                <span class="text-purple-700">سيتم إنشاء كود المورد تلقائياً عند الحفظ</span>
+            </div>
+            
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="md:col-span-2">
-                    <label class="form-label">اسم المورد <span class="text-red-500">*</span></label>
-                    <input type="text" name="name" required class="form-input" autofocus>
+                    <label class="form-label" for="name">اسم المورد *</label>
+                    <input type="text" 
+                           id="name" 
+                           name="name" 
+                           class="form-input" 
+                           required
+                           autofocus>
                 </div>
                 
                 <div>
-                    <label class="form-label">رقم الهاتف</label>
-                    <input type="text" name="phone" class="form-input" dir="ltr">
+                    <label class="form-label" for="phone">رقم الهاتف</label>
+                    <input type="text" 
+                           id="phone" 
+                           name="phone" 
+                           class="form-input"
+                           placeholder="اختياري">
                 </div>
                 
                 <div>
-                    <label class="form-label">البريد الإلكتروني</label>
-                    <input type="email" name="email" class="form-input" dir="ltr">
+                    <label class="form-label" for="email">البريد الإلكتروني</label>
+                    <input type="email" 
+                           id="email" 
+                           name="email" 
+                           class="form-input"
+                           placeholder="اختياري">
                 </div>
                 
                 <div class="md:col-span-2">
-                    <label class="form-label">العنوان</label>
-                    <textarea name="address" rows="2" class="form-input"></textarea>
+                    <label class="form-label" for="address">العنوان</label>
+                    <input type="text" 
+                           id="address" 
+                           name="address" 
+                           class="form-input">
                 </div>
                 
                 <div class="md:col-span-2">
-                    <label class="form-label">ملاحظات</label>
-                    <textarea name="notes" rows="3" class="form-input"></textarea>
+                    <label class="form-label" for="notes">ملاحظات</label>
+                    <textarea id="notes" 
+                              name="notes" 
+                              rows="3" 
+                              class="form-input"></textarea>
                 </div>
             </div>
             
-            <div class="mt-6 flex justify-end gap-2">
+            <div class="mt-6 flex gap-3">
+                <button type="submit" class="btn btn-add">
+                    <i class="fas fa-save ml-2"></i>
+                    حفظ المورد
+                </button>
                 <a href="{{ url_for('suppliers.index') }}" class="btn btn-secondary">
+                    <i class="fas fa-times ml-2"></i>
                     إلغاء
                 </a>
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i>
-                    حفظ
-                </button>
             </div>
         </form>
     </div>

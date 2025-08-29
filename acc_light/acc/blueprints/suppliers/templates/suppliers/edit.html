@@ -1,56 +1,80 @@
 {% extends "base.html" %}
 
-{% block title %}تعديل {{ supplier.name }} - {{ super() }}{% endblock %}
+{% block title %}تعديل المورد - {{ supplier.name }}{% endblock %}
+{% block page_title %}تعديل المورد{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-3xl font-bold text-gray-900">تعديل بيانات المورد</h2>
-        <a href="{{ url_for('suppliers.detail', id=supplier.id) }}" class="btn btn-secondary">
-            <i class="fas fa-arrow-right"></i>
-            العودة للتفاصيل
-        </a>
-    </div>
-    
-    <!-- Form -->
-    <div class="card max-w-3xl mx-auto">
-        <form method="post" action="{{ url_for('suppliers.edit', id=supplier.id) }}">
+<div class="max-w-2xl mx-auto">
+    <div class="card">
+        <form method="post" action="{{ url_for('suppliers.edit', id=supplier.id) }}"
+              data-ajax="true" 
+              data-loading-message="جاري تحديث المورد..."
+              data-success-message="تم تحديث المورد بنجاح"
+              data-error-message="فشل في تحديث المورد">
+            
+            <!-- عرض الكود -->
+            <div class="mb-4 p-3 bg-purple-50 rounded-lg text-center">
+                <span class="text-purple-700 font-semibold">كود المورد: </span>
+                <span class="text-purple-900 font-bold text-lg">{{ supplier.code }}</span>
+            </div>
+            
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="md:col-span-2">
-                    <label class="form-label">اسم المورد <span class="text-red-500">*</span></label>
-                    <input type="text" name="name" value="{{ supplier.name }}" required class="form-input" autofocus>
+                    <label class="form-label" for="name">اسم المورد *</label>
+                    <input type="text" 
+                           id="name" 
+                           name="name" 
+                           value="{{ supplier.name }}"
+                           class="form-input" 
+                           required
+                           autofocus>
                 </div>
                 
                 <div>
-                    <label class="form-label">رقم الهاتف</label>
-                    <input type="text" name="phone" value="{{ supplier.phone or '' }}" class="form-input" dir="ltr">
+                    <label class="form-label" for="phone">رقم الهاتف</label>
+                    <input type="text" 
+                           id="phone" 
+                           name="phone" 
+                           value="{{ supplier.phone or '' }}"
+                           class="form-input">
                 </div>
                 
                 <div>
-                    <label class="form-label">البريد الإلكتروني</label>
-                    <input type="email" name="email" value="{{ supplier.email or '' }}" class="form-input" dir="ltr">
+                    <label class="form-label" for="email">البريد الإلكتروني</label>
+                    <input type="email" 
+                           id="email" 
+                           name="email" 
+                           value="{{ supplier.email or '' }}"
+                           class="form-input">
                 </div>
                 
                 <div class="md:col-span-2">
-                    <label class="form-label">العنوان</label>
-                    <textarea name="address" rows="2" class="form-input">{{ supplier.address or '' }}</textarea>
+                    <label class="form-label" for="address">العنوان</label>
+                    <input type="text" 
+                           id="address" 
+                           name="address" 
+                           value="{{ supplier.address or '' }}"
+                           class="form-input">
                 </div>
                 
                 <div class="md:col-span-2">
-                    <label class="form-label">ملاحظات</label>
-                    <textarea name="notes" rows="3" class="form-input">{{ supplier.notes or '' }}</textarea>
+                    <label class="form-label" for="notes">ملاحظات</label>
+                    <textarea id="notes" 
+                              name="notes" 
+                              rows="3" 
+                              class="form-input">{{ supplier.notes or '' }}</textarea>
                 </div>
             </div>
             
-            <div class="mt-6 flex justify-end gap-2">
-                <a href="{{ url_for('suppliers.detail', id=supplier.id) }}" class="btn btn-secondary">
-                    إلغاء
-                </a>
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i>
+            <div class="mt-6 flex gap-3">
+                <button type="submit" class="btn btn-edit">
+                    <i class="fas fa-save ml-2"></i>
                     حفظ التعديلات
                 </button>
+                <a href="{{ url_for('suppliers.detail', id=supplier.id) }}" class="btn btn-secondary">
+                    <i class="fas fa-times ml-2"></i>
+                    إلغاء
+                </a>
             </div>
         </form>
     </div>

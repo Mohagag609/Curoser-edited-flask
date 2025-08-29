@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}العملاء{% endblock %}
-{% block page_title %}العملاء{% endblock %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
     <!-- Header with Actions -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div class="flex flex-wrap gap-3">
-            <a href="{{ url_for('customers.add') }}" class="btn btn-add">
+            <a href="{{ url_for(entity_name + '.add') }}" class="btn btn-add">
                 <i class="fas fa-plus ml-2"></i>
-                إضافة عميل جديد
+                {{ add_button_text }}
             </a>
             
             <!-- Export Dropdown -->
@@ -23,15 +23,15 @@
                 <div x-show="open" @click.away="open = false" x-transition
                      class="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
                     <div class="py-1">
-                        <a href="{{ url_for('customers.export', format='excel') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <a href="{{ url_for(entity_name + '.export', format='excel') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <i class="fas fa-file-excel ml-2 text-green-600"></i>
                             Excel
                         </a>
-                        <a href="{{ url_for('customers.export', format='csv') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <a href="{{ url_for(entity_name + '.export', format='csv') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <i class="fas fa-file-csv ml-2 text-blue-600"></i>
                             CSV
                         </a>
-                        <a href="{{ url_for('customers.export', format='json') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <a href="{{ url_for(entity_name + '.export', format='json') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <i class="fas fa-file-code ml-2 text-purple-600"></i>
                             JSON
                         </a>
@@ -39,25 +39,27 @@
                 </div>
             </div>
             
-            <a href="{{ url_for('customers.import_data') }}" class="btn btn-import">
+            <a href="{{ url_for(entity_name + '.import_data') }}" class="btn btn-import">
                 <i class="fas fa-upload ml-2"></i>
                 استيراد
             </a>
             
-            <a href="{{ url_for('customers.report') }}" class="btn btn-report">
+            {% if has_report %}
+            <a href="{{ url_for(entity_name + '.report') }}" class="btn btn-report">
                 <i class="fas fa-chart-bar ml-2"></i>
                 تقارير
             </a>
+            {% endif %}
         </div>
     </div>
     
     <!-- Search and Filters -->
     <div class="card">
         <div class="p-4">
-            <form method="GET" action="{{ url_for('customers.index') }}" class="flex flex-col sm:flex-row gap-4">
+            <form method="GET" action="{{ url_for(entity_name + '.index') }}" class="flex flex-col sm:flex-row gap-4">
                 <div class="flex-1">
                     <input type="text" name="q" value="{{ q }}" 
-                           placeholder="بحث بالاسم، الهاتف، الرقم القومي، أو العنوان..."
+                           placeholder="{{ search_placeholder }}"
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                 </div>
                 <button type="submit" class="btn btn-view">
@@ -65,7 +67,7 @@
                     بحث
                 </button>
                 {% if q %}
-                <a href="{{ url_for('customers.index') }}" class="btn btn-secondary">
+                <a href="{{ url_for(entity_name + '.index') }}" class="btn btn-secondary">
                     <i class="fas fa-times ml-2"></i>
                     إلغاء
                 </a>
@@ -74,64 +76,66 @@
         </div>
     </div>
     
-    <!-- Customers Table -->
+    <!-- Data Table -->
     <div class="card overflow-hidden">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gradient-to-l from-gray-50 to-gray-100">
                     <tr>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الكود</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الاسم</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الهاتف</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الرقم القومي</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الحالة</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الإجراءات</th>
+                        {% for column in columns %}
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                            {{ column.label }}
+                        </th>
+                        {% endfor %}
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                            الإجراءات
+                        </th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    {% for customer in customers %}
+                    {% for item in items %}
                     <tr class="hover:bg-gray-50 transition-colors duration-200">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
-                            <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded-md">{{ customer.code }}</span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <a href="{{ url_for('customers.detail', id=customer.id) }}" 
-                               class="text-blue-600 hover:text-blue-900 font-medium">
-                                {{ customer.name }}
-                            </a>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {% if customer.phone %}
-                                <a href="tel:{{ customer.phone }}" class="hover:text-blue-600">{{ customer.phone }}</a>
+                        {% for column in columns %}
+                        <td class="px-6 py-4 whitespace-nowrap text-sm {{ column.class }}">
+                            {% if column.type == 'link' %}
+                                <a href="{{ url_for(entity_name + '.detail', id=item.id) }}" 
+                                   class="text-blue-600 hover:text-blue-900 font-medium">
+                                    {{ item[column.key] }}
+                                </a>
+                            {% elif column.type == 'status' %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                    {% if item[column.key] == 'نشط' %}bg-green-100 text-green-800
+                                    {% elif item[column.key] == 'غير نشط' %}bg-red-100 text-red-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ item[column.key] }}
+                                </span>
+                            {% elif column.type == 'currency' %}
+                                <span class="text-green-600 font-semibold">{{ format_currency(item[column.key] or 0) }}</span>
+                            {% elif column.type == 'date' %}
+                                {{ item[column.key].strftime('%Y-%m-%d') if item[column.key] else '-' }}
                             {% else %}
-                                <span class="text-gray-400">-</span>
+                                {{ item[column.key] or '-' }}
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ customer.national_id or '-' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                {% if customer.status == 'نشط' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
-                                {{ customer.status }}
-                            </span>
-                        </td>
+                        {% endfor %}
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex gap-2">
-                                <a href="{{ url_for('customers.detail', id=customer.id) }}" 
+                                {% if has_detail %}
+                                <a href="{{ url_for(entity_name + '.detail', id=item.id) }}" 
                                    class="btn-icon btn-icon-view"
                                    title="عرض">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                <a href="{{ url_for('customers.edit', id=customer.id) }}" 
+                                {% endif %}
+                                <a href="{{ url_for(entity_name + '.edit', id=item.id) }}" 
                                    class="btn-icon btn-icon-edit"
                                    title="تعديل">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 <button type="button"
                                         data-confirm-delete="true"
-                                        data-delete-url="{{ url_for('customers.delete', id=customer.id) }}"
-                                        data-confirm-message="هل أنت متأكد من حذف العميل '{{ customer.name }}'؟"
+                                        data-delete-url="{{ url_for(entity_name + '.delete', id=item.id) }}"
+                                        data-confirm-message="هل أنت متأكد من حذف {{ item.name }}؟"
                                         data-remove-element="tr"
                                         class="btn-icon btn-icon-delete"
                                         title="حذف">
@@ -142,9 +146,9 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6" class="px-6 py-10 text-center text-gray-500">
-                            <i class="fas fa-users text-4xl text-gray-300 mb-3 block"></i>
-                            لا يوجد عملاء حالياً
+                        <td colspan="{{ columns|length + 1 }}" class="px-6 py-10 text-center text-gray-500">
+                            <i class="{{ empty_icon }} text-4xl text-gray-300 mb-3 block"></i>
+                            {{ empty_message }}
                         </td>
                     </tr>
                     {% endfor %}
@@ -153,16 +157,16 @@
         </div>
         
         <!-- Pagination -->
-        {% if pagination.pages > 1 %}
+        {% if pagination and pagination.pages > 1 %}
         <div class="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
             <div class="flex-1 flex justify-between sm:hidden">
                 {% if pagination.has_prev %}
-                <a href="{{ url_for('customers.index', page=pagination.prev_num, q=q) }}" class="btn-secondary">
+                <a href="{{ url_for(entity_name + '.index', page=pagination.prev_num, q=q) }}" class="btn btn-secondary">
                     السابق
                 </a>
                 {% endif %}
                 {% if pagination.has_next %}
-                <a href="{{ url_for('customers.index', page=pagination.next_num, q=q) }}" class="btn-primary mr-auto">
+                <a href="{{ url_for(entity_name + '.index', page=pagination.next_num, q=q) }}" class="btn btn-primary mr-auto">
                     التالي
                 </a>
                 {% endif %}
@@ -178,10 +182,10 @@
                 <div>
                     <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
                         {% if pagination.has_prev %}
-                        <a href="{{ url_for('customers.index', page=1, q=q) }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <a href="{{ url_for(entity_name + '.index', page=1, q=q) }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                             <i class="fas fa-angle-double-right"></i>
                         </a>
-                        <a href="{{ url_for('customers.index', page=pagination.prev_num, q=q) }}" class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <a href="{{ url_for(entity_name + '.index', page=pagination.prev_num, q=q) }}" class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                             <i class="fas fa-angle-right"></i>
                         </a>
                         {% endif %}
@@ -189,7 +193,7 @@
                         {% for page_num in pagination.iter_pages(left_edge=1, left_current=1, right_current=1, right_edge=1) %}
                             {% if page_num %}
                                 {% if page_num != pagination.page %}
-                                <a href="{{ url_for('customers.index', page=page_num, q=q) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                <a href="{{ url_for(entity_name + '.index', page=page_num, q=q) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
                                     {{ page_num }}
                                 </a>
                                 {% else %}
@@ -203,10 +207,10 @@
                         {% endfor %}
                         
                         {% if pagination.has_next %}
-                        <a href="{{ url_for('customers.index', page=pagination.next_num, q=q) }}" class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <a href="{{ url_for(entity_name + '.index', page=pagination.next_num, q=q) }}" class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                             <i class="fas fa-angle-left"></i>
                         </a>
-                        <a href="{{ url_for('customers.index', page=pagination.pages, q=q) }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <a href="{{ url_for(entity_name + '.index', page=pagination.pages, q=q) }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                             <i class="fas fa-angle-double-left"></i>
                         </a>
                         {% endif %}
@@ -219,8 +223,7 @@
 </div>
 
 <!-- Floating Action Button -->
-<a href="{{ url_for('customers.add') }}" class="fab">
+<a href="{{ url_for(entity_name + '.add') }}" class="fab">
     <i class="fas fa-plus text-2xl"></i>
 </a>
-
 {% endblock %}

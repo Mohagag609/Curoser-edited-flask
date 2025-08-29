@@ -6,6 +6,7 @@ class Supplier(db.Model):
     __tablename__ = 'suppliers'
     
     id = Column(String(20), primary_key=True)
+    code = Column(String(20), unique=True, nullable=False)
     name = Column(String(200), nullable=False)
     phone = Column(String(20))
     email = Column(String(100))

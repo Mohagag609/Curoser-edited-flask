@@ -6,6 +6,7 @@ class Material(db.Model):
     __tablename__ = 'materials'
     
     id = Column(String(20), primary_key=True)
+    code = Column(String(20), unique=True, nullable=False)
     name = Column(String(200), nullable=False)
     code = Column(String(50), unique=True)
     unit = Column(String(50))  # متر، كيلو، قطعة

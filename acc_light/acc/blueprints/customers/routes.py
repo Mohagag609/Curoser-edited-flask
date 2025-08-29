@@ -7,6 +7,7 @@ from sqlalchemy import or_, func
 from .simple_export import simple_export_json, simple_export_csv, simple_import_json, simple_import_csv
 from .excel_export import export_excel_html, export_report_excel
 from .simple_excel_reader import read_excel_simple, parse_excel_data
+from acc.services.code_generator import generate_customer_code
 
 
 @bp.route('/')
@@ -62,9 +63,10 @@ def add():
                 flash('⚠️ رقم الهاتف طويل جداً (الحد الأقصى 20 رقم)', 'warning')
                 return redirect(url_for('customers.add'))
             
-            # Create new customer
+            # Create new customer with auto-generated code
             customer = Customer(
                 id=generate_uid('C'),
+                code=generate_customer_code(),
                 name=name,
                 phone=phone,
                 national_id=national_id,

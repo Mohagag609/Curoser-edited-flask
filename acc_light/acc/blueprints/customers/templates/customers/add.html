@@ -15,6 +15,12 @@
               data-success-message="تم إضافة العميل بنجاح"
               data-error-message="فشل في إضافة العميل"
               data-reset-on-success="true">
+            <!-- سيتم إنشاء الكود تلقائياً -->
+            <div class="mb-4 p-3 bg-blue-50 rounded-lg text-center">
+                <i class="fas fa-info-circle text-blue-600 ml-2"></i>
+                <span class="text-blue-700">سيتم إنشاء كود العميل تلقائياً عند الحفظ</span>
+            </div>
+            
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label class="form-label" for="name">اسم العميل *</label>
@@ -69,8 +75,14 @@
             </div>
             
             <div class="mt-6 flex gap-3">
-                <button type="submit" class="btn btn-primary">حفظ</button>
-                <a href="{{ url_for('customers.index') }}" class="btn btn-secondary">إلغاء</a>
+                <button type="submit" class="btn btn-add">
+                    <i class="fas fa-save ml-2"></i>
+                    حفظ العميل
+                </button>
+                <a href="{{ url_for('customers.index') }}" class="btn btn-secondary">
+                    <i class="fas fa-times ml-2"></i>
+                    إلغاء
+                </a>
             </div>
         </form>
     </div>

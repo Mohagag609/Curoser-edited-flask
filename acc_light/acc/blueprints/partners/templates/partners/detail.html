@@ -1,248 +1,202 @@
 {% extends "base.html" %}
 
-{% block title %}{{ partner.name }} - {{ super() }}{% endblock %}
+{% block title %}{{ partner.name }} - الشركاء{% endblock %}
+{% block page_title %}تفاصيل الشريك{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
+<div class="max-w-4xl mx-auto space-y-6">
     <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex justify-between items-start">
         <div>
-            <h2 class="text-3xl font-bold text-gray-900">{{ partner.name }}</h2>
-            <p class="text-gray-600 mt-1">تفاصيل الشريك</p>
+            <h2 class="text-2xl font-bold text-gray-900">{{ partner.name }}</h2>
+            <div class="mt-2">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+                    <i class="fas fa-barcode ml-2"></i>
+                    {{ partner.code }}
+                </span>
+            </div>
         </div>
         <div class="flex gap-2">
-            <a href="{{ url_for('partners.edit', id=partner.id) }}" class="btn btn-primary">
-                <i class="fas fa-edit"></i>
+            <a href="{{ url_for('partners.edit', id=partner.id) }}" class="btn btn-edit">
+                <i class="fas fa-edit ml-2"></i>
                 تعديل
             </a>
-            <a href="{{ url_for('partners.index') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-right"></i>
-                العودة للشركاء
-            </a>
+            <button type="button"
+                    data-confirm-delete="true"
+                    data-delete-url="{{ url_for('partners.delete', id=partner.id) }}"
+                    data-confirm-message="هل أنت متأكد من حذف الشريك '{{ partner.name }}'؟"
+                    data-redirect-url="{{ url_for('partners.index') }}"
+                    class="btn btn-delete">
+                <i class="fas fa-trash ml-2"></i>
+                حذف
+            </button>
         </div>
     </div>
     
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Partner Info -->
-        <div>
-            <div class="card">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">معلومات الشريك</h3>
-                
-                <div class="space-y-3">
-                    <div>
-                        <label class="form-label">الاسم</label>
-                        <p class="text-lg">{{ partner.name }}</p>
-                    </div>
-                    
-                    <div>
-                        <label class="form-label">رقم الهاتف</label>
-                        <p class="text-lg">{{ partner.phone or '-' }}</p>
-                    </div>
-                    
-                    <div>
-                        <label class="form-label">الرقم القومي</label>
-                        <p class="text-lg">{{ partner.national_id or '-' }}</p>
-                    </div>
-                    
-                    <div>
-                        <label class="form-label">العنوان</label>
-                        <p>{{ partner.address or '-' }}</p>
-                    </div>
-                    
-                    {% if partner.notes %}
-                    <div>
-                        <label class="form-label">ملاحظات</label>
-                        <p class="text-gray-600">{{ partner.notes }}</p>
-                    </div>
-                    {% endif %}
+    <!-- Basic Info -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="text-lg font-semibold">المعلومات الأساسية</h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="text-sm font-medium text-gray-600">الكود</label>
+                    <p class="mt-1 text-lg font-semibold text-indigo-600">{{ partner.code }}</p>
                 </div>
-            </div>
-            
-            <!-- Financial Summary -->
-            <div class="card mt-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">الملخص المالي</h3>
                 
-                <div class="space-y-3">
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600">إجمالي النسب</span>
-                        <span class="text-lg font-semibold">{{ total_percentage }}%</span>
-                    </div>
-                    
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600">له (دائن)</span>
-                        <span class="text-lg font-semibold text-green-600">{{ format_currency(total_owed) }}</span>
-                    </div>
-                    
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600">عليه (مدين)</span>
-                        <span class="text-lg font-semibold text-red-600">{{ format_currency(total_due) }}</span>
-                    </div>
-                    
-                    <hr class="my-3">
-                    
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600">الصافي</span>
-                        <span class="text-xl font-bold {% if total_owed - total_due >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
-                            {{ format_currency(total_owed - total_due) }}
-                        </span>
-                    </div>
+                <div>
+                    <label class="text-sm font-medium text-gray-600">الاسم</label>
+                    <p class="mt-1 text-lg">{{ partner.name }}</p>
+                </div>
+                
+                <div>
+                    <label class="text-sm font-medium text-gray-600">رقم الهاتف</label>
+                    <p class="mt-1 text-lg">
+                        {% if partner.phone %}
+                            <a href="tel:{{ partner.phone }}" class="text-blue-600 hover:text-blue-900">
+                                <i class="fas fa-phone ml-2"></i>{{ partner.phone }}
+                            </a>
+                        {% else %}
+                            <span class="text-gray-400">غير محدد</span>
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <div>
+                    <label class="text-sm font-medium text-gray-600">الرقم القومي</label>
+                    <p class="mt-1 text-lg">{{ partner.national_id or 'غير محدد' }}</p>
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="text-sm font-medium text-gray-600">العنوان</label>
+                    <p class="mt-1 text-lg">{{ partner.address or 'غير محدد' }}</p>
+                </div>
+                
+                {% if partner.notes %}
+                <div class="md:col-span-2">
+                    <label class="text-sm font-medium text-gray-600">ملاحظات</label>
+                    <p class="mt-1 text-gray-700 whitespace-pre-wrap">{{ partner.notes }}</p>
+                </div>
+                {% endif %}
+                
+                <div>
+                    <label class="text-sm font-medium text-gray-600">تاريخ التسجيل</label>
+                    <p class="mt-1 text-lg">{{ partner.created_at.strftime('%Y-%m-%d') if partner.created_at else '-' }}</p>
+                </div>
+                
+                {% if partner.updated_at %}
+                <div>
+                    <label class="text-sm font-medium text-gray-600">آخر تحديث</label>
+                    <p class="mt-1 text-lg">{{ partner.updated_at.strftime('%Y-%m-%d') }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistics -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="text-lg font-semibold">الإحصائيات</h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 text-center">
+                    <div class="text-3xl font-bold text-blue-700">{{ total_units }}</div>
+                    <div class="text-sm text-blue-600 mt-2">عدد الوحدات</div>
+                </div>
+                
+                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-6 text-center">
+                    <div class="text-3xl font-bold text-green-700">{{ total_shares }}%</div>
+                    <div class="text-sm text-green-600 mt-2">إجمالي النسب</div>
+                </div>
+                
+                <div class="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-6 text-center">
+                    <div class="text-3xl font-bold text-red-700">{{ format_currency(total_debts) }}</div>
+                    <div class="text-sm text-red-600 mt-2">إجمالي الديون</div>
                 </div>
             </div>
         </div>
-        
-        <!-- Units & Groups -->
-        <div class="lg:col-span-2">
-            <!-- Units -->
-            <div class="card">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">الوحدات</h3>
-                
-                <div class="table-container">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>الوحدة</th>
-                                <th>النسبة</th>
-                                <th>القيمة</th>
-                                <th>الحالة</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for up in unit_partners %}
-                            <tr>
-                                <td>
-                                    <a href="{{ url_for('units.detail', id=up.unit_id) }}" class="text-blue-600 hover:underline">
-                                        {{ up.unit.get_display_name() }}
-                                    </a>
-                                </td>
-                                <td>{{ up.percentage }}%</td>
-                                <td>{{ format_currency((up.unit.total_price or 0) * up.percentage / 100) }}</td>
-                                <td>
-                                    {% if up.unit.status == 'متاحة' %}
-                                        <span class="badge badge-success">{{ up.unit.status }}</span>
-                                    {% elif up.unit.status == 'محجوزة' %}
-                                        <span class="badge badge-warning">{{ up.unit.status }}</span>
-                                    {% else %}
-                                        <span class="badge badge-secondary">{{ up.unit.status }}</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="4" class="text-center text-gray-500">لا توجد وحدات</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <!-- Groups -->
-            <div class="card mt-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">المجموعات</h3>
-                
-                <div class="table-container">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>المجموعة</th>
-                                <th>النسبة</th>
-                                <th>إجمالي نسب المجموعة</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for membership in group_memberships %}
-                            <tr>
-                                <td>
-                                    <a href="{{ url_for('partners.group_detail', id=membership.group_id) }}" class="text-blue-600 hover:underline">
-                                        {{ membership.group.name }}
-                                    </a>
-                                </td>
-                                <td>{{ membership.percentage }}%</td>
-                                <td>{{ membership.group.get_total_percentage() }}%</td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="3" class="text-center text-gray-500">لا توجد مجموعات</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <!-- Debts -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                <!-- Debts Owed (له) -->
-                <div class="card">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">ديون له (دائن)</h3>
-                    
-                    <div class="space-y-3">
-                        {% for debt in debts_owed %}
-                        <div class="border rounded-lg p-3">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <p class="font-medium">
-                                        <a href="{{ url_for('partners.detail', id=debt.debtor_id) }}" class="text-blue-600 hover:underline">
-                                            {{ debt.debtor.name }}
-                                        </a>
-                                    </p>
-                                    {% if debt.unit %}
-                                    <p class="text-sm text-gray-600">
-                                        الوحدة: {{ debt.unit.get_display_name() }}
-                                    </p>
-                                    {% endif %}
-                                    {% if debt.description %}
-                                    <p class="text-sm text-gray-500">{{ debt.description }}</p>
-                                    {% endif %}
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-semibold text-green-600">{{ format_currency(debt.remaining_amount) }}</p>
-                                    <p class="text-xs text-gray-500">من {{ format_currency(debt.amount) }}</p>
-                                </div>
-                            </div>
-                        </div>
-                        {% else %}
-                        <p class="text-center text-gray-500">لا توجد ديون</p>
-                        {% endfor %}
-                    </div>
-                </div>
-                
-                <!-- Debts Due (عليه) -->
-                <div class="card">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">ديون عليه (مدين)</h3>
-                    
-                    <div class="space-y-3">
-                        {% for debt in debts_due %}
-                        <div class="border rounded-lg p-3">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <p class="font-medium">
-                                        <a href="{{ url_for('partners.detail', id=debt.creditor_id) }}" class="text-blue-600 hover:underline">
-                                            {{ debt.creditor.name }}
-                                        </a>
-                                    </p>
-                                    {% if debt.unit %}
-                                    <p class="text-sm text-gray-600">
-                                        الوحدة: {{ debt.unit.get_display_name() }}
-                                    </p>
-                                    {% endif %}
-                                    {% if debt.description %}
-                                    <p class="text-sm text-gray-500">{{ debt.description }}</p>
-                                    {% endif %}
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-semibold text-red-600">{{ format_currency(debt.remaining_amount) }}</p>
-                                    <p class="text-xs text-gray-500">من {{ format_currency(debt.amount) }}</p>
-                                </div>
-                            </div>
-                        </div>
-                        {% else %}
-                        <p class="text-center text-gray-500">لا توجد ديون</p>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
+    </div>
+    
+    <!-- Recent Units -->
+    {% if recent_units %}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="text-lg font-semibold">آخر الوحدات</h3>
         </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الوحدة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">النسبة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">تاريخ الإضافة</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for unit_partner in recent_units %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{{ url_for('units.detail', id=unit_partner.unit.id) }}" 
+                               class="text-blue-600 hover:text-blue-900">
+                                {{ unit_partner.unit.name }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full">{{ unit_partner.share_percent }}%</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ unit_partner.created_at.strftime('%Y-%m-%d') if unit_partner.created_at else '-' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Debts -->
+    {% if debts %}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="text-lg font-semibold">الديون</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المبلغ</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الوصف</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التاريخ</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for debt in debts %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-red-600">
+                            {{ format_currency(debt.amount) }}
+                        </td>
+                        <td class="px-6 py-4 text-sm">{{ debt.description }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ debt.created_at.strftime('%Y-%m-%d') if debt.created_at else '-' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Back Button -->
+    <div class="flex justify-center">
+        <a href="{{ url_for('partners.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-right ml-2"></i>
+            العودة للقائمة
+        </a>
     </div>
 </div>
 {% endblock %}
