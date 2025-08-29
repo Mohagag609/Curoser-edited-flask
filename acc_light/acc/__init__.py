@@ -15,7 +15,7 @@ def create_app(config_class=Config):
     @app.context_processor
     def inject_globals():
         from acc.services.utils import format_currency
-        from acc.services.project_context import get_current_project
+        from acc.services.project_selection import get_current_project
         from acc.models import Project
         
         current_project = get_current_project()
@@ -29,6 +29,9 @@ def create_app(config_class=Config):
         }
     
     # Register blueprints
+    from acc.blueprints.main import bp as main_bp
+    app.register_blueprint(main_bp)
+    
     from acc.blueprints.dashboard import bp as dashboard_bp
     app.register_blueprint(dashboard_bp)
     
@@ -76,5 +79,8 @@ def create_app(config_class=Config):
     
     from acc.blueprints.settlement import bp as settlement_bp
     app.register_blueprint(settlement_bp, url_prefix='/settlement')
+    
+    from acc.blueprints.transfers import bp as transfers_bp
+    app.register_blueprint(transfers_bp, url_prefix='/transfers')
     
     return app

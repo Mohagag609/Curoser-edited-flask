@@ -5,9 +5,11 @@ from acc.blueprints.dashboard import bp
 from acc.extensions import db
 from acc.models import Unit, Contract, Voucher, Installment, Customer, Partner
 from acc.services.utils import format_currency
+from acc.services.project_selection import project_required
 
 
 @bp.route('/')
+@project_required
 def index():
     # Get filter dates
     from_date = request.args.get('from_date')

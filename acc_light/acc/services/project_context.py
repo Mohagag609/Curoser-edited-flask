@@ -1,41 +1,28 @@
 from flask import session, g
 from acc.models import Project
+from acc.services.project_selection import (
+    get_current_project_id as get_selected_project_id,
+    set_current_project as set_selected_project,
+    get_current_project as get_selected_project
+)
 
 SESSION_PROJECT_KEY = 'current_project_id'
 
 def get_current_project_id():
     """Get the ID of the current project from the session."""
-    return session.get(SESSION_PROJECT_KEY)
+    # Use the new selection system
+    return get_selected_project_id()
 
 def get_current_project():
     """Get the current project from session"""
-    project_id = get_current_project_id()
-    
-    if not project_id:
-        # Try to get default project
-        default_project = Project.query.filter_by(is_default=True).first()
-        if default_project:
-            session['current_project_id'] = default_project.id
-            session['current_project_name'] = default_project.name
-            session['current_project_code'] = default_project.code
-        return default_project
-    
-    # Get project from cache or database
-    if not hasattr(g, 'current_project'):
-        g.current_project = Project.query.get(session['current_project_id'])
-    
-    return g.current_project
+    # Use the new selection system
+    return get_selected_project()
 
 def set_current_project(project_id):
     """Set the current project in session"""
-    project = Project.query.get(project_id)
-    if project:
-        session['current_project_id'] = project.id
-        session['current_project_name'] = project.name
-        session['current_project_code'] = project.code
-        session.permanent = True
-        return True
-    return False
+    # Use the new selection system
+    set_selected_project(project_id)
+    return True
 
 def clear_current_project():
     """Clear the current project from session"""
