@@ -1,5 +1,5 @@
 from flask import render_template, request, redirect, url_for, flash, jsonify
-from acc.blueprints.settlement import bp
+from . import bp
 from acc.models import (Phase, Project, ProjectPartner, Partner, Expense, MaterialIssue,
                        Material, PhaseSettlementLine)
 from acc.extensions import db
