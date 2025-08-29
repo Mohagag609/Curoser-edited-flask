@@ -55,6 +55,7 @@ def add():
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
         code = request.form.get('code', '').strip()
+        project_type = request.form.get('project_type', 'عقاري')
         budget = parse_number(request.form.get('budget', 0))
         start_date = request.form.get('start_date', '').strip()
         expected_end_date = request.form.get('expected_end_date', '').strip()
@@ -78,6 +79,7 @@ def add():
             id=generate_uid('PRJ'),
             name=name,
             code=code,
+            project_type=project_type,
             budget=budget if budget > 0 else None,
             start_date=datetime.strptime(start_date, '%Y-%m-%d').date() if start_date else None,
             expected_end_date=datetime.strptime(expected_end_date, '%Y-%m-%d').date() if expected_end_date else None,
@@ -137,6 +139,7 @@ def edit(id):
     if request.method == 'POST':
         project.name = request.form.get('name', '').strip()
         project.code = request.form.get('code', '').strip()
+        project.project_type = request.form.get('project_type', 'عقاري')
         project.budget = parse_number(request.form.get('budget', 0)) or None
         start_date = request.form.get('start_date', '')
         project.start_date = datetime.strptime(start_date, '%Y-%m-%d').date() if start_date else None

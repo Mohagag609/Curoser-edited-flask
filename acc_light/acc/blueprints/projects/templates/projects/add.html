@@ -32,6 +32,29 @@
                     <p class="text-sm text-gray-500 mt-1">كود فريد لتمييز المشروع</p>
                 </div>
                 
+                <!-- نوع المشروع -->
+                <div>
+                    <label class="form-label required">نوع المشروع</label>
+                    <div class="space-y-3">
+                        <label class="flex items-start space-x-3 space-x-reverse p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="project_type" value="عقاري" checked 
+                                   class="mt-1 form-radio text-blue-600">
+                            <div>
+                                <div class="font-medium">مشروع عقاري</div>
+                                <div class="text-sm text-gray-500">نظام متكامل يشمل: الوحدات، العقود، الأقساط، وجميع الميزات</div>
+                            </div>
+                        </label>
+                        <label class="flex items-start space-x-3 space-x-reverse p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="project_type" value="محاسبي" 
+                                   class="mt-1 form-radio text-blue-600">
+                            <div>
+                                <div class="font-medium">مشروع محاسبي</div>
+                                <div class="text-sm text-gray-500">نظام محاسبي بدون: الوحدات، العقود، الأقساط</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
                 <!-- الميزانية -->
                 <div>
                     <label class="form-label">الميزانية</label>

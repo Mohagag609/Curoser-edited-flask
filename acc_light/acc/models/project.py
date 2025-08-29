@@ -9,6 +9,7 @@ class Project(db.Model):
     name = Column(String(200), nullable=False)
     code = Column(String(50), unique=True, nullable=False)
     description = Column(Text)
+    project_type = Column(String(20), default='عقاري')  # عقاري أو محاسبي
     start_date = Column(Date)
     expected_end_date = Column(Date)
     actual_end_date = Column(Date)
@@ -25,6 +26,16 @@ class Project(db.Model):
     vouchers = db.relationship('Voucher', backref='project', lazy='dynamic')
     stages = db.relationship('ProjectStage', backref='project', lazy='dynamic', cascade='all, delete-orphan')
     materials = db.relationship('ProjectMaterial', backref='project', lazy='dynamic', cascade='all, delete-orphan')
+    
+    def has_feature(self, feature):
+        """التحقق من توفر ميزة معينة حسب نوع المشروع"""
+        if self.project_type == 'عقاري':
+            return True  # كل الميزات متاحة
+        elif self.project_type == 'محاسبي':
+            # الميزات غير المتاحة في المشاريع المحاسبية
+            restricted_features = ['units', 'contracts', 'installments']
+            return feature not in restricted_features
+        return True
     
     def __repr__(self):
         return f'<Project {self.code} - {self.name}>'

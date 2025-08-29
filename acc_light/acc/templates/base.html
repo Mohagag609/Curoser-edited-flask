@@ -422,14 +422,18 @@
                        class="px-3 py-2 rounded-md text-sm font-medium {% if 'customers' in request.endpoint %}bg-gray-100 text-gray-900{% else %}text-gray-600 hover:text-gray-900{% endif %}">
                         العملاء
                     </a>
+                    {% if current_project.has_feature('units') %}
                     <a href="{{ url_for('units.index') }}" 
                        class="px-3 py-2 rounded-md text-sm font-medium {% if 'units' in request.endpoint %}bg-gray-100 text-gray-900{% else %}text-gray-600 hover:text-gray-900{% endif %}">
                         الوحدات
                     </a>
+                    {% endif %}
+                    {% if current_project.has_feature('contracts') %}
                     <a href="{{ url_for('contracts.index') }}" 
                        class="px-3 py-2 rounded-md text-sm font-medium {% if 'contracts' in request.endpoint %}bg-gray-100 text-gray-900{% else %}text-gray-600 hover:text-gray-900{% endif %}">
                         العقود
                     </a>
+                    {% endif %}
                     <a href="{{ url_for('partners.index') }}" 
                        class="px-3 py-2 rounded-md text-sm font-medium {% if 'partners' in request.endpoint %}bg-gray-100 text-gray-900{% else %}text-gray-600 hover:text-gray-900{% endif %}">
                         الشركاء
@@ -458,7 +462,9 @@
                              class="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
                             <div class="py-1">
                                 <a href="{{ url_for('brokers.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">السماسرة</a>
+                                {% if current_project.has_feature('installments') %}
                                 <a href="{{ url_for('installments.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">الأقساط</a>
+                                {% endif %}
                                 <a href="{{ url_for('vouchers.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">السندات</a>
                                 <hr class="my-1">
                                 <a href="{{ url_for('suppliers.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">الموردون</a>
