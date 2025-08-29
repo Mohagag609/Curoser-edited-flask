@@ -127,49 +127,75 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle delete buttons with confirmation
     document.addEventListener('click', function(e) {
-        if (e.target.matches('[data-confirm-delete]')) {
+        // Check if clicked element or its parent has data-confirm-delete
+        const deleteBtn = e.target.closest('[data-confirm-delete]');
+        
+        if (deleteBtn) {
             e.preventDefault();
             
-            const message = e.target.dataset.confirmMessage || 'هل أنت متأكد من الحذف؟';
-            const deleteUrl = e.target.dataset.deleteUrl || e.target.href;
+            const message = deleteBtn.dataset.confirmMessage || 'هل أنت متأكد من الحذف؟ هذا الإجراء لا يمكن التراجع عنه.';
+            const deleteUrl = deleteBtn.dataset.deleteUrl || deleteBtn.href;
             
+            // Custom confirmation dialog
             if (confirm(message)) {
                 const loadingToast = toast.loading('جاري الحذف...');
                 
+                // Determine HTTP method
+                const method = deleteBtn.dataset.method || 'POST';
+                
                 fetch(deleteUrl, {
-                    method: 'POST',
+                    method: method,
                     headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/json'
                     }
                 })
-                .then(response => {
+                .then(async response => {
                     toast.remove(loadingToast);
                     
+                    const contentType = response.headers.get("content-type");
+                    
                     if (response.ok) {
-                        toast.success('تم الحذف بنجاح');
+                        if (contentType && contentType.indexOf("application/json") !== -1) {
+                            const data = await response.json();
+                            toast.success(data.message || 'تم الحذف بنجاح');
+                            
+                            if (data.redirect) {
+                                setTimeout(() => {
+                                    window.location.href = data.redirect;
+                                }, 1000);
+                            }
+                        } else {
+                            toast.success('تم الحذف بنجاح');
+                        }
                         
                         // Remove element from DOM if specified
-                        const removeElement = e.target.dataset.removeElement;
+                        const removeElement = deleteBtn.dataset.removeElement;
                         if (removeElement) {
-                            const element = e.target.closest(removeElement);
+                            const element = deleteBtn.closest(removeElement);
                             if (element) {
-                                element.style.transition = 'opacity 0.3s';
+                                element.style.transition = 'all 0.3s ease-out';
+                                element.style.transform = 'translateX(-100%)';
                                 element.style.opacity = '0';
                                 setTimeout(() => element.remove(), 300);
                             }
                         } else {
                             // Reload page after delay
-                            setTimeout(() => location.reload(), 1500);
+                            setTimeout(() => location.reload(), 1000);
                         }
                     } else {
-                        response.text().then(text => {
-                            toast.error(text || 'فشل الحذف');
-                        });
+                        if (contentType && contentType.indexOf("application/json") !== -1) {
+                            const data = await response.json();
+                            toast.error(data.message || 'فشل الحذف');
+                        } else {
+                            const text = await response.text();
+                            toast.error(text || 'فشل الحذف - الرجاء المحاولة مرة أخرى');
+                        }
                     }
                 })
                 .catch(error => {
                     toast.remove(loadingToast);
-                    toast.error(`خطأ: ${error.message}`);
+                    toast.error(`خطأ في الاتصال: ${error.message}`);
                 });
             }
         }

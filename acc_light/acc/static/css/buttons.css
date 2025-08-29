@@ -100,6 +100,28 @@
     box-shadow: 0 6px 8px -1px rgba(99, 102, 241, 0.4);
 }
 
+/* Action buttons in tables - Enhanced */
+td .btn-view, td .btn-edit, td .btn-delete {
+    @apply inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200;
+    min-width: 80px;
+}
+
+/* Smaller version for compact tables */
+td .btn-view.btn-sm, td .btn-edit.btn-sm, td .btn-delete.btn-sm {
+    @apply px-2 py-1.5 text-xs;
+    min-width: 60px;
+}
+
+/* Icon only buttons */
+.btn-icon-only {
+    @apply p-2 rounded-lg;
+    min-width: auto;
+}
+
+.btn-icon-only i {
+    @apply text-base;
+}
+
 /* Secondary Button - Gray */
 .btn-secondary {
     @apply bg-gray-100 text-gray-700 border-gray-300;

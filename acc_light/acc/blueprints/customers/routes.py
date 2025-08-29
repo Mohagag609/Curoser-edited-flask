@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify
+from flask import render_template, request, redirect, url_for, flash, jsonify, Response, send_file
 from acc.blueprints.customers import bp
 from acc.extensions import db
 from acc.models import Customer, Contract, Voucher, Installment
@@ -184,7 +184,12 @@ def delete(id):
         
         # Check if customer has contracts
         if len(customer.contracts) > 0:
-            flash('❌ لا يمكن حذف هذا العميل لأنه مرتبط بعقود.', 'error')
+            error_msg = f'لا يمكن حذف العميل "{customer.name}" لوجود عقود مرتبطة به.'
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'message': f'❌ {error_msg}'}), 400
+            
+            flash(f'❌ {error_msg}', 'error')
             return redirect(url_for('customers.index'))
         
         # Store customer info before deletion
@@ -198,12 +203,25 @@ def delete(id):
         # Log action after successful deletion
         log_action('حذف عميل', {'id': customer_id, 'name': customer_name})
         
-        flash(f'✅ تم حذف العميل "{customer_name}" بنجاح.', 'success')
+        success_msg = f'تم حذف العميل "{customer_name}" بنجاح.'
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({
+                'success': True, 
+                'message': f'✅ {success_msg}'
+            })
+        
+        flash(f'✅ {success_msg}', 'success')
         return redirect(url_for('customers.index'))
         
     except Exception as e:
         db.session.rollback()
-        flash(f'❌ خطأ في حذف العميل: {str(e)}', 'error')
+        error_msg = f'خطأ في حذف العميل: {str(e)}'
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': f'❌ {error_msg}'}), 500
+            
+        flash(f'❌ {error_msg}', 'error')
         return redirect(url_for('customers.index'))
 
 
