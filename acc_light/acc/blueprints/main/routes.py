@@ -7,17 +7,22 @@ from acc.extensions import db
 
 @bp.route('/')
 def index():
-    """الصفحة الرئيسية - تحويل لاختيار المشروع أو لوحة التحكم"""
-    if get_current_project():
-        return redirect(url_for('dashboard.index'))
+    """الصفحة الرئيسية - تحويل مباشر لاختيار المشروع"""
+    # دائماً نعرض صفحة اختيار المشروع أولاً
     return redirect(url_for('main.select_project'))
 
 
 @bp.route('/select-project')
 def select_project():
     """صفحة اختيار المشروع"""
+    # الحصول على جميع المشاريع النشطة
     projects = Project.query.filter_by(status='نشط').order_by(Project.name).all()
     current_project = get_current_project()
+    
+    # إذا لم توجد مشاريع، نعرض رسالة خاصة
+    if not projects:
+        flash('لا توجد مشاريع. يرجى إضافة مشروع جديد للمتابعة.', 'info')
+    
     return render_template('main/select_project.html', 
                          projects=projects,
                          current_project=current_project)

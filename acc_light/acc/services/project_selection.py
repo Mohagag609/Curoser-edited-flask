@@ -25,13 +25,16 @@ def project_required(f):
     def decorated_function(*args, **kwargs):
         # الصفحات المستثناة من اختيار المشروع
         exempt_endpoints = [
+            'main.index',
             'main.select_project',
             'main.set_project',
+            'main.clear_project',
             'static',
             'projects.index',
             'projects.add',
             'projects.edit',
-            'projects.delete'
+            'projects.delete',
+            'projects.api_projects'
         ]
         
         if request.endpoint in exempt_endpoints:
