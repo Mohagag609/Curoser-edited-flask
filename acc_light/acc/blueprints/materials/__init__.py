@@ -2,4 +2,4 @@ from flask import Blueprint
 
 bp = Blueprint('materials', __name__, template_folder='templates')
 
-from acc.blueprints.materials import routes
+from . import routes

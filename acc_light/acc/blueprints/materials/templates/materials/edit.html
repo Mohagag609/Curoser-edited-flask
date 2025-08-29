@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}تعديل {{ material.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-gray-900">تعديل المادة</h2>
+        <a href="{{ url_for('materials.detail', id=material.id) }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-right ml-2"></i>
+            رجوع
+        </a>
+    </div>
+    
+    <!-- Form -->
+    <div class="card max-w-3xl mx-auto">
+        <form method="post" action="{{ url_for('materials.edit', id=material.id) }}">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label class="form-label">اسم المادة <span class="text-red-500">*</span></label>
+                    <input type="text" name="name" value="{{ material.name }}" required class="form-input" autofocus>
+                </div>
+                
+                <div>
+                    <label class="form-label">وحدة القياس <span class="text-red-500">*</span></label>
+                    <input type="text" name="unit" value="{{ material.unit }}" required class="form-input" 
+                           placeholder="مثال: متر، كيلو، قطعة">
+                </div>
+                
+                <div>
+                    <label class="form-label">سعر الوحدة</label>
+                    <input type="number" name="unit_cost" value="{{ material.unit_cost }}" 
+                           step="0.01" min="0" class="form-input">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="form-label">الوصف</label>
+                    <textarea name="description" rows="3" class="form-input">{{ material.description or '' }}</textarea>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex gap-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save ml-2"></i>
+                    حفظ التعديلات
+                </button>
+                <a href="{{ url_for('materials.detail', id=material.id) }}" class="btn btn-secondary">
+                    إلغاء
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -53,7 +53,7 @@
                         <th>الاسم</th>
                         <th>الهاتف</th>
                         <th>البريد الإلكتروني</th>
-                        <th>الرقم الضريبي</th>
+                        <th>العنوان</th>
                         <th>الإجراءات</th>
                     </tr>
                 </thead>
@@ -67,7 +67,7 @@
                         </td>
                         <td>{{ supplier.phone or '-' }}</td>
                         <td>{{ supplier.email or '-' }}</td>
-                        <td>{{ supplier.tax_number or '-' }}</td>
+                        <td>{{ supplier.address[:30] + '...' if supplier.address and supplier.address|length > 30 else supplier.address or '-' }}</td>
                         <td>
                             <div class="flex gap-2">
                                 <a href="{{ url_for('suppliers.detail', id=supplier.id) }}" class="btn btn-sm btn-secondary">

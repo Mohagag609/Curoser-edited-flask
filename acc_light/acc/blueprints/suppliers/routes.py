@@ -54,7 +54,6 @@ def add():
         phone = request.form.get('phone', '').strip()
         email = request.form.get('email', '').strip()
         address = request.form.get('address', '').strip()
-        tax_number = request.form.get('tax_number', '').strip()
         notes = request.form.get('notes', '').strip()
         
         if not name:
@@ -72,7 +71,6 @@ def add():
             phone=phone,
             email=email,
             address=address,
-            tax_number=tax_number,
             notes=notes
         )
         
@@ -118,7 +116,7 @@ def edit(id):
         supplier.phone = request.form.get('phone', '').strip()
         supplier.email = request.form.get('email', '').strip()
         supplier.address = request.form.get('address', '').strip()
-        supplier.tax_number = request.form.get('tax_number', '').strip()
+
         supplier.notes = request.form.get('notes', '').strip()
         
         if not supplier.name:

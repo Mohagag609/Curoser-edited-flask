@@ -19,7 +19,7 @@ def index():
             db.or_(
                 Contractor.name.ilike(f'%{search}%'),
                 Contractor.phone.ilike(f'%{search}%'),
-                Contractor.specialization.ilike(f'%{search}%')
+                Contractor.specialty.ilike(f'%{search}%')
             )
         )
     
@@ -57,7 +57,7 @@ def add():
         name = request.form.get('name', '').strip()
         phone = request.form.get('phone', '').strip()
         email = request.form.get('email', '').strip()
-        specialization = request.form.get('specialization', '').strip()
+        specialty = request.form.get('specialty', '').strip()
         address = request.form.get('address', '').strip()
         notes = request.form.get('notes', '').strip()
         
@@ -75,7 +75,7 @@ def add():
             name=name,
             phone=phone,
             email=email,
-            specialization=specialization,
+            specialty=specialty,
             address=address,
             notes=notes
         )
@@ -94,8 +94,11 @@ def add():
 def detail(id):
     contractor = Contractor.query.get_or_404(id)
     
-    # Get contractor projects
-    projects = Project.query.filter_by(contractor_id=id).order_by(Project.start_date.desc()).all()
+    # Get contractor projects through stages
+    from acc.models import ProjectStage
+    stage_project_ids = db.session.query(ProjectStage.project_id).filter_by(contractor_id=id).distinct().all()
+    project_ids = [p[0] for p in stage_project_ids]
+    projects = Project.query.filter(Project.id.in_(project_ids)).order_by(Project.start_date.desc()).all() if project_ids else []
     
     # Get contractor vouchers
     vouchers = Voucher.query.filter_by(
@@ -141,7 +144,7 @@ def edit(id):
         contractor.name = request.form.get('name', '').strip()
         contractor.phone = request.form.get('phone', '').strip()
         contractor.email = request.form.get('email', '').strip()
-        contractor.specialization = request.form.get('specialization', '').strip()
+        contractor.specialty = request.form.get('specialty', '').strip()
         contractor.address = request.form.get('address', '').strip()
         contractor.notes = request.form.get('notes', '').strip()
         
@@ -172,5 +175,5 @@ def api_contractors():
         'id': c.id,
         'name': c.name,
         'phone': c.phone,
-        'specialization': c.specialization
+        'specialty': c.specialty
     } for c in contractors])

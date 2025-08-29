@@ -32,11 +32,6 @@
                     <input type="email" name="email" value="{{ supplier.email or '' }}" class="form-input" dir="ltr">
                 </div>
                 
-                <div>
-                    <label class="form-label">الرقم الضريبي</label>
-                    <input type="text" name="tax_number" value="{{ supplier.tax_number or '' }}" class="form-input" dir="ltr">
-                </div>
-                
                 <div class="md:col-span-2">
                     <label class="form-label">العنوان</label>
                     <textarea name="address" rows="2" class="form-input">{{ supplier.address or '' }}</textarea>

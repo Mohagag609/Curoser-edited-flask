@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}المواد{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-gray-900">المواد</h2>
+        <a href="{{ url_for('materials.add') }}" class="btn btn-primary">
+            <i class="fas fa-plus ml-2"></i>
+            إضافة مادة
+        </a>
+    </div>
+    
+    <!-- Search -->
+    <div class="card mb-6">
+        <form method="get" class="flex gap-4">
+            <div class="flex-1">
+                <input type="text" name="search" value="{{ search }}" 
+                       placeholder="بحث في المواد..."
+                       class="form-input">
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+                بحث
+            </button>
+            {% if search %}
+            <a href="{{ url_for('materials.index') }}" class="btn btn-secondary">
+                <i class="fas fa-redo"></i>
+                إلغاء
+            </a>
+            {% endif %}
+        </form>
+    </div>
+    
+    <!-- Table -->
+    <div class="card">
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>اسم المادة</th>
+                        <th>الوحدة</th>
+                        <th>سعر الوحدة</th>
+                        <th>الوصف</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for material in materials %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('materials.detail', id=material.id) }}" class="text-blue-600 hover:underline font-medium">
+                                {{ material.name }}
+                            </a>
+                        </td>
+                        <td>{{ material.unit }}</td>
+                        <td>{{ format_currency(material.unit_cost) }}</td>
+                        <td>{{ material.description[:50] + '...' if material.description and material.description|length > 50 else material.description or '-' }}</td>
+                        <td>
+                            <div class="flex gap-2">
+                                <a href="{{ url_for('materials.detail', id=material.id) }}" class="btn btn-sm btn-secondary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('materials.edit', id=material.id) }}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-8 text-gray-500">
+                            لا توجد مواد مسجلة
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if pagination and pagination.pages > 1 %}
+        <div class="mt-6">
+            {{ render_pagination(pagination, 'materials.index', search=search) }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
