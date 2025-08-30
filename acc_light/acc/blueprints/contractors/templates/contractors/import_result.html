@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}نتيجة الاستيراد{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">نتيجة استيراد المقاولين</h1>
+    </div>
+    
+    <!-- Summary Card -->
+    <div class="card mb-6">
+        <div class="grid grid-cols-2 gap-6">
+            <!-- Success Count -->
+            <div class="bg-green-50 rounded-lg p-6 text-center">
+                <i class="fas fa-check-circle text-4xl text-green-600 mb-3"></i>
+                <p class="text-3xl font-bold text-green-900">{{ success_count }}</p>
+                <p class="text-sm text-green-700">مقاول تم استيراده بنجاح</p>
+            </div>
+            
+            <!-- Error Count -->
+            <div class="bg-red-50 rounded-lg p-6 text-center">
+                <i class="fas fa-times-circle text-4xl text-red-600 mb-3"></i>
+                <p class="text-3xl font-bold text-red-900">{{ error_count }}</p>
+                <p class="text-sm text-red-700">مقاول لم يتم استيراده</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Errors Details -->
+    {% if errors %}
+    <div class="card mb-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">تفاصيل الأخطاء</h3>
+        
+        <div class="bg-red-50 rounded-lg p-4">
+            <ul class="space-y-2 text-sm text-red-700">
+                {% for error in errors %}
+                <li class="flex items-start">
+                    <i class="fas fa-exclamation-triangle ml-2 mt-0.5"></i>
+                    <span>{{ error }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Actions -->
+    <div class="flex justify-center gap-3">
+        <a href="{{ url_for('contractors.import_data') }}" 
+           class="modern-btn modern-btn-secondary">
+            <i class="fas fa-redo"></i>
+            <span>استيراد ملف آخر</span>
+        </a>
+        <a href="{{ url_for('contractors.index') }}" 
+           class="modern-btn modern-btn-primary">
+            <i class="fas fa-list"></i>
+            <span>عرض المقاولين</span>
+        </a>
+    </div>
+</div>
+{% endblock %}

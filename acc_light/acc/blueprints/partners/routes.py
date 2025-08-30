@@ -2,7 +2,7 @@ from flask import render_template, request, redirect, url_for, flash, jsonify, R
 from acc.blueprints.partners import bp
 from acc.extensions import db
 from acc.models import Partner
-from acc.services.utils import generate_uid, log_action, Pagination
+from acc.services.utils import generate_uid, log_action, Pagination, format_currency
 from acc.services.import_handler import ImportHandler
 from acc.services.code_generator import generate_partner_code
 from sqlalchemy import or_, func
@@ -197,7 +197,8 @@ def detail(id):
     return render_template('partners/detail.html',
                          partner=partner,
                          total_share_value=total_share_value,
-                         pending_payments=pending_payments)
+                         pending_payments=pending_payments,
+                         format_currency=format_currency)
 
 
 @bp.route('/<string:id>/edit', methods=['GET', 'POST'])
@@ -450,7 +451,7 @@ def export():
     
     else:
         # Excel export (HTML table)
-        return render_template('partners/export_excel.html', partners=partners)
+        return render_template('partners/export_excel.html', partners=partners, datetime=datetime)
 
 
 @bp.route('/report')
