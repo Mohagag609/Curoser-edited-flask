@@ -201,7 +201,7 @@ def add():
                 budget=budget,
                 contractor_id=contractor_id if contractor_id else None,
                 start_date=datetime.strptime(start_date, '%Y-%m-%d').date() if start_date else None,
-                end_date=datetime.strptime(end_date, '%Y-%m-%d').date() if end_date else None,
+                expected_end_date=datetime.strptime(end_date, '%Y-%m-%d').date() if end_date else None,
                 status=status,
                 description=description
             )

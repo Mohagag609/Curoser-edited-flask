@@ -1,33 +1,62 @@
-from app import app, db
-from acc.models import Project
-from acc.services.utils import generate_uid
-from datetime import datetime
+#!/usr/bin/env python3
+"""Test project add functionality"""
 
-with app.app_context():
-    try:
-        # Test creating a project directly
-        project = Project(
-            id=generate_uid('PRJ'),
-            name='مشروع تجريبي',
-            code='TEST-123',
-            budget=1000000,
-            start_date=datetime.strptime('2025-01-01', '%Y-%m-%d').date(),
-            expected_end_date=None,
-            description='وصف تجريبي',
-            status='نشط'
-        )
-        
-        db.session.add(project)
-        db.session.commit()
-        
-        print(f"Success! Project created with ID: {project.id}")
-        
-        # Clean up
-        db.session.delete(project)
-        db.session.commit()
-        print("Test project deleted")
-        
-    except Exception as e:
-        print(f"Error: {type(e).__name__}: {e}")
-        import traceback
-        traceback.print_exc()
+from acc import create_app
+import json
+
+def test_project_add():
+    app = create_app()
+    
+    with app.app_context():
+        with app.test_client() as client:
+            # Login first
+            print("1. Logging in...")
+            response = client.post('/auth/login', data={
+                'username': 'admin',
+                'password': 'admin123'
+            })
+            print(f"Login status: {response.status_code}")
+            
+            # Try to add a project
+            print("\n2. Adding a new project...")
+            response = client.post('/projects/add', 
+                data={
+                    'name': 'مشروع تجريبي جديد',
+                    'project_type': 'عقاري',
+                    'location': 'الرياض',
+                    'area': '5000',
+                    'budget': '10000000',
+                    'start_date': '2025-01-01',
+                    'end_date': '2026-12-31',
+                    'status': 'نشط',
+                    'description': 'مشروع تجريبي'
+                },
+                headers={
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            )
+            
+            print(f"Add project status: {response.status_code}")
+            
+            if response.status_code == 200:
+                try:
+                    data = json.loads(response.data)
+                    print(f"Response: {json.dumps(data, ensure_ascii=False, indent=2)}")
+                except:
+                    print(f"Response text: {response.data.decode()[:500]}")
+            else:
+                print(f"Error response: {response.data.decode()[:500]}")
+            
+            # Check redirect URL
+            print("\n3. Testing redirect...")
+            if response.status_code == 200:
+                data = json.loads(response.data)
+                if 'redirect' in data:
+                    print(f"Redirect URL: {data['redirect']}")
+                    
+                    # Try to access the redirect URL
+                    redirect_response = client.get(data['redirect'])
+                    print(f"Redirect page status: {redirect_response.status_code}")
+
+if __name__ == "__main__":
+    test_project_add()

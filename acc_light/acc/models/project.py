@@ -10,6 +10,9 @@ class Project(db.Model):
     code = Column(String(50), unique=True, nullable=False)
     description = Column(Text)
     project_type = Column(String(20), default='عقاري')  # عقاري أو محاسبي
+    location = Column(String(200))  # الموقع
+    area = Column(String(100))  # المساحة
+    contractor_id = Column(String(20), ForeignKey('contractors.id'))  # المقاول الرئيسي
     start_date = Column(Date)
     expected_end_date = Column(Date)
     actual_end_date = Column(Date)
@@ -20,6 +23,7 @@ class Project(db.Model):
     updated_at = Column(DateTime, onupdate=func.now())
     
     # Relationships
+    contractor = db.relationship('Contractor', foreign_keys=[contractor_id], backref='projects')
     units = db.relationship('Unit', backref='project', lazy='dynamic')
     contracts = db.relationship('Contract', backref='project', lazy='dynamic')
     safes = db.relationship('Safe', backref='project', lazy='dynamic')
