@@ -1,8 +1,9 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify, make_response
+from flask import render_template, request, redirect, url_for, flash, jsonify, Response, send_file
 from acc.blueprints.contractors import bp
 from acc.extensions import db
 from acc.models import Contractor
-from acc.services.utils import generate_uid, log_action, Pagination, format_currency
+from acc.services.utils import generate_uid, log_action, Pagination
+from acc.services.import_handler import ImportHandler
 from acc.services.code_generator import generate_contractor_code
 from sqlalchemy import or_, func
 import json
@@ -15,463 +16,484 @@ from datetime import datetime
 def index():
     page = request.args.get('page', 1, type=int)
     q = request.args.get('q', '')
+    status = request.args.get('status', '')
     
-    contractors = Contractor.query
+    query = Contractor.query
     
+    # Text search
     if q:
-        contractors = contractors.filter(
+        search_term = f'%{q}%'
+        query = query.filter(
             or_(
-                Contractor.name.contains(q),
-                Contractor.phone.contains(q),
-                Contractor.email.contains(q),
-                Contractor.specialty.contains(q),
-                Contractor.address.contains(q)
+                Contractor.name.ilike(search_term),
+                Contractor.code.ilike(search_term),
+                Contractor.phone.ilike(search_term),
+                Contractor.email.ilike(search_term),
+                Contractor.address.ilike(search_term),
+                Contractor.specialization.ilike(search_term)
             )
         )
     
-    contractors = contractors.order_by(Contractor.name)
-    pagination = Pagination(contractors, page)
+    # Status filter
+    if status:
+        query = query.filter(Contractor.status == status)
     
-    return render_template('contractors/index.html', 
-                         contractors=pagination.items, 
+    # Order by
+    query = query.order_by(Contractor.created_at.desc())
+    
+    # Pagination
+    pagination = Pagination(query, page, per_page=20)
+    
+    # Calculate stats
+    total_contractors = Contractor.query.count()
+    active_contractors = Contractor.query.filter_by(status='نشط').count()
+    inactive_contractors = Contractor.query.filter_by(status='غير نشط').count()
+    
+    return render_template('contractors/index.html',
+                         contractors=pagination.items,
                          pagination=pagination,
-                         q=q)
+                         q=q,
+                         status=status,
+                         total_contractors=total_contractors,
+                         active_contractors=active_contractors,
+                         inactive_contractors=inactive_contractors)
+
+
+@bp.route('/search')
+def search():
+    """Advanced search endpoint for AJAX"""
+    q = request.args.get('q', '')
+    status = request.args.get('status', '')
+    page = request.args.get('page', 1, type=int)
+    
+    query = Contractor.query
+    
+    # Text search
+    if q:
+        search_term = f'%{q}%'
+        query = query.filter(
+            or_(
+                Contractor.name.ilike(search_term),
+                Contractor.code.ilike(search_term),
+                Contractor.phone.ilike(search_term),
+                Contractor.email.ilike(search_term),
+                Contractor.address.ilike(search_term),
+                Contractor.specialization.ilike(search_term)
+            )
+        )
+    
+    # Status filter
+    if status:
+        query = query.filter(Contractor.status == status)
+    
+    # Order by
+    query = query.order_by(Contractor.created_at.desc())
+    
+    # Pagination
+    pagination = Pagination(query, page, per_page=20)
+    
+    # Check if AJAX request
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return render_template('contractors/_results.html',
+                             contractors=pagination.items,
+                             pagination=pagination,
+                             q=q,
+                             status=status)
+    
+    # Otherwise return full page
+    return render_template('contractors/index.html',
+                         contractors=pagination.items,
+                         pagination=pagination,
+                         q=q,
+                         status=status)
 
 
 @bp.route('/add', methods=['GET', 'POST'])
 def add():
     if request.method == 'POST':
         try:
-            # Get form data
             name = request.form.get('name', '').strip()
-            phone = request.form.get('phone', '').strip()
-            email = request.form.get('email', '').strip()
-            specialty = request.form.get('specialty', '').strip()
-            address = request.form.get('address', '').strip()
-            notes = request.form.get('notes', '').strip()
+            phone = request.form.get('phone', '').strip() or None
+            email = request.form.get('email', '').strip() or None
+            address = request.form.get('address', '').strip() or None
+            specialization = request.form.get('specialization', '').strip() or None
+            status = request.form.get('status', 'نشط')
+            notes = request.form.get('notes', '').strip() or None
             
-            # Validate required fields
             if not name:
-                flash('⚠️ الرجاء إدخال اسم المقاول', 'warning')
+                error_msg = 'الرجاء إدخال اسم المقاول'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'success': False, 'message': f'❌ {error_msg}'}), 400
+                flash(f'❌ {error_msg}', 'error')
                 return redirect(url_for('contractors.add'))
             
-            # Check if contractor exists
+            # Check for duplicate name
             existing = Contractor.query.filter_by(name=name).first()
             if existing:
-                flash('⚠️ يوجد مقاول بنفس الاسم', 'warning')
-                return redirect(url_for('contractors.add'))
+                error_msg = f'مقاول بنفس الاسم "{name}" موجود بالفعل'
+                
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({
+                        'success': False,
+                        'message': f'⚠️ {error_msg}',
+                        'redirect': url_for('contractors.detail', id=existing.id)
+                    }), 400
+                
+                flash(f'⚠️ {error_msg}', 'warning')
+                return redirect(url_for('contractors.detail', id=existing.id))
             
-            # Create contractor with auto-generated code
+            # Generate code automatically
+            code = generate_contractor_code()
+            
             contractor = Contractor(
                 id=generate_uid('CON'),
-                code=generate_contractor_code(),
+                code=code,
                 name=name,
                 phone=phone,
                 email=email,
-                specialty=specialty,
                 address=address,
+                specialization=specialization,
+                status=status,
                 notes=notes
             )
             
             db.session.add(contractor)
             db.session.commit()
             
-            # Log action
             log_action('إضافة مقاول', {'id': contractor.id, 'name': contractor.name})
             
-            flash(f'✅ تم إضافة المقاول "{contractor.name}" بنجاح', 'success')
+            success_msg = f'تم إضافة المقاول بنجاح! رقم المقاول: {code}'
             
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({
                     'success': True,
-                    'message': f'تم إضافة المقاول "{contractor.name}" بنجاح',
-                    'redirect': url_for('contractors.index')
+                    'message': f'✅ {success_msg}',
+                    'redirect': url_for('contractors.detail', id=contractor.id)
                 })
             
-            return redirect(url_for('contractors.index'))
+            flash(f'✅ {success_msg}', 'success')
+            return redirect(url_for('contractors.detail', id=contractor.id))
             
         except Exception as e:
             db.session.rollback()
-            error_msg = f'❌ خطأ في إضافة المقاول: {str(e)}'
-            flash(error_msg, 'error')
+            error_msg = f'حدث خطأ أثناء إضافة المقاول: {str(e)}'
             
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'success': False, 'message': error_msg}), 500
-                
+                return jsonify({'success': False, 'message': f'❌ {error_msg}'}), 500
+            
+            flash(f'❌ {error_msg}', 'error')
             return redirect(url_for('contractors.add'))
     
     return render_template('contractors/add.html')
 
 
-@bp.route('/edit/<id>', methods=['GET', 'POST'])
+@bp.route('/<string:id>')
+def detail(id):
+    contractor = Contractor.query.get_or_404(id)
+    
+    # Get project statistics
+    active_projects = len([s for s in contractor.stages if s.status == 'active'])
+    completed_projects = len([s for s in contractor.stages if s.status == 'completed'])
+    
+    return render_template('contractors/detail.html',
+                         contractor=contractor,
+                         active_projects=active_projects,
+                         completed_projects=completed_projects)
+
+
+@bp.route('/<string:id>/edit', methods=['GET', 'POST'])
 def edit(id):
     contractor = Contractor.query.get_or_404(id)
     
     if request.method == 'POST':
         try:
-            # Get form data
-            name = request.form.get('name', '').strip()
-            phone = request.form.get('phone', '').strip()
-            email = request.form.get('email', '').strip()
-            specialty = request.form.get('specialty', '').strip()
-            address = request.form.get('address', '').strip()
-            notes = request.form.get('notes', '').strip()
+            contractor.name = request.form.get('name', '').strip()
+            contractor.phone = request.form.get('phone', '').strip() or None
+            contractor.email = request.form.get('email', '').strip() or None
+            contractor.address = request.form.get('address', '').strip() or None
+            contractor.specialization = request.form.get('specialization', '').strip() or None
+            contractor.status = request.form.get('status', contractor.status)
+            contractor.notes = request.form.get('notes', '').strip() or None
             
-            # Validate
-            if not name:
-                flash('⚠️ الرجاء إدخال اسم المقاول', 'warning')
+            if not contractor.name:
+                error_msg = 'الرجاء إدخال اسم المقاول'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'success': False, 'message': f'❌ {error_msg}'}), 400
+                flash(f'❌ {error_msg}', 'error')
                 return redirect(url_for('contractors.edit', id=id))
             
-            # Check duplicate name
-            existing = Contractor.query.filter_by(name=name).filter(Contractor.id != id).first()
+            # Check for duplicate name (excluding current contractor)
+            existing = Contractor.query.filter(
+                Contractor.name == contractor.name,
+                Contractor.id != contractor.id
+            ).first()
+            
             if existing:
-                flash('⚠️ يوجد مقاول آخر بنفس الاسم', 'warning')
+                error_msg = f'مقاول آخر بنفس الاسم "{contractor.name}" موجود بالفعل'
+                
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({
+                        'success': False,
+                        'message': f'⚠️ {error_msg}',
+                        'redirect': url_for('contractors.detail', id=existing.id)
+                    }), 400
+                
+                flash(f'⚠️ {error_msg}', 'warning')
                 return redirect(url_for('contractors.edit', id=id))
             
-            # Update contractor
-            contractor.name = name
-            contractor.phone = phone
-            contractor.email = email
-            contractor.specialty = specialty
-            contractor.address = address
-            contractor.notes = notes
-            
+            log_action('تعديل مقاول', {'id': contractor.id, 'name': contractor.name})
             db.session.commit()
             
-            # Log action
-            log_action('تعديل مقاول', {'id': contractor.id, 'name': contractor.name})
-            
-            flash(f'✅ تم تحديث المقاول "{contractor.name}" بنجاح', 'success')
+            success_msg = 'تم تعديل المقاول بنجاح'
             
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({
                     'success': True,
-                    'message': f'تم تحديث المقاول "{contractor.name}" بنجاح',
+                    'message': f'✅ {success_msg}',
                     'redirect': url_for('contractors.detail', id=id)
                 })
             
+            flash(f'✅ {success_msg}', 'success')
             return redirect(url_for('contractors.detail', id=id))
             
         except Exception as e:
             db.session.rollback()
-            error_msg = f'❌ خطأ في تحديث المقاول: {str(e)}'
-            flash(error_msg, 'error')
+            error_msg = f'حدث خطأ أثناء تعديل المقاول: {str(e)}'
             
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'success': False, 'message': error_msg}), 500
-                
+                return jsonify({'success': False, 'message': f'❌ {error_msg}'}), 500
+            
+            flash(f'❌ {error_msg}', 'error')
             return redirect(url_for('contractors.edit', id=id))
     
     return render_template('contractors/edit.html', contractor=contractor)
 
 
-@bp.route('/detail/<id>')
-def detail(id):
-    contractor = Contractor.query.get_or_404(id)
-    
-    # Get related data
-    # TODO: Add project stages when model is available
-    projects_count = 0  # Placeholder
-    total_value = 0  # Placeholder
-    
-    return render_template('contractors/detail.html', 
-                         contractor=contractor,
-                         projects_count=projects_count,
-                         total_value=total_value,
-                         format_currency=format_currency)
-
-
-@bp.route('/delete/<id>', methods=['POST'])
+@bp.route('/<string:id>/delete', methods=['POST'])
 def delete(id):
     try:
         contractor = Contractor.query.get_or_404(id)
         
-        # Check if has projects
-        # TODO: Check project stages when available
+        # Check if contractor has project stages
+        if contractor.stages.count() > 0:
+            error_msg = f'لا يمكن حذف المقاول "{contractor.name}" لوجود مراحل مشاريع مرتبطة به'
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'message': f'❌ {error_msg}'}), 400
+            
+            flash(f'❌ {error_msg}', 'error')
+            return redirect(url_for('contractors.index'))
         
-        # Store info before deletion
         contractor_name = contractor.name
         contractor_id = contractor.id
         
-        # Delete contractor
         db.session.delete(contractor)
         db.session.commit()
         
-        # Log action
         log_action('حذف مقاول', {'id': contractor_id, 'name': contractor_name})
         
-        flash(f'✅ تم حذف المقاول "{contractor_name}" بنجاح', 'success')
+        success_msg = f'تم حذف المقاول "{contractor_name}" بنجاح'
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({
+                'success': True,
+                'message': f'✅ {success_msg}'
+            })
+        
+        flash(f'✅ {success_msg}', 'success')
         return redirect(url_for('contractors.index'))
         
     except Exception as e:
         db.session.rollback()
-        flash(f'❌ خطأ في حذف المقاول: {str(e)}', 'error')
-        return redirect(url_for('contractors.index'))
-
-
-@bp.route('/export/<format>')
-def export(format):
-    contractors = Contractor.query.order_by(Contractor.name).all()
-    
-    if format == 'excel':
-        # Generate HTML table for Excel
-        html = generate_excel_html(contractors)
+        error_msg = f'خطأ في حذف المقاول: {str(e)}'
         
-        response = make_response(html)
-        response.headers['Content-Type'] = 'application/vnd.ms-excel; charset=utf-8'
-        response.headers['Content-Disposition'] = f'attachment; filename=contractors_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xls'
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': f'❌ {error_msg}'}), 500
         
-        return response
-        
-    elif format == 'json':
-        data = [{
-            'id': c.id,
-            'code': c.code,
-            'name': c.name,
-            'phone': c.phone,
-            'email': c.email,
-            'specialty': c.specialty,
-            'address': c.address,
-            'notes': c.notes,
-            'created_at': c.created_at.isoformat() if c.created_at else None
-        } for c in contractors]
-        
-        response = make_response(json.dumps(data, ensure_ascii=False, indent=2))
-        response.headers['Content-Type'] = 'application/json; charset=utf-8'
-        response.headers['Content-Disposition'] = f'attachment; filename=contractors_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
-        
-        return response
-        
-    elif format == 'csv':
-        output = io.StringIO()
-        writer = csv.writer(output)
-        
-        # Headers
-        writer.writerow(['الكود', 'الاسم', 'الهاتف', 'البريد الإلكتروني', 'التخصص', 'العنوان', 'ملاحظات', 'تاريخ التسجيل'])
-        
-        # Data
-        for c in contractors:
-            writer.writerow([
-                c.code,
-                c.name,
-                c.phone or '',
-                c.email or '',
-                c.specialty or '',
-                c.address or '',
-                c.notes or '',
-                c.created_at.strftime('%Y-%m-%d') if c.created_at else ''
-            ])
-        
-        response = make_response('\ufeff' + output.getvalue())
-        response.headers['Content-Type'] = 'text/csv; charset=utf-8-sig'
-        response.headers['Content-Disposition'] = f'attachment; filename=contractors_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
-        
-        return response
-        
-    else:
-        flash('صيغة التصدير غير مدعومة', 'error')
+        flash(f'❌ {error_msg}', 'error')
         return redirect(url_for('contractors.index'))
 
 
 @bp.route('/import', methods=['GET', 'POST'])
 def import_data():
+    """Import contractors from file"""
     if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('❌ الرجاء اختيار ملف', 'error')
+            return redirect(url_for('contractors.import_data'))
+        
+        file = request.files['file']
+        if file.filename == '':
+            flash('❌ الرجاء اختيار ملف', 'error')
+            return redirect(url_for('contractors.import_data'))
+        
         try:
-            file = request.files.get('file')
-            if not file:
-                flash('⚠️ الرجاء اختيار ملف', 'warning')
+            handler = ImportHandler()
+            data, error = handler.read_file(file)
+            
+            if error:
+                flash(f'❌ خطأ في قراءة الملف: {error}', 'error')
                 return redirect(url_for('contractors.import_data'))
             
-            # Read file content
-            content = file.read()
-            filename = file.filename.lower()
-            
-            imported = 0
-            skipped = 0
+            # Process data
+            success_count = 0
+            error_count = 0
             errors = []
             
-            if filename.endswith('.json'):
-                # Import JSON
+            for row in data:
                 try:
-                    data = json.loads(content.decode('utf-8'))
-                    for item in data:
-                        if not item.get('name'):
-                            skipped += 1
-                            continue
-                        
-                        # Check if exists
-                        if Contractor.query.filter_by(name=item['name']).first():
-                            skipped += 1
-                            continue
-                        
-                        contractor = Contractor(
-                            id=generate_uid('CON'),
-                            code=generate_contractor_code(),
-                            name=item['name'],
-                            phone=item.get('phone', ''),
-                            email=item.get('email', ''),
-                            specialty=item.get('specialty', ''),
-                            address=item.get('address', ''),
-                            notes=item.get('notes', '')
-                        )
-                        db.session.add(contractor)
-                        imported += 1
-                        
-                except Exception as e:
-                    errors.append(f'خطأ في معالجة JSON: {str(e)}')
+                    # Check required fields
+                    if not row.get('name'):
+                        error_count += 1
+                        errors.append(f"السطر {data.index(row) + 1}: اسم المقاول مطلوب")
+                        continue
                     
-            elif filename.endswith('.csv'):
-                # Import CSV
-                try:
-                    # Try different encodings
-                    for encoding in ['utf-8-sig', 'utf-8', 'windows-1256', 'iso-8859-1']:
-                        try:
-                            text = content.decode(encoding)
-                            break
-                        except:
-                            continue
-                    else:
-                        raise ValueError('لا يمكن قراءة ترميز الملف')
+                    # Check for duplicates
+                    existing = Contractor.query.filter_by(name=row['name']).first()
+                    if existing:
+                        error_count += 1
+                        errors.append(f"السطر {data.index(row) + 1}: المقاول '{row['name']}' موجود بالفعل")
+                        continue
                     
-                    reader = csv.DictReader(io.StringIO(text))
-                    for row in reader:
-                        name = row.get('الاسم') or row.get('name') or row.get('Name')
-                        if not name:
-                            skipped += 1
-                            continue
-                        
-                        # Check if exists
-                        if Contractor.query.filter_by(name=name).first():
-                            skipped += 1
-                            continue
-                        
-                        contractor = Contractor(
-                            id=generate_uid('CON'),
-                            code=generate_contractor_code(),
-                            name=name,
-                            phone=row.get('الهاتف') or row.get('phone') or row.get('Phone') or '',
-                            email=row.get('البريد الإلكتروني') or row.get('email') or row.get('Email') or '',
-                            specialty=row.get('التخصص') or row.get('specialty') or row.get('Specialty') or '',
-                            address=row.get('العنوان') or row.get('address') or row.get('Address') or '',
-                            notes=row.get('ملاحظات') or row.get('notes') or row.get('Notes') or ''
-                        )
-                        db.session.add(contractor)
-                        imported += 1
-                        
+                    # Create contractor
+                    contractor = Contractor(
+                        id=generate_uid('CON'),
+                        code=row.get('code') or generate_contractor_code(),
+                        name=row['name'],
+                        phone=row.get('phone'),
+                        email=row.get('email'),
+                        address=row.get('address'),
+                        specialization=row.get('specialization'),
+                        status=row.get('status', 'نشط'),
+                        notes=row.get('notes')
+                    )
+                    
+                    db.session.add(contractor)
+                    success_count += 1
+                    
                 except Exception as e:
-                    errors.append(f'خطأ في معالجة CSV: {str(e)}')
+                    error_count += 1
+                    errors.append(f"السطر {data.index(row) + 1}: {str(e)}")
             
-            else:
-                flash('⚠️ نوع الملف غير مدعوم. يرجى استخدام JSON أو CSV', 'warning')
-                return redirect(url_for('contractors.import_data'))
-            
-            if imported > 0:
+            if success_count > 0:
                 db.session.commit()
-                log_action('استيراد مقاولين', {'count': imported})
+                log_action('استيراد مقاولين', {'count': success_count})
             
-            # Show results
-            if imported > 0:
-                flash(f'✅ تم استيراد {imported} مقاول بنجاح', 'success')
-            if skipped > 0:
-                flash(f'ℹ️ تم تخطي {skipped} مقاول (موجود مسبقاً)', 'info')
-            if errors:
-                for error in errors:
-                    flash(f'❌ {error}', 'error')
-            
-            return redirect(url_for('contractors.index'))
+            return render_template('contractors/import_result.html',
+                                 success_count=success_count,
+                                 error_count=error_count,
+                                 errors=errors)
             
         except Exception as e:
-            db.session.rollback()
-            flash(f'❌ خطأ في الاستيراد: {str(e)}', 'error')
+            flash(f'❌ خطأ في معالجة الملف: {str(e)}', 'error')
             return redirect(url_for('contractors.import_data'))
     
     return render_template('contractors/import.html')
 
 
+@bp.route('/export')
+def export():
+    """Export contractors"""
+    format = request.args.get('format', 'excel')
+    
+    contractors = Contractor.query.order_by(Contractor.name).all()
+    
+    if format == 'json':
+        # JSON export
+        data = []
+        for contractor in contractors:
+            data.append({
+                'code': contractor.code,
+                'name': contractor.name,
+                'phone': contractor.phone or '',
+                'email': contractor.email or '',
+                'address': contractor.address or '',
+                'specialization': contractor.specialization or '',
+                'status': contractor.status,
+                'notes': contractor.notes or ''
+            })
+        
+        output = io.StringIO()
+        json.dump(data, output, ensure_ascii=False, indent=2)
+        output.seek(0)
+        
+        return Response(
+            output.getvalue(),
+            mimetype='application/json',
+            headers={
+                'Content-Disposition': f'attachment;filename=contractors_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
+            }
+        )
+    
+    elif format == 'csv':
+        # CSV export
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Header
+        writer.writerow(['الكود', 'الاسم', 'الهاتف', 'البريد الإلكتروني', 'العنوان', 'التخصص', 'الحالة', 'ملاحظات'])
+        
+        # Data
+        for contractor in contractors:
+            writer.writerow([
+                contractor.code,
+                contractor.name,
+                contractor.phone or '',
+                contractor.email or '',
+                contractor.address or '',
+                contractor.specialization or '',
+                contractor.status,
+                contractor.notes or ''
+            ])
+        
+        output.seek(0)
+        output_bytes = io.BytesIO(output.getvalue().encode('utf-8-sig'))
+        
+        return Response(
+            output_bytes.getvalue(),
+            mimetype='text/csv',
+            headers={
+                'Content-Disposition': f'attachment;filename=contractors_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+            }
+        )
+    
+    else:
+        # Excel export (HTML table)
+        return render_template('contractors/export_excel.html', contractors=contractors)
+
+
 @bp.route('/report')
 def report():
-    # Get statistics
-    total_contractors = Contractor.query.count()
+    """Generate contractors report"""
+    # Get filters
+    status = request.args.get('status', '')
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
     
-    # TODO: Add more statistics when project stages are available
-    active_contractors = 0  # Placeholder
-    total_projects_value = 0  # Placeholder
+    query = Contractor.query
+    
+    # Apply filters
+    if status:
+        query = query.filter(Contractor.status == status)
+    
+    if date_from:
+        query = query.filter(Contractor.created_at >= datetime.strptime(date_from, '%Y-%m-%d'))
+    
+    if date_to:
+        query = query.filter(Contractor.created_at <= datetime.strptime(date_to, '%Y-%m-%d'))
+    
+    contractors = query.order_by(Contractor.name).all()
+    
+    # Calculate statistics
+    total_contractors = len(contractors)
+    active_contractors = len([c for c in contractors if c.status == 'نشط'])
+    inactive_contractors = len([c for c in contractors if c.status == 'غير نشط'])
     
     return render_template('contractors/report.html',
+                         contractors=contractors,
                          total_contractors=total_contractors,
                          active_contractors=active_contractors,
-                         total_projects_value=total_projects_value,
-                         format_currency=format_currency)
-
-
-def generate_excel_html(contractors):
-    """Generate HTML table for Excel export"""
-    html = '''
-    <html xmlns:o="urn:schemas-microsoft-com:office:office"
-          xmlns:x="urn:schemas-microsoft-com:office:excel"
-          xmlns="http://www.w3.org/TR/REC-html40">
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <style>
-            table {
-                border-collapse: collapse;
-                width: 100%;
-            }
-            th {
-                background-color: #366092;
-                color: white;
-                font-weight: bold;
-                padding: 10px;
-                text-align: right;
-                border: 1px solid #ddd;
-            }
-            td {
-                padding: 8px;
-                text-align: right;
-                border: 1px solid #ddd;
-            }
-            tr:nth-child(even) {
-                background-color: #f2f2f2;
-            }
-        </style>
-    </head>
-    <body>
-        <h1>قائمة المقاولين</h1>
-        <table>
-            <thead>
-                <tr>
-                    <th>الكود</th>
-                    <th>الاسم</th>
-                    <th>الهاتف</th>
-                    <th>البريد الإلكتروني</th>
-                    <th>التخصص</th>
-                    <th>العنوان</th>
-                    <th>ملاحظات</th>
-                    <th>تاريخ التسجيل</th>
-                </tr>
-            </thead>
-            <tbody>
-    '''
-    
-    for contractor in contractors:
-        html += f'''
-            <tr>
-                <td>{contractor.code}</td>
-                <td>{contractor.name}</td>
-                <td>{contractor.phone or ''}</td>
-                <td>{contractor.email or ''}</td>
-                <td>{contractor.specialty or ''}</td>
-                <td>{contractor.address or ''}</td>
-                <td>{contractor.notes or ''}</td>
-                <td>{contractor.created_at.strftime('%Y-%m-%d') if contractor.created_at else ''}</td>
-            </tr>
-        '''
-    
-    html += '''
-            </tbody>
-        </table>
-    </body>
-    </html>
-    '''
-    
-    return html
+                         inactive_contractors=inactive_contractors,
+                         status=status,
+                         date_from=date_from,
+                         date_to=date_to)
