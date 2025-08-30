@@ -1,246 +1,171 @@
 {% extends "base.html" %}
 
-{% block title %}عقد رقم {{ contract.code }} - {{ super() }}{% endblock %}
+{% block title %}عقد {{ contract.code }}{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto">
+<div class="max-w-6xl mx-auto">
     <!-- Header -->
-    <div class="mb-6">
-        <div class="flex flex-wrap items-start justify-between gap-4">
+    <div class="mb-6 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <a href="{{ url_for('contracts.index') }}" class="modern-btn modern-btn-back modern-btn-sm">
+                <i class="fas fa-arrow-right"></i>
+                <span>رجوع</span>
+            </a>
             <div>
-                <div class="flex items-center gap-4 mb-2">
-                    <a href="{{ url_for('contracts.index') }}" class="text-gray-600 hover:text-gray-900">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                        </svg>
-                    </a>
-                    <h2 class="text-3xl font-bold text-gray-900">عقد رقم {{ contract.code }}</h2>
-                    {% if contract.status == 'نشط' %}
-                        <span class="badge badge-success">{{ contract.status }}</span>
-                    {% elif contract.status == 'مكتمل' %}
-                        <span class="badge badge-secondary">{{ contract.status }}</span>
-                    {% else %}
-                        <span class="badge badge-danger">{{ contract.status }}</span>
-                    {% endif %}
-                </div>
-                <p class="text-gray-600">تاريخ العقد: {{ contract.start_date.strftime('%Y-%m-%d') }}</p>
+                <h1 class="text-2xl font-bold text-gray-900">عقد رقم {{ contract.code }}</h1>
+                <p class="text-sm text-gray-600">{{ contract.date.strftime('%Y-%m-%d') if contract.date else '-' }}</p>
             </div>
-            <div class="flex gap-2">
-                {% if contract.status == 'نشط' %}
-                <a href="{{ url_for('vouchers.add') }}?contract_id={{ contract.id }}" class="btn btn-primary">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    تسجيل دفعة
-                </a>
-                {% endif %}
-                {% if contract.status == 'نشط' and total_paid == 0 %}
-                <form method="post" action="{{ url_for('contracts.cancel', id=contract.id) }}" 
-                      class="inline"
-                      onsubmit="return confirm('هل أنت متأكد من إلغاء هذا العقد؟');">
-                    <button type="submit" class="btn btn-danger">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
-                        </svg>
-                        إلغاء العقد
-                    </button>
-                </form>
-                {% endif %}
-            </div>
+        </div>
+        
+        <div class="flex gap-2">
+            <a href="{{ url_for('contracts.edit', id=contract.id) }}" 
+               class="modern-btn modern-btn-edit">
+                <i class="fas fa-edit"></i>
+                <span>تعديل</span>
+            </a>
+            <button type="button"
+                    data-confirm-delete="true"
+                    data-delete-url="{{ url_for('contracts.delete', id=contract.id) }}"
+                    data-confirm-message="هل أنت متأكد من حذف العقد '{{ contract.code }}'؟"
+                    class="modern-btn modern-btn-delete">
+                <i class="fas fa-trash"></i>
+                <span>حذف</span>
+            </button>
         </div>
     </div>
     
-    <!-- Financial Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-blue-600 text-sm font-medium">القيمة الكلية</p>
-                    <p class="text-2xl font-bold text-blue-900 mt-1">{{ format_currency(contract.total_price) }}</p>
-                    {% if contract.discount_amount %}
-                    <p class="text-xs text-blue-600 mt-1">خصم: {{ format_currency(contract.discount_amount) }}</p>
-                    {% endif %}
-                </div>
-                <div class="bg-blue-200 bg-opacity-50 rounded-lg p-3">
-                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-            </div>
-        </div>
-        
-        <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-green-600 text-sm font-medium">المدفوع</p>
-                    <p class="text-2xl font-bold text-green-900 mt-1">{{ format_currency(total_paid) }}</p>
-                    <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-                        <div class="bg-green-600 h-2 rounded-full" style="width: {{ (total_paid / total_after_discount * 100) if total_after_discount > 0 else 0 }}%"></div>
-                    </div>
-                </div>
-                <div class="bg-green-200 bg-opacity-50 rounded-lg p-3">
-                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-            </div>
-        </div>
-        
-        <div class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-red-600 text-sm font-medium">المتبقي</p>
-                    <p class="text-2xl font-bold text-red-900 mt-1">{{ format_currency(remaining) }}</p>
-                    <p class="text-xs text-red-600 mt-1">من {{ format_currency(total_after_discount) }}</p>
-                </div>
-                <div class="bg-red-200 bg-opacity-50 rounded-lg p-3">
-                    <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-            </div>
-        </div>
-        
-        <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-purple-600 text-sm font-medium">طريقة الدفع</p>
-                    <p class="text-xl font-bold text-purple-900 mt-1">
-                        {% if contract.payment_type == 'cash' %}نقدي{% else %}أقساط{% endif %}
-                    </p>
-                    {% if contract.payment_type == 'installment' %}
-                    <p class="text-xs text-purple-600 mt-1">{{ contract.installment_count }} قسط</p>
-                    {% endif %}
-                </div>
-                <div class="bg-purple-200 bg-opacity-50 rounded-lg p-3">
-                    <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                    </svg>
-                </div>
-            </div>
-        </div>
+    <!-- Status Badge -->
+    <div class="mb-6">
+        {% if contract.status == 'نشط' %}
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                <i class="fas fa-check-circle ml-1"></i>
+                نشط
+            </span>
+        {% elif contract.status == 'مكتمل' %}
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                <i class="fas fa-badge-check ml-1"></i>
+                مكتمل
+            </span>
+        {% else %}
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                <i class="fas fa-times-circle ml-1"></i>
+                ملغي
+            </span>
+        {% endif %}
     </div>
     
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Contract Details -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Info -->
         <div class="lg:col-span-2 space-y-6">
-            <!-- Basic Info -->
+            <!-- Contract Details -->
             <div class="card">
-                <h3 class="text-lg font-semibold text-gray-900 mb-6 pb-4 border-b">معلومات العقد</h3>
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">تفاصيل العقد</h2>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <h4 class="text-sm font-medium text-gray-600 mb-3">العميل</h4>
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <p class="font-medium text-gray-900">{{ contract.customer.name }}</p>
-                            <p class="text-sm text-gray-600 mt-1">{{ contract.customer.phone }}</p>
-                            {% if contract.customer.national_id %}
-                            <p class="text-sm text-gray-600">{{ contract.customer.national_id }}</p>
+                        <dt class="text-sm font-medium text-gray-500">العميل</dt>
+                        <dd class="mt-1 text-sm font-medium text-gray-900">
+                            {% if contract.customer %}
+                                <a href="{{ url_for('customers.detail', id=contract.customer.id) }}" class="text-blue-600 hover:text-blue-800">
+                                    {{ contract.customer.name }}
+                                </a>
+                            {% else %}
+                                -
                             {% endif %}
-                        </div>
+                        </dd>
                     </div>
                     
                     <div>
-                        <h4 class="text-sm font-medium text-gray-600 mb-3">الوحدة</h4>
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <p class="font-medium text-gray-900">{{ contract.unit.get_display_name() }}</p>
-                            <p class="text-sm text-gray-600 mt-1">{{ contract.unit.code }}</p>
-                            {% if contract.unit.area %}
-                            <p class="text-sm text-gray-600">المساحة: {{ contract.unit.area }} م²</p>
+                        <dt class="text-sm font-medium text-gray-500">الوحدة</dt>
+                        <dd class="mt-1 text-sm font-medium text-gray-900">
+                            {% if contract.unit %}
+                                <a href="{{ url_for('units.detail', id=contract.unit.id) }}" class="text-blue-600 hover:text-blue-800">
+                                    {{ contract.unit.code }} - {{ contract.unit.name }}
+                                </a>
+                            {% else %}
+                                -
                             {% endif %}
-                        </div>
+                        </dd>
                     </div>
                     
-                    {% if contract.broker_name %}
                     <div>
-                        <h4 class="text-sm font-medium text-gray-600 mb-3">السمسار</h4>
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <p class="font-medium text-gray-900">{{ contract.broker_name }}</p>
-                            <p class="text-sm text-gray-600 mt-1">العمولة: {{ contract.broker_percent }}%</p>
-                        </div>
+                        <dt class="text-sm font-medium text-gray-500">سعر الوحدة</dt>
+                        <dd class="mt-1 text-sm text-gray-900 font-mono">{{ format_currency(contract.unit_price) }}</dd>
+                    </div>
+                    
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">قيمة العقد</dt>
+                        <dd class="mt-1 text-sm text-gray-900 font-mono">{{ format_currency(contract.contract_amount) }}</dd>
+                    </div>
+                    
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">العربون</dt>
+                        <dd class="mt-1 text-sm text-gray-900 font-mono">{{ format_currency(contract.booking_amount) }}</dd>
+                    </div>
+                    
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">الوسيط</dt>
+                        <dd class="mt-1 text-sm text-gray-900">
+                            {% if contract.broker %}
+                                {{ contract.broker.name }} - عمولة {{ format_currency(contract.broker_commission) }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </dd>
+                    </div>
+                    
+                    {% if contract.notes %}
+                    <div class="md:col-span-2">
+                        <dt class="text-sm font-medium text-gray-500">ملاحظات</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ contract.notes }}</dd>
                     </div>
                     {% endif %}
-                    
-                    <div>
-                        <h4 class="text-sm font-medium text-gray-600 mb-3">تفاصيل مالية</h4>
-                        <div class="bg-gray-50 p-4 rounded-lg space-y-2">
-                            {% if contract.down_payment %}
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">الدفعة المقدمة:</span>
-                                <span class="font-medium">{{ format_currency(contract.down_payment) }}</span>
-                            </div>
-                            {% endif %}
-                            {% if contract.maintenance_deposit %}
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">وديعة الصيانة:</span>
-                                <span class="font-medium">{{ format_currency(contract.maintenance_deposit) }}</span>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                
-                {% if contract.notes %}
-                <div class="mt-6">
-                    <h4 class="text-sm font-medium text-gray-600 mb-3">ملاحظات</h4>
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <p class="text-gray-900">{{ contract.notes }}</p>
-                    </div>
-                </div>
-                {% endif %}
+                </dl>
             </div>
             
-            <!-- Installments Table -->
-            {% if installments_data %}
-            <div class="card overflow-hidden">
-                <h3 class="text-lg font-semibold text-gray-900 mb-6 pb-4 border-b px-6 pt-6">الأقساط</h3>
+            <!-- Installments -->
+            <div class="card">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900">الأقساط</h2>
+                    <a href="{{ url_for('installments.add', contract_id=contract.id) }}" 
+                       class="modern-btn modern-btn-primary modern-btn-sm">
+                        <i class="fas fa-plus"></i>
+                        <span>إضافة قسط</span>
+                    </a>
+                </div>
                 
+                {% if installments %}
                 <div class="overflow-x-auto">
-                    <table class="table">
+                    <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">رقم القسط</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">تاريخ الاستحقاق</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">القيمة</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المدفوع</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المتبقي</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
+                                <th class="px-4 py-2 text-right text-xs font-medium text-gray-500">التاريخ</th>
+                                <th class="px-4 py-2 text-right text-xs font-medium text-gray-500">المبلغ</th>
+                                <th class="px-4 py-2 text-right text-xs font-medium text-gray-500">المدفوع</th>
+                                <th class="px-4 py-2 text-right text-xs font-medium text-gray-500">الحالة</th>
+                                <th class="px-4 py-2 text-right text-xs font-medium text-gray-500">إجراء</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            {% for data in installments_data %}
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    قسط {{ data.installment.installment_number }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                    {{ data.installment.due_date.strftime('%Y-%m-%d') }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    {{ format_currency(data.installment.amount) }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                                    {{ format_currency(data.paid) }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600">
-                                    {{ format_currency(data.remaining) }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    {% if data.status == 'paid' %}
-                                        <span class="badge badge-success">مدفوع</span>
-                                    {% elif data.status == 'partial' %}
-                                        <span class="badge badge-warning">مدفوع جزئياً</span>
-                                    {% elif data.status == 'overdue' %}
-                                        <span class="badge badge-danger">متأخر</span>
+                            {% for installment in installments %}
+                            <tr>
+                                <td class="px-4 py-2 text-sm">{{ installment.due_date.strftime('%Y-%m-%d') }}</td>
+                                <td class="px-4 py-2 text-sm font-mono">{{ format_currency(installment.amount) }}</td>
+                                <td class="px-4 py-2 text-sm font-mono">{{ format_currency(installment.paid_amount or 0) }}</td>
+                                <td class="px-4 py-2">
+                                    {% if installment.status == 'مدفوع' %}
+                                        <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">مدفوع</span>
+                                    {% elif installment.status == 'متأخر' %}
+                                        <span class="text-xs px-2 py-1 rounded-full bg-red-100 text-red-800">متأخر</span>
                                     {% else %}
-                                        <span class="badge badge-secondary">لم يحل</span>
+                                        <span class="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">مستحق</span>
                                     {% endif %}
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    {% if data.remaining > 0 and contract.status == 'نشط' %}
-                                    <a href="{{ url_for('vouchers.add') }}?installment_id={{ data.installment.id }}" 
-                                       class="text-blue-600 hover:text-blue-800">
+                                <td class="px-4 py-2">
+                                    {% if installment.status != 'مدفوع' %}
+                                    <a href="{{ url_for('installments.pay', id=installment.id) }}" 
+                                       class="text-green-600 hover:text-green-800 text-sm">
+                                        <i class="fas fa-money-bill"></i>
                                         دفع
                                     </a>
                                     {% endif %}
@@ -250,63 +175,73 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
-            {% endif %}
-        </div>
-        
-        <!-- Payment History -->
-        <div class="space-y-6">
-            <div class="card">
-                <h3 class="text-lg font-semibold text-gray-900 mb-6 pb-4 border-b">سجل المدفوعات</h3>
-                
-                {% if payments %}
-                <div class="space-y-3">
-                    {% for payment in payments %}
-                    <div class="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="font-medium text-gray-900">{{ format_currency(payment.amount) }}</p>
-                                <p class="text-sm text-gray-600 mt-1">{{ payment.payment_date.strftime('%Y-%m-%d') }}</p>
-                                {% if payment.notes %}
-                                <p class="text-xs text-gray-500 mt-1">{{ payment.notes }}</p>
-                                {% endif %}
-                            </div>
-                            <span class="badge badge-success">{{ payment.voucher_number }}</span>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
                 {% else %}
                 <div class="text-center py-8 text-gray-500">
-                    <svg class="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                    </svg>
-                    <p>لا توجد مدفوعات بعد</p>
+                    <i class="fas fa-calendar-alt text-4xl mb-3"></i>
+                    <p>لا توجد أقساط</p>
                 </div>
                 {% endif %}
             </div>
+        </div>
+        
+        <!-- Stats Sidebar -->
+        <div class="space-y-6">
+            <!-- Payment Summary -->
+            <div class="card">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">ملخص المدفوعات</h3>
+                
+                <div class="space-y-4">
+                    <div class="bg-blue-50 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-blue-700">قيمة العقد</span>
+                            <span class="text-xl font-bold text-blue-900">{{ format_currency(contract.contract_amount) }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-green-50 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-green-700">المدفوع</span>
+                            <span class="text-xl font-bold text-green-900">{{ format_currency(contract.paid_amount) }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-orange-50 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-orange-700">المتبقي</span>
+                            <span class="text-xl font-bold text-orange-900">{{ format_currency(contract.remaining_amount) }}</span>
+                        </div>
+                    </div>
+                    
+                    {% if overdue_count > 0 %}
+                    <div class="bg-red-50 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-red-700">أقساط متأخرة</span>
+                            <span class="text-xl font-bold text-red-900">{{ overdue_count }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
             
-            <!-- Actions -->
+            <!-- Quick Actions -->
             <div class="card">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">إجراءات سريعة</h3>
+                
                 <div class="space-y-2">
-                    <a href="{{ url_for('contracts.index') }}" class="btn btn-secondary w-full">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                        </svg>
-                        جميع العقود
+                    <a href="{{ url_for('contracts.print', id=contract.id) }}" 
+                       class="w-full text-right px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors block">
+                        <i class="fas fa-print text-blue-600 ml-2"></i>
+                        طباعة العقد
                     </a>
-                    <a href="{{ url_for('customers.detail', id=contract.customer.id) }}" class="btn btn-secondary w-full">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                        </svg>
-                        ملف العميل
+                    <a href="{{ url_for('installments.index', contract_id=contract.id) }}" 
+                       class="w-full text-right px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors block">
+                        <i class="fas fa-calendar-alt text-green-600 ml-2"></i>
+                        إدارة الأقساط
                     </a>
-                    <a href="{{ url_for('units.detail', id=contract.unit.id) }}" class="btn btn-secondary w-full">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                        </svg>
-                        تفاصيل الوحدة
+                    <a href="{{ url_for('vouchers.add', contract_id=contract.id) }}" 
+                       class="w-full text-right px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors block">
+                        <i class="fas fa-receipt text-purple-600 ml-2"></i>
+                        إنشاء إيصال
                     </a>
                 </div>
             </div>

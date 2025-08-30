@@ -2,7 +2,7 @@ from flask import render_template, request, redirect, url_for, flash, jsonify, R
 from acc.blueprints.brokers import bp
 from acc.extensions import db
 from acc.models import Broker
-from acc.services.utils import generate_uid, log_action, Pagination
+from acc.services.utils import generate_uid, log_action, Pagination, format_currency
 from acc.services.import_handler import ImportHandler
 from acc.services.code_generator import generate_broker_code
 from sqlalchemy import or_, func
@@ -198,7 +198,8 @@ def detail(id):
                          broker=broker,
                          total_commissions=total_commissions,
                          pending_commissions=pending_commissions,
-                         total_contracts=total_contracts)
+                         total_contracts=total_contracts,
+                         format_currency=format_currency)
 
 
 @bp.route('/<string:id>/edit', methods=['GET', 'POST'])
@@ -459,7 +460,7 @@ def export():
     
     else:
         # Excel export (HTML table)
-        return render_template('brokers/export_excel.html', brokers=brokers)
+        return render_template('brokers/export_excel.html', brokers=brokers, datetime=datetime)
 
 
 @bp.route('/report')

@@ -1,153 +1,130 @@
 {% extends "base.html" %}
 
-{% block title %}العقود - {{ super() }}{% endblock %}
+{% block title %}العقود{% endblock %}
+{% block page_title %}العقود{% endblock %}
 
 {% block content %}
-<div class="mb-8">
-    <!-- Header -->
-    <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+<div class="space-y-6 page-content">
+    <!-- Header with Back Button -->
+    <div class="flex items-center gap-4 mb-4">
+        <a href="{{ url_for('dashboard.index') }}" class="modern-btn modern-btn-back modern-btn-sm">
+            <i class="fas fa-arrow-right"></i>
+            <span>الرئيسية</span>
+        </a>
         <div>
-            <h2 class="text-3xl font-bold text-gray-900">إدارة العقود</h2>
-            <p class="text-gray-600 mt-1">إدارة جميع عقود البيع والأقساط</p>
-        </div>
-        <div class="flex flex-wrap gap-2">
-            <a href="{{ url_for('contracts.report') }}" class="btn btn-secondary">
-                <i class="fas fa-chart-bar"></i>
-                التقارير
-            </a>
-            <div class="relative group">
-                <button class="btn btn-export flex items-center gap-2">
-                    <i class="fas fa-file-export"></i>
-                    تصدير
-                    <i class="fas fa-chevron-down text-xs"></i>
-                </button>
-                <div class="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-xl hidden group-hover:block z-10">
-                    <a href="{{ url_for('contracts.export', format='excel') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-t-lg">
-                        <i class="fas fa-file-excel text-green-600 ml-2"></i>
-                        Excel
-                    </a>
-                    <a href="{{ url_for('contracts.export', format='csv') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-file-csv text-blue-600 ml-2"></i>
-                        CSV
-                    </a>
-                    <a href="{{ url_for('contracts.export', format='json') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-b-lg">
-                        <i class="fas fa-file-code text-purple-600 ml-2"></i>
-                        JSON
-                    </a>
-                </div>
-            </div>
-            <a href="{{ url_for('contracts.add') }}" class="btn btn-add">
-                <i class="fas fa-plus"></i>
-                إنشاء عقد جديد
-            </a>
+            <h1 class="text-2xl font-bold text-gray-900">إدارة العقود</h1>
+            <p class="text-sm text-gray-600">إدارة عقود البيع والتقارير</p>
         </div>
     </div>
     
-    <!-- Stats Cards -->
+    <!-- Stats Cards - Same colors as Customers -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-6 text-white">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-indigo-100">إجمالي العقود</p>
-                    <p class="text-3xl font-bold mt-2">{{ contracts_data|length }}</p>
+                    <p class="text-blue-100 text-sm">إجمالي العقود</p>
+                    <p class="text-3xl font-bold">{{ total_contracts|default(0) }}</p>
                 </div>
-                <svg class="w-12 h-12 text-indigo-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
+                <i class="fas fa-file-contract text-4xl text-blue-200"></i>
             </div>
         </div>
         
         <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-green-100">عقود نشطة</p>
-                    <p class="text-3xl font-bold mt-2">{{ contracts_data|selectattr('contract.status', 'equalto', 'نشط')|list|length }}</p>
+                    <p class="text-green-100 text-sm">عقود نشطة</p>
+                    <p class="text-3xl font-bold">{{ active_contracts|default(0) }}</p>
                 </div>
-                <svg class="w-12 h-12 text-green-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                </svg>
+                <i class="fas fa-check-circle text-4xl text-green-200"></i>
             </div>
         </div>
         
-        <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-6 text-white">
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-yellow-100">أقساط</p>
-                    <p class="text-3xl font-bold mt-2">{{ contracts_data|selectattr('contract.payment_type', 'equalto', 'installment')|list|length }}</p>
+                    <p class="text-purple-100 text-sm">مكتملة</p>
+                    <p class="text-3xl font-bold">{{ completed_contracts|default(0) }}</p>
                 </div>
-                <svg class="w-12 h-12 text-yellow-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                </svg>
+                <i class="fas fa-badge-check text-4xl text-purple-200"></i>
             </div>
         </div>
         
-        <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white">
+        <div class="bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl p-6 text-white">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-red-100">ملغاة</p>
-                    <p class="text-3xl font-bold mt-2">{{ contracts_data|selectattr('contract.status', 'equalto', 'ملغي')|list|length }}</p>
+                    <p class="text-gray-100 text-sm">ملغية</p>
+                    <p class="text-3xl font-bold">{{ cancelled_contracts|default(0) }}</p>
                 </div>
-                <svg class="w-12 h-12 text-red-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
-                </svg>
+                <i class="fas fa-times-circle text-4xl text-gray-200"></i>
             </div>
         </div>
     </div>
     
-    <!-- Filters and Search -->
-    <div class="card mb-6">
-        <div class="flex flex-wrap gap-4 items-end">
-            <div class="flex-1 min-w-[200px]">
-                <label class="form-label">البحث</label>
-                <div class="relative">
-                    <input type="text" 
-                           name="q" 
-                           value="{{ q }}"
-                           placeholder="بحث برقم العقد، اسم العميل، كود الوحدة..."
-                           class="form-input pl-10"
-                           hx-get="{{ url_for('contracts.search') }}"
-                           hx-trigger="keyup changed delay:500ms"
-                           hx-target="#contracts-table"
-                           hx-include="[name='status']">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="min-w-[150px]">
-                <label class="form-label">الحالة</label>
-                <select name="status" 
-                        class="form-select"
-                        hx-get="{{ url_for('contracts.search') }}"
-                        hx-trigger="change"
-                        hx-target="#contracts-table"
-                        hx-include="[name='q']">
-                    <option value="">جميع الحالات</option>
-                    <option value="نشط" {% if status_filter == 'نشط' %}selected{% endif %}>نشط</option>
-                    <option value="مكتمل" {% if status_filter == 'مكتمل' %}selected{% endif %}>مكتمل</option>
-                    <option value="ملغي" {% if status_filter == 'ملغي' %}selected{% endif %}>ملغي</option>
-                </select>
-            </div>
-            
-            <button type="button" 
-                    class="btn btn-secondary"
-                    onclick="window.location.href='{{ url_for('contracts.index') }}'">
-                إعادة تعيين
+    <!-- Action Buttons -->
+    <div class="flex flex-wrap gap-2 mb-6">
+        <a href="{{ url_for('contracts.add') }}" class="modern-btn modern-btn-primary">
+            <i class="fas fa-plus-circle"></i>
+            <span>إضافة عقد جديد</span>
+        </a>
+        
+        <div class="relative" x-data="{ open: false }">
+            <button @click="open = !open" class="modern-btn modern-btn-secondary">
+                <i class="fas fa-download"></i>
+                <span>تصدير</span>
+                <i class="fas fa-chevron-down text-xs mr-1"></i>
             </button>
+            <div x-show="open" @click.away="open = false" x-transition
+                 class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                <a href="{{ url_for('contracts.export', format='excel') }}" 
+                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <i class="fas fa-file-excel text-green-600 ml-2"></i>
+                    تصدير Excel
+                </a>
+                <a href="{{ url_for('contracts.export', format='csv') }}" 
+                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <i class="fas fa-file-csv text-blue-600 ml-2"></i>
+                    تصدير CSV
+                </a>
+                <a href="{{ url_for('contracts.export', format='json') }}" 
+                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <i class="fas fa-file-code text-purple-600 ml-2"></i>
+                    تصدير JSON
+                </a>
+            </div>
         </div>
+        
+        <a href="{{ url_for('contracts.report') }}" class="modern-btn modern-btn-secondary">
+            <i class="fas fa-chart-bar"></i>
+            <span>التقارير</span>
+        </a>
+        
+        <a href="{{ url_for('installments.index') }}" class="modern-btn modern-btn-secondary">
+            <i class="fas fa-money-bill-wave"></i>
+            <span>الأقساط</span>
+        </a>
     </div>
     
-    <!-- Contracts Table -->
-    <div id="contracts-table">
-        {% include 'contracts/_table.html' %}
+    <!-- Enhanced Search Bar -->
+    {% set search_url = url_for('contracts.search') %}
+    {% set search_placeholder = 'البحث برقم العقد، اسم العميل، كود الوحدة...' %}
+    {% set filter_options = [
+        {'value': '', 'label': 'جميع الحالات'},
+        {'value': 'نشط', 'label': 'نشط'},
+        {'value': 'مكتمل', 'label': 'مكتمل'},
+        {'value': 'ملغي', 'label': 'ملغي'}
+    ] %}
+    {% set filter_name = 'status' %}
+    {% set filter_label = 'الحالة' %}
+    {% include 'shared/search_bar.html' %}
+    
+    <!-- Results Container -->
+    <div id="results-container">
+        {% include 'contracts/_results.html' %}
     </div>
 </div>
 
-<!-- FAB - Floating Action Button -->
-<a href="{{ url_for('contracts.add') }}" class="fab">
-    <i class="fas fa-plus"></i>
+<!-- Floating Action Button -->
+<a href="{{ url_for('contracts.add') }}" class="modern-fab">
+    <i class="fas fa-plus text-xl"></i>
 </a>
 {% endblock %}
