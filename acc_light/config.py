@@ -29,3 +29,13 @@ class Config:
     # Application settings
     SITE_NAME = 'نظام إدارة العقارات'
     DEFAULT_LOCALE = 'ar'
+    
+    # Security settings
+    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'False') == 'True'
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    PERMANENT_SESSION_LIFETIME = 86400  # 24 hours
+    
+    # CSRF Protection
+    WTF_CSRF_ENABLED = True
+    WTF_CSRF_TIME_LIMIT = None

@@ -41,7 +41,7 @@ def format_date(date_obj):
     
     try:
         return date_obj.strftime('%Y-%m-%d')
-    except:
+    except AttributeError:
         return str(date_obj)
 
 

@@ -8,7 +8,7 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
-            return redirect(url_for('auth.login', next=request.url))
+            return redirect(url_for('main.index'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -30,5 +30,7 @@ def is_admin():
 
 
 def hash_password(password):
-    """Hash a password using SHA256"""
-    return hashlib.sha256(password.encode()).hexdigest()
+    """Hash a password using SHA256 with salt"""
+    # في الإنتاج يُنصح باستخدام bcrypt أو argon2
+    salt = "acc_system_salt_2024"  # في الإنتاج استخدم salt عشوائي لكل مستخدم
+    return hashlib.sha256((password + salt).encode()).hexdigest()

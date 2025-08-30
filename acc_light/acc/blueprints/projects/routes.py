@@ -17,7 +17,7 @@ import json
 def index():
     # التحقق من تسجيل الدخول
     if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
+        return redirect(url_for('main.index'))
     
     page = request.args.get('page', 1, type=int)
     q = request.args.get('q', '')

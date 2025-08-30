@@ -52,8 +52,7 @@ def create_app(config_class=Config):
         }
     
     # Register blueprints
-    from acc.blueprints.auth import bp as auth_bp
-    app.register_blueprint(auth_bp, url_prefix='/auth')
+
     
     from acc.blueprints.main import bp as main_bp
     app.register_blueprint(main_bp)
@@ -109,9 +108,7 @@ def create_app(config_class=Config):
     from acc.blueprints.transfers import bp as transfers_bp
     app.register_blueprint(transfers_bp, url_prefix='/transfers')
     
-    # Register error handlers
-    from acc.error_handlers import register_error_handlers
-    register_error_handlers(app)
+
     
     # Register context processors
     from acc.context_processors import inject_global_vars
