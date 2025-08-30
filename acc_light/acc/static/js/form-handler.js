@@ -13,10 +13,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const successMessage = form.dataset.successMessage || 'تمت العملية بنجاح';
             const errorMessage = form.dataset.errorMessage || 'حدث خطأ أثناء المعالجة';
             
-            // Show loading state
-            submitBtn.disabled = true;
-            submitBtn.classList.add('btn-loading');
-            const loadingToast = toast.loading(loadingMessage);
+            // Show loading state only if not disabled
+            let loadingToast = null;
+            if (!form.dataset.noLoading) {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('btn-loading');
+                loadingToast = toast.loading(loadingMessage);
+            }
             
             try {
                 const formData = new FormData(form);
@@ -25,8 +28,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: formData
                 });
                 
-                // Remove loading toast
-                toast.remove(loadingToast);
+                // Remove loading toast if it exists
+                if (loadingToast) {
+                    toast.remove(loadingToast);
+                }
                 
                 if (response.ok) {
                     const contentType = response.headers.get("content-type");
@@ -53,10 +58,12 @@ document.addEventListener('DOMContentLoaded', function() {
                             toast.error(data.message || errorMessage);
                             
                             // If redirect URL provided for duplicate entry
-                            if (data.redirect) {
+                            if (data.duplicate && data.redirect) {
                                 setTimeout(() => {
-                                    window.location.href = data.redirect;
-                                }, 2000);
+                                    if (confirm('هل تريد الانتقال إلى السجل الموجود؟')) {
+                                        window.location.href = data.redirect;
+                                    }
+                                }, 1500);
                             }
                         }
                     } else {
@@ -120,14 +127,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             } catch (error) {
-                // Remove loading toast
-                toast.remove(loadingToast);
+                // Remove loading toast if it exists
+                if (loadingToast) {
+                    toast.remove(loadingToast);
+                }
                 toast.error(`خطأ في الاتصال: ${error.message}`);
             } finally {
-                // Reset button state
-                submitBtn.disabled = false;
-                submitBtn.classList.remove('btn-loading');
-                submitBtn.innerHTML = originalBtnText;
+                // Reset button state only if loading was shown
+                if (!form.dataset.noLoading) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('btn-loading');
+                    submitBtn.innerHTML = originalBtnText;
+                }
             }
         });
     });

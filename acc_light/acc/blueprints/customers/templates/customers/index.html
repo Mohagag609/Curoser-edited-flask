@@ -17,54 +17,53 @@
         </div>
     </div>
     
-    <!-- Header with Actions -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div class="flex flex-wrap gap-3">
-            <a href="{{ url_for('customers.add') }}" class="modern-btn modern-btn-add">
-                <i class="fas fa-plus"></i>
-                إضافة عميل جديد
-            </a>
-            
-            <!-- Export Dropdown -->
-            <div class="relative" x-data="{ open: false }">
-                <button @click="open = !open" class="modern-btn modern-btn-export">
-                    <i class="fas fa-download"></i>
-                    تصدير
-                    <i class="fas fa-chevron-down text-xs"></i>
-                </button>
-                <div x-show="open" @click.away="open = false" x-transition
-                     class="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
-                    <div class="py-1">
-                        <a href="{{ url_for('customers.export', format='excel') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                            <i class="fas fa-file-excel ml-2 text-green-600"></i>
-                            Excel
-                        </a>
-                        <a href="{{ url_for('customers.export', format='csv') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                            <i class="fas fa-file-csv ml-2 text-blue-600"></i>
-                            CSV
-                        </a>
-                        <a href="{{ url_for('customers.export', format='json') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                            <i class="fas fa-file-code ml-2 text-purple-600"></i>
-                            JSON
-                        </a>
-                    </div>
-                </div>
+    <!-- Action Buttons -->
+    <div class="flex flex-wrap gap-2 mb-6">
+        <a href="{{ url_for('customers.add') }}" class="modern-btn modern-btn-primary">
+            <i class="fas fa-plus-circle"></i>
+            <span>إضافة عميل جديد</span>
+        </a>
+        
+        <div class="relative" x-data="{ open: false }">
+            <button @click="open = !open" class="modern-btn modern-btn-secondary">
+                <i class="fas fa-download"></i>
+                <span>تصدير</span>
+                <i class="fas fa-chevron-down text-xs mr-1"></i>
+            </button>
+            <div x-show="open" @click.away="open = false" x-transition
+                 class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                <a href="{{ url_for('customers.export', format='excel') }}" 
+                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <i class="fas fa-file-excel text-green-600 ml-2"></i>
+                    تصدير Excel
+                </a>
+                <a href="{{ url_for('customers.export', format='csv') }}" 
+                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <i class="fas fa-file-csv text-blue-600 ml-2"></i>
+                    تصدير CSV
+                </a>
+                <a href="{{ url_for('customers.export', format='json') }}" 
+                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <i class="fas fa-file-code text-purple-600 ml-2"></i>
+                    تصدير JSON
+                </a>
             </div>
-            
-            <a href="{{ url_for('customers.import_data') }}" class="modern-btn modern-btn-import">
-                <i class="fas fa-upload"></i>
-                استيراد
-            </a>
-            
-            <a href="{{ url_for('customers.report') }}" class="modern-btn modern-btn-secondary">
-                <i class="fas fa-chart-bar"></i>
-                تقارير
-            </a>
         </div>
+        
+        <a href="{{ url_for('customers.import_data') }}" class="modern-btn modern-btn-secondary">
+            <i class="fas fa-upload"></i>
+            <span>استيراد</span>
+        </a>
+        
+        <a href="{{ url_for('customers.report') }}" class="modern-btn modern-btn-secondary">
+            <i class="fas fa-chart-bar"></i>
+            <span>التقارير</span>
+        </a>
     </div>
     
     <!-- Enhanced Search Bar -->
     {% set search_url = url_for('customers.search') %}
+    {% set search_placeholder = 'البحث بالاسم، الهاتف، الرقم القومي...' %}
     {% include 'shared/search_bar.html' %}
     
     <!-- Results Container -->

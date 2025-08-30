@@ -11,7 +11,7 @@
     <div class="card">
         <form method="post" action="{{ url_for('customers.add') }}" 
               data-ajax="true" 
-              data-loading-message="جاري إضافة العميل..."
+              data-no-loading="true"
               data-success-message="تم إضافة العميل بنجاح"
               data-error-message="فشل في إضافة العميل"
               data-reset-on-success="true">
