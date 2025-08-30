@@ -1,14 +1,10 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify, make_response
+from flask import render_template, request, redirect, url_for, flash, jsonify
 from acc.blueprints.customers import bp
 from acc.extensions import db
 from acc.models import Customer, Contract, Voucher, Installment
 from acc.services.utils import generate_uid, log_action, Pagination, format_currency
 from sqlalchemy import or_, func
 from acc.services.code_generator import generate_customer_code
-import csv
-import io
-from datetime import datetime
-
 
 @bp.route('/')
 def index():
@@ -34,7 +30,6 @@ def index():
                          customers=pagination.items,
                          pagination=pagination,
                          q=q)
-
 
 @bp.route('/add', methods=['GET', 'POST'])
 def add():
@@ -115,7 +110,6 @@ def add():
     
     return render_template('customers/add.html')
 
-
 @bp.route('/<string:id>')
 def detail(id):
     customer = Customer.query.get_or_404(id)
@@ -161,7 +155,6 @@ def detail(id):
                          total_debt=total_debt,
                          format_currency=format_currency)
 
-
 @bp.route('/<string:id>/edit', methods=['GET', 'POST'])
 def edit(id):
     customer = Customer.query.get_or_404(id)
@@ -185,7 +178,6 @@ def edit(id):
         return redirect(url_for('customers.detail', id=id))
     
     return render_template('customers/edit.html', customer=customer)
-
 
 @bp.route('/<string:id>/delete', methods=['POST'])
 def delete(id):
@@ -234,7 +226,6 @@ def delete(id):
         flash(f'❌ {error_msg}', 'error')
         return redirect(url_for('customers.index'))
 
-
 @bp.route('/search')
 def search():
     """Advanced search endpoint for AJAX"""
@@ -282,233 +273,4 @@ def search():
                          pagination=pagination,
                          q=q,
                          status=status)
-
-
-@bp.route('/report')
-def report():
-    """عرض صفحة التقارير"""
-    try:
-        # إحصائيات عامة
-        total_customers = Customer.query.count()
-        active_customers = Customer.query.filter_by(status='نشط').count()
-        inactive_customers = Customer.query.filter_by(status='غير نشط').count()
-        
-        # العملاء الأكثر شراءً
-        top_customers = db.session.query(
-            Customer,
-            func.count(Contract.id).label('contracts_count'),
-            func.sum(Contract.total_price).label('total_value')
-        ).join(Contract, Customer.id == Contract.customer_id, isouter=True).group_by(Customer.id).order_by(
-            func.sum(Contract.total_price).desc()
-        ).limit(10).all()
-        
-        # العملاء المدينون
-        debtors = []
-        customers_with_contracts = db.session.query(Customer).join(Contract).distinct().all()
-        
-        for customer in customers_with_contracts:
-            total_value = 0
-            total_paid = 0
-            
-            for contract in customer.contracts:
-                total_value += contract.total_price or 0
-                
-                # حساب المدفوعات
-                installment_ids = [i.id for i in Installment.query.filter_by(unit_id=contract.unit_id).all()]
-                voucher_query = db.session.query(func.sum(Voucher.amount)).filter(
-                    Voucher.type == 'receipt'
-                )
-                
-                if installment_ids:
-                    voucher_query = voucher_query.filter(
-                        or_(
-                            Voucher.linked_ref == contract.id,
-                            Voucher.linked_ref.in_(installment_ids)
-                        )
-                    )
-                else:
-                    voucher_query = voucher_query.filter(Voucher.linked_ref == contract.id)
-                    
-                paid = voucher_query.scalar() or 0
-                total_paid += paid
-            
-            debt = total_value - total_paid
-            if debt > 0:
-                debtors.append({
-                    'customer': customer,
-                    'total_value': total_value,
-                    'total_paid': total_paid,
-                    'debt': debt
-                })
-        
-        debtors.sort(key=lambda x: x['debt'], reverse=True)
-        
-        return render_template('customers/report.html',
-                             total_customers=total_customers,
-                             active_customers=active_customers,
-                             inactive_customers=inactive_customers,
-                             top_customers=top_customers,
-                             debtors=debtors[:10],  # أكبر 10 مدينين
-                             format_currency=format_currency)
-    except Exception as e:
-        flash(f'حدث خطأ في عرض التقارير: {str(e)}', 'error')
-        return redirect(url_for('customers.index'))
-
-
-@bp.route('/export/simple/<format>')
-def export_simple(format):
-    """تصدير بسيط للعملاء"""
-    try:
-        customers = Customer.query.order_by(Customer.name).all()
-        
-        if format == 'csv':
-            # تصدير CSV بسيط
-            output = io.StringIO()
-            writer = csv.writer(output)
-            
-            # العناوين
-            writer.writerow(['الكود', 'الاسم', 'الهاتف', 'الرقم القومي', 'العنوان', 'الحالة'])
-            
-            # البيانات
-            for customer in customers:
-                writer.writerow([
-                    customer.code,
-                    customer.name,
-                    customer.phone or '',
-                    customer.national_id or '',
-                    customer.address or '',
-                    customer.status
-                ])
-            
-            # إنشاء الاستجابة
-            response = make_response('\ufeff' + output.getvalue())
-            response.headers['Content-Type'] = 'text/csv; charset=utf-8-sig'
-            response.headers['Content-Disposition'] = f'attachment; filename=customers_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
-            return response
-            
-        elif format == 'excel':
-            # تصدير Excel بسيط باستخدام HTML
-            html = render_template('customers/export_excel.html', customers=customers)
-            response = make_response(html)
-            response.headers['Content-Type'] = 'application/vnd.ms-excel'
-            response.headers['Content-Disposition'] = f'attachment; filename=customers_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xls'
-            return response
-            
-        else:
-            flash('صيغة التصدير غير مدعومة', 'error')
-            return redirect(url_for('customers.index'))
-            
-    except Exception as e:
-        flash(f'خطأ في التصدير: {str(e)}', 'error')
-        return redirect(url_for('customers.index'))
-
-
-@bp.route('/import/simple', methods=['GET', 'POST'])
-def import_simple():
-    """صفحة استيراد بسيطة"""
-    if request.method == 'GET':
-        return render_template('customers/import_simple.html')
-    
-    if 'file' not in request.files:
-        flash('الرجاء اختيار ملف', 'error')
-        return redirect(url_for('customers.import_simple'))
-    
-    file = request.files['file']
-    if file.filename == '':
-        flash('الرجاء اختيار ملف', 'error')
-        return redirect(url_for('customers.import_simple'))
-    
-    try:
-        # قراءة ملف CSV بسيط
-        content = file.read().decode('utf-8-sig')
-        reader = csv.DictReader(io.StringIO(content))
-        
-        imported_count = 0
-        skipped_count = 0
-        
-        for row in reader:
-            name = row.get('الاسم', '').strip()
-            if not name:
-                continue
-            
-            # تحقق من وجود العميل
-            if Customer.query.filter_by(name=name).first():
-                skipped_count += 1
-                continue
-            
-            # إنشاء عميل جديد
-            customer = Customer(
-                id=generate_uid('C'),
-                code=generate_customer_code(),
-                name=name,
-                phone=row.get('الهاتف', '').strip() or None,
-                national_id=row.get('الرقم القومي', '').strip() or None,
-                address=row.get('العنوان', '').strip() or None,
-                status=row.get('الحالة', 'نشط').strip()
-            )
-            
-            db.session.add(customer)
-            imported_count += 1
-        
-        if imported_count > 0:
-            db.session.commit()
-            flash(f'تم استيراد {imported_count} عميل بنجاح', 'success')
-        
-        if skipped_count > 0:
-            flash(f'تم تخطي {skipped_count} عميل مكرر', 'warning')
-        
-        return redirect(url_for('customers.index'))
-        
-    except Exception as e:
-        db.session.rollback()
-        flash(f'خطأ في الاستيراد: {str(e)}', 'error')
-        return redirect(url_for('customers.import_simple'))
-
-
-@bp.route('/report/simple')
-def report_simple():
-    """صفحة تقارير حديثة مع رسوم بيانية"""
-    try:
-        # إحصائيات بسيطة
-        total_customers = Customer.query.count()
-        active_customers = Customer.query.filter_by(status='نشط').count()
-        inactive_customers = total_customers - active_customers
-        
-        # حساب معدل النمو
-        from datetime import datetime, timedelta
-        now = datetime.now()
-        last_month = now - timedelta(days=30)
-        new_customers = Customer.query.filter(Customer.created_at >= last_month).count()
-        growth_rate = round((new_customers / max(total_customers - new_customers, 1)) * 100, 1)
-        
-        # بيانات العملاء الجدد خلال الشهور الماضية
-        monthly_labels = []
-        monthly_data = []
-        for i in range(6):
-            month_start = now - timedelta(days=(i+1)*30)
-            month_end = now - timedelta(days=i*30)
-            count = Customer.query.filter(
-                Customer.created_at >= month_start,
-                Customer.created_at < month_end
-            ).count()
-            monthly_labels.insert(0, month_start.strftime('%B'))
-            monthly_data.insert(0, count)
-        
-        # أحدث العملاء
-        recent_customers = Customer.query.order_by(Customer.created_at.desc()).limit(5).all()
-        
-        return render_template('customers/report_modern.html',
-                             total_customers=total_customers,
-                             active_customers=active_customers,
-                             inactive_customers=inactive_customers,
-                             growth_rate=growth_rate,
-                             monthly_labels=monthly_labels,
-                             monthly_data=monthly_data,
-                             recent_customers=recent_customers)
-                             
-    except Exception as e:
-        flash(f'خطأ في عرض التقارير: {str(e)}', 'error')
-        return redirect(url_for('customers.index'))
-
-
 
