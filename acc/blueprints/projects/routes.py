@@ -6,7 +6,6 @@ from acc.extensions import db
 from acc.services.utils import generate_uid, log_action, Pagination, parse_number, get_today, format_currency
 from acc.services.project_selection import set_current_project
 from acc.services.code_generator import generate_project_code
-from acc.services.import_handler import ImportHandler
 from sqlalchemy import func, or_
 from datetime import datetime
 import io

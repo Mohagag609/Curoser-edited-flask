@@ -3,7 +3,6 @@ from acc.blueprints.contractors import bp
 from acc.extensions import db
 from acc.models import Contractor
 from acc.services.utils import generate_uid, log_action, Pagination
-from acc.services.import_handler import ImportHandler
 from acc.services.code_generator import generate_contractor_code
 from sqlalchemy import or_, func
 import json
@@ -328,10 +327,14 @@ def import_data():
             return redirect(url_for('contractors.import_data'))
         
         try:
-            handler = ImportHandler()
-            data, error = handler.read_file(file)
+            # تم تعطيل الاستيراد مؤقتاً - يحتاج لتحديث للنظام الجديد
+            flash('❌ نظام الاستيراد قيد التحديث', 'error')
+            return redirect(url_for('contractors.index'))
             
-            if error:
+            # handler = ImportHandler()
+            # data, error = handler.read_file(file)
+            
+            if False:  # error:
                 flash(f'❌ خطأ في قراءة الملف: {error}', 'error')
                 return redirect(url_for('contractors.import_data'))
             

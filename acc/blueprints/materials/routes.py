@@ -4,7 +4,6 @@ from acc.models import Material, ProjectMaterial, Project
 from acc.extensions import db
 from acc.services.utils import generate_uid, log_action, Pagination, format_currency
 from acc.services.code_generator import generate_material_code
-from acc.services.import_handler import ImportHandler
 from sqlalchemy import func, or_
 import io
 import csv
@@ -405,10 +404,14 @@ def import_data():
         # قراءة محتوى الملف
         file_content = file.read()
         
-        # استخدام ImportHandler
-        data, import_errors, file_type = ImportHandler.import_file(file_content, file.filename)
+        # تم تعطيل الاستيراد مؤقتاً - يحتاج لتحديث للنظام الجديد
+        flash('❌ نظام الاستيراد قيد التحديث', 'error')
+        return redirect(url_for('materials.index'))
         
-        if import_errors and not data:
+        # استخدام ImportHandler
+        # data, import_errors, file_type = ImportHandler.import_file(file_content, file.filename)
+        
+        if False:  # import_errors and not data:
             for error in import_errors[:5]:
                 flash(f'❌ {error}', 'error')
             if len(import_errors) > 5:

@@ -3,7 +3,6 @@ from acc.blueprints.contracts import bp
 from acc.extensions import db
 from acc.models import Contract, Customer, Unit, Broker, Installment, Safe, Voucher
 from acc.services.utils import generate_uid, log_action, Pagination, format_currency, format_date
-from acc.services.import_handler import ImportHandler
 from acc.services.code_generator import generate_contract_code
 from sqlalchemy import or_, func
 import json
