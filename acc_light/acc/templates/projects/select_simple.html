@@ -16,37 +16,73 @@
     
     <style>
         body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
         }
         
         .project-card {
             transition: all 0.3s ease;
             cursor: pointer;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
         }
         
         .project-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
         }
         
         .add-project-card {
-            border: 2px dashed #cbd5e0;
-            background: rgba(255,255,255,0.5);
+            border: 3px dashed #e2e8f0;
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(5px);
         }
         
         .add-project-card:hover {
-            border-color: #3182ce;
-            background: rgba(255,255,255,0.8);
+            border-color: #667eea;
+            background: rgba(255,255,255,0.9);
+            border-style: solid;
+        }
+        
+        /* Animation for form appearance */
+        [x-cloak] { display: none !important; }
+        
+        /* Pulse animation for add button */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .add-project-card:hover i {
+            animation: pulse 1s infinite;
+        }
+        
+        /* Gradient text */
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Radio button animation */
+        input[type="radio"]:checked + div {
+            animation: radioSelect 0.3s ease;
+        }
+        
+        @keyframes radioSelect {
+            0% { transform: scale(0.95); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
     </style>
 </head>
 <body>
     <div class="min-h-screen flex flex-col items-center justify-center p-4">
         <!-- Header -->
-        <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-800 mb-2">مرحباً بك</h1>
-            <p class="text-xl text-gray-600">اختر مشروعاً للمتابعة</p>
+        <div class="text-center mb-10">
+            <h1 class="text-5xl font-bold text-white mb-3 drop-shadow-lg">مرحباً بك</h1>
+            <p class="text-xl text-white/90">اختر مشروعاً للمتابعة أو أنشئ مشروعاً جديداً</p>
         </div>
         
         <!-- Projects Grid -->
@@ -80,45 +116,90 @@
             <div x-data="{ showForm: false }">
                 <div @click="showForm = true" 
                      x-show="!showForm"
-                     class="project-card add-project-card rounded-xl p-6 shadow-lg flex flex-col items-center justify-center min-h-[200px]">
-                    <i class="fas fa-plus-circle text-4xl text-gray-400 mb-3"></i>
-                    <p class="text-lg font-medium text-gray-600">إنشاء مشروع جديد</p>
+                     class="project-card add-project-card rounded-xl p-6 shadow-lg flex flex-col items-center justify-center min-h-[200px] group">
+                    <div class="mb-4 p-4 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 group-hover:from-purple-200 group-hover:to-pink-200 transition-all">
+                        <i class="fas fa-plus text-3xl gradient-text"></i>
+                    </div>
+                    <p class="text-lg font-semibold text-gray-700 group-hover:text-gray-900">إنشاء مشروع جديد</p>
+                    <p class="text-sm text-gray-500 mt-1">انقر لإضافة مشروع</p>
                 </div>
                 
                 <!-- Quick Add Form -->
                 <div x-show="showForm" 
                      x-transition
-                     class="bg-white rounded-xl p-6 shadow-lg">
-                    <h3 class="text-lg font-bold mb-4">مشروع جديد</h3>
+                     class="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-xl overflow-hidden">
+                    <!-- Header -->
+                    <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                        <h3 class="text-xl font-bold text-white flex items-center">
+                            <i class="fas fa-folder-plus ml-2"></i>
+                            إنشاء مشروع جديد
+                        </h3>
+                    </div>
                     
-                    <form method="post" action="{{ url_for('projects.add') }}" class="space-y-4">
+                    <!-- Form -->
+                    <form method="post" action="{{ url_for('projects.add') }}" class="p-6 space-y-5">
+                        <!-- Project Name -->
                         <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-signature text-gray-400 ml-1"></i>
+                                اسم المشروع
+                            </label>
                             <input type="text" 
                                    name="name" 
-                                   placeholder="اسم المشروع" 
+                                   placeholder="مثال: مشروع التطوير العقاري" 
                                    required
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
                         </div>
                         
+                        <!-- Project Type -->
                         <div>
-                            <select name="project_type" 
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="عقاري">عقاري</option>
-                                <option value="محاسبي">محاسبي</option>
-                            </select>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-tags text-gray-400 ml-1"></i>
+                                نوع المشروع
+                            </label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="relative cursor-pointer">
+                                    <input type="radio" name="project_type" value="عقاري" checked class="sr-only peer">
+                                    <div class="p-4 border-2 border-gray-200 rounded-lg peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all text-center">
+                                        <i class="fas fa-building text-2xl mb-2 text-gray-600 peer-checked:text-blue-600"></i>
+                                        <p class="font-medium">عقاري</p>
+                                    </div>
+                                </label>
+                                <label class="relative cursor-pointer">
+                                    <input type="radio" name="project_type" value="محاسبي" class="sr-only peer">
+                                    <div class="p-4 border-2 border-gray-200 rounded-lg peer-checked:border-green-500 peer-checked:bg-green-50 transition-all text-center">
+                                        <i class="fas fa-calculator text-2xl mb-2 text-gray-600 peer-checked:text-green-600"></i>
+                                        <p class="font-medium">محاسبي</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Location (Optional) -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-map-marker-alt text-gray-400 ml-1"></i>
+                                الموقع (اختياري)
+                            </label>
+                            <input type="text" 
+                                   name="location" 
+                                   placeholder="مثال: القاهرة الجديدة"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
                         </div>
                         
                         <input type="hidden" name="status" value="نشط">
                         
-                        <div class="flex gap-2">
+                        <!-- Action Buttons -->
+                        <div class="flex gap-3 pt-4">
                             <button type="submit" 
-                                    class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                                <i class="fas fa-save ml-2"></i>
-                                حفظ
+                                    class="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-[1.02] shadow-lg">
+                                <i class="fas fa-check-circle ml-2"></i>
+                                إنشاء المشروع
                             </button>
                             <button type="button" 
                                     @click="showForm = false"
-                                    class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                    class="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200">
+                                <i class="fas fa-times ml-2"></i>
                                 إلغاء
                             </button>
                         </div>
@@ -128,8 +209,12 @@
         </div>
         
         <!-- Footer -->
-        <div class="mt-12 text-center text-gray-500 text-sm">
-            <p>نظام إدارة المشاريع والمحاسبة</p>
+        <div class="mt-12 text-center">
+            <p class="text-white/80 text-sm font-medium">
+                <i class="fas fa-chart-line ml-2"></i>
+                نظام إدارة المشاريع والمحاسبة المتكامل
+            </p>
+            <p class="text-white/60 text-xs mt-1">© 2024 جميع الحقوق محفوظة</p>
         </div>
     </div>
     
