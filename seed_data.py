@@ -38,11 +38,11 @@ def seed_database():
         
         # Add some customers
         customers = [
-            Customer(id=generate_uid('C'), name='أحمد محمد علي', phone='01012345678', 
+            Customer(id=generate_uid('C'), code='C001', name='أحمد محمد علي', phone='01012345678', 
                     national_id='29901011234567', address='القاهرة - مدينة نصر', status='نشط'),
-            Customer(id=generate_uid('C'), name='محمد إبراهيم سالم', phone='01098765432', 
+            Customer(id=generate_uid('C'), code='C002', name='محمد إبراهيم سالم', phone='01098765432', 
                     national_id='29801021234567', address='الجيزة - الهرم', status='نشط'),
-            Customer(id=generate_uid('C'), name='فاطمة أحمد حسن', phone='01234567890', 
+            Customer(id=generate_uid('C'), code='C003', name='فاطمة أحمد حسن', phone='01234567890', 
                     national_id='29701031234567', address='الإسكندرية', status='نشط'),
         ]
         for c in customers:
