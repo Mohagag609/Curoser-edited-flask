@@ -30,33 +30,8 @@
     
     // Handle smooth navigation
     function handleSmoothNavigation() {
-        // Intercept non-AJAX links
-        document.addEventListener('click', function(e) {
-            const link = e.target.closest('a');
-            if (!link) return;
-            
-            // Skip special cases
-            if (
-                link.target === '_blank' ||
-                link.href.startsWith('#') ||
-                link.dataset.noTransition ||
-                link.hasAttribute('download') ||
-                link.hostname !== window.location.hostname ||
-                link.dataset.ajax === 'true' ||
-                link.hasAttribute('hx-get') ||
-                link.hasAttribute('hx-post')
-            ) {
-                return;
-            }
-            
-            // Add exit animation
-            e.preventDefault();
-            document.body.style.opacity = '0.8';
-            
-            setTimeout(() => {
-                window.location.href = link.href;
-            }, 200);
-        });
+        // Page loader handles navigation now
+        // Just ensure animations work on page load
     }
     
     // Handle browser back/forward
