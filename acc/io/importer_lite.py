@@ -75,7 +75,8 @@ class GenericImporter:
             raise ValueError(f"مورد غير معرف: {resource_name}")
         
         self.model_class = self.schema.model_class
-        self.current_project_id = g.get('current_project', {}).get('id') if g.get('current_project') else None
+        current_project = g.get('current_project')
+        self.current_project_id = current_project.id if current_project and hasattr(current_project, 'id') else None
     
     def import_file(self, file_content: bytes, filename: str, mode: str = 'insert') -> ImportResult:
         """استيراد ملف"""

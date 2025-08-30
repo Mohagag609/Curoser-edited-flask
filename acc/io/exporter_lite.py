@@ -26,7 +26,8 @@ class GenericExporter:
             raise ValueError(f"مورد غير معرف: {resource_name}")
         
         self.model_class = self.schema.model_class
-        self.current_project_id = g.get('current_project', {}).get('id') if g.get('current_project') else None
+        current_project = g.get('current_project')
+        self.current_project_id = current_project.id if current_project and hasattr(current_project, 'id') else None
     
     def export_csv(self) -> Any:
         """تصدير كـ CSV"""

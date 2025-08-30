@@ -1,7 +1,7 @@
 """
 مسارات الاستيراد والتصدير
 """
-from flask import Blueprint, request, jsonify, render_template, g
+from flask import Blueprint, request, jsonify, render_template, g, current_app
 from acc.decorators import login_required
 from werkzeug.utils import secure_filename
 from .importer_lite import GenericImporter
@@ -9,8 +9,8 @@ from .exporter_lite import GenericExporter
 from .schemas import list_resources, get_schema
 import os
 
-# حد أقصى لحجم الملف: 5MB
-MAX_FILE_SIZE = 5 * 1024 * 1024
+# حد أقصى لحجم الملف: 1MB (مؤقتاً لتجنب timeout)
+MAX_FILE_SIZE = 1 * 1024 * 1024
 
 # الامتدادات المسموحة
 ALLOWED_EXTENSIONS = {'csv', 'xlsx', 'xls'}
@@ -45,6 +45,7 @@ def resource_page(resource):
 @login_required
 def import_data(resource):
     """استيراد البيانات"""
+    current_app.logger.info(f"Starting import for resource: {resource}")
     try:
         # التحقق من وجود ملف
         if 'file' not in request.files:
@@ -79,7 +80,7 @@ def import_data(resource):
         if len(file_content) > MAX_FILE_SIZE:
             return jsonify({
                 'ok': False,
-                'message': 'حجم الملف كبير جداً (الحد الأقصى 5MB)',
+                'message': 'حجم الملف كبير جداً (الحد الأقصى 1MB)',
                 'report': {'errors': [{'row': 0, 'error': 'حجم الملف كبير جداً'}]}
             }), 400
         
@@ -89,9 +90,13 @@ def import_data(resource):
             mode = 'insert'
         
         # تنفيذ الاستيراد
+        current_app.logger.info(f"Creating importer for {resource}")
         importer = GenericImporter(resource)
+        
+        current_app.logger.info(f"Starting import_file for {file.filename}")
         result = importer.import_file(file_content, file.filename, mode)
         
+        current_app.logger.info(f"Import completed: {result.get_message()}")
         return jsonify(result.to_dict())
         
     except ValueError as e:
@@ -101,6 +106,7 @@ def import_data(resource):
             'report': {'errors': [{'row': 0, 'error': str(e)}]}
         }), 400
     except Exception as e:
+        current_app.logger.error(f"Import error for {resource}: {str(e)}", exc_info=True)
         return jsonify({
             'ok': False,
             'message': 'حدث خطأ في النظام',
