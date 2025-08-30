@@ -144,7 +144,7 @@ def check_db_connections():
         pool = db.engine.pool
         print(f"🔌 Database Connection Pool Status:")
         print(f"   Size: {pool.size()}")
-        print(f"   Checked out: {pool.checked_out_connections}")
+        print(f"   Checked out connections: {pool.checkedout()}")
         print(f"   Overflow: {pool.overflow()}")
         print(f"   Total: {pool.size() + pool.overflow()}")
 
@@ -157,8 +157,9 @@ def vacuum_database():
     app = create_app()
     with app.app_context():
         print("🧹 Vacuuming database...")
-        db.session.execute("VACUUM")
-        db.session.execute("ANALYZE")
+        from sqlalchemy import text
+        db.session.execute(text("VACUUM"))
+        db.session.execute(text("ANALYZE"))
         print("✅ Database vacuumed and analyzed!")
 
 # 7. إضافة Indexes إضافية للبحث

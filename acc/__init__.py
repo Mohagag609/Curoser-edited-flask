@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 from datetime import datetime
 from config import Config
+from acc.services.cache_service import cache
 from acc.extensions import db
 import logging
 from logging.handlers import RotatingFileHandler
