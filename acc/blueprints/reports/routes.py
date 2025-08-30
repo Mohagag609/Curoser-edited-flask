@@ -15,7 +15,6 @@ import io
 def index():
     return render_template('reports/index.html')
 
-
 @bp.route('/units-status')
 def units_status():
     # Get units grouped by status
@@ -37,7 +36,6 @@ def units_status():
                          units=units,
                          total_units=total_units,
                          total_value=total_value)
-
 
 @bp.route('/installments-schedule')
 def installments_schedule():
@@ -94,7 +92,6 @@ def installments_schedule():
                          remaining_amount=remaining_amount,
                          monthly_summary=monthly_summary)
 
-
 @bp.route('/financial-summary')
 def financial_summary():
     from_date = request.args.get('from_date', '')
@@ -148,7 +145,6 @@ def financial_summary():
                          recent_vouchers=recent_vouchers,
                          safes=safes,
                          total_balance=total_balance)
-
 
 @bp.route('/customers-balance')
 def customers_balance():
@@ -211,7 +207,6 @@ def customers_balance():
                          total_paid=total_paid,
                          total_remaining=total_remaining)
 
-
 @bp.route('/partners-summary')
 def partners_summary():
     # Get all partners with their units and percentages
@@ -257,7 +252,6 @@ def partners_summary():
     return render_template('reports/partners_summary.html',
                          partners_data=partners_data)
 
-
 @bp.route('/brokers-commissions')
 def brokers_commissions():
     # Get all contracts with broker info
@@ -298,7 +292,6 @@ def brokers_commissions():
                          total_contracts=total_contracts,
                          total_sales=total_sales,
                          total_commissions=total_commissions)
-
 
 # Export functions
 @bp.route('/export/<report_type>')
@@ -385,7 +378,6 @@ def export_report(report_type):
     # Add BOM for Excel Arabic support
     return '\ufeff' + output.getvalue(), response.status_code, response.headers
 
-
 @bp.route('/project-expenses')
 def project_expenses():
     """تقرير مصروفات المشاريع"""
@@ -444,7 +436,6 @@ def project_expenses():
                          from_date=from_date,
                          to_date=to_date)
 
-
 @bp.route('/partner-balances')
 def partner_balances():
     """تقرير أرصدة الشركاء"""
@@ -490,7 +481,6 @@ def partner_balances():
                          total_debit=total_debit,
                          total_credit=total_credit)
 
-
 @bp.route('/phase-settlements')
 def phase_settlements():
     """تقرير تسويات المراحل"""
@@ -529,7 +519,6 @@ def phase_settlements():
                          to_date=to_date,
                          total_amount=total_amount,
                          total_count=total_count)
-
 
 @bp.route('/project-summary')
 def project_summary():

@@ -81,7 +81,6 @@ def index():
                          today_receipts=today_receipts,
                          today_payments=today_payments)
 
-
 @bp.route('/add', methods=['GET', 'POST'])
 def add():
     if request.method == 'POST':
@@ -153,12 +152,10 @@ def add():
                          partners=partners,
                          today=get_today())
 
-
 @bp.route('/<id>')
 def detail(id):
     voucher = Voucher.query.get_or_404(id)
     return render_template('vouchers/detail.html', voucher=voucher)
-
 
 @bp.route('/<id>/edit', methods=['GET', 'POST'])
 def edit(id):
@@ -225,7 +222,6 @@ def edit(id):
                          contractors=contractors,
                          partners=partners)
 
-
 @bp.route('/<id>/delete', methods=['POST'])
 def delete(id):
     voucher = Voucher.query.get_or_404(id)
@@ -252,7 +248,6 @@ def delete(id):
     
     flash('تم حذف السند بنجاح', 'success')
     return redirect(url_for('vouchers.index'))
-
 
 @bp.route('/print/<id>')
 def print_voucher(id):

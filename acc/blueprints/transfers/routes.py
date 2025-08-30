@@ -9,7 +9,6 @@ from acc.services.inter_project_transfer import (
 from acc.services.project_selection import get_current_project, project_required
 from acc.extensions import db
 
-
 @bp.route('/')
 @project_required
 def index():
@@ -21,7 +20,6 @@ def index():
     return render_template('transfers/index.html',
                          transfers=transfers,
                          summary=summary)
-
 
 @bp.route('/add', methods=['GET', 'POST'])
 @project_required
@@ -74,7 +72,6 @@ def add():
                          other_projects=other_projects,
                          from_safes=from_safes)
 
-
 @bp.route('/detail/<id>')
 @project_required
 def detail(id):
@@ -88,7 +85,6 @@ def detail(id):
         return redirect(url_for('transfers.index'))
     
     return render_template('transfers/detail.html', transfer=transfer)
-
 
 @bp.route('/api/project-safes/<project_id>')
 @project_required

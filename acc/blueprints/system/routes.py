@@ -9,12 +9,10 @@ import json
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 
-
 @bp.route('/')
 def index():
     """الصفحة الرئيسية للنظام"""
     return redirect(url_for('system.settings'))
-
 
 @bp.route('/settings', methods=['GET', 'POST'])
 def settings():
@@ -62,7 +60,6 @@ def settings():
     
     return render_template('system/settings.html', settings=settings)
 
-
 @bp.route('/audit-log')
 def audit_log():
     """سجل التدقيق"""
@@ -100,13 +97,11 @@ def audit_log():
                          date_from=date_from,
                          date_to=date_to)
 
-
 @bp.route('/backup')
 def backup():
     """صفحة النسخ الاحتياطي"""
     backups = get_backups_list()
     return render_template('system/backup.html', backups=backups)
-
 
 @bp.route('/backup/create', methods=['POST'])
 def create_backup_route():
@@ -119,7 +114,6 @@ def create_backup_route():
         flash(f'خطأ في إنشاء النسخة الاحتياطية: {str(e)}', 'error')
     
     return redirect(url_for('system.backup'))
-
 
 @bp.route('/backup/download/<filename>')
 def download_backup(filename):
@@ -134,7 +128,6 @@ def download_backup(filename):
         flash('الملف غير موجود', 'error')
         return redirect(url_for('system.backup'))
 
-
 @bp.route('/backup/restore/<filename>', methods=['POST'])
 def restore_backup_route(filename):
     """استعادة نسخة احتياطية"""
@@ -146,7 +139,6 @@ def restore_backup_route(filename):
         flash(f'خطأ في استعادة النسخة الاحتياطية: {str(e)}', 'error')
     
     return redirect(url_for('system.backup'))
-
 
 @bp.route('/backup/delete/<filename>', methods=['POST'])
 def delete_backup(filename):
@@ -162,7 +154,6 @@ def delete_backup(filename):
         flash('الملف غير موجود', 'error')
     
     return redirect(url_for('system.backup'))
-
 
 @bp.route('/maintenance')
 def maintenance():
@@ -187,7 +178,6 @@ def maintenance():
                          db_info=db_info,
                          system_info=system_info)
 
-
 @bp.route('/maintenance/optimize', methods=['POST'])
 def optimize_database():
     """تحسين قاعدة البيانات"""
@@ -205,7 +195,6 @@ def optimize_database():
     
     return redirect(url_for('system.maintenance'))
 
-
 def get_database_size():
     """حساب حجم قاعدة البيانات"""
     try:
@@ -218,7 +207,6 @@ def get_database_size():
         return "غير متاح"
     except:
         return "غير متاح"
-
 
 def get_system_uptime():
     """حساب وقت تشغيل النظام"""

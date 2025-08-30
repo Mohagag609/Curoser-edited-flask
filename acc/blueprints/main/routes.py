@@ -5,7 +5,6 @@ from acc.services.project_selection import get_current_project, clear_current_pr
 from acc.services.auth import login_required
 from acc.extensions import db
 
-
 @bp.route('/')
 def index():
     """الصفحة الرئيسية - الذهاب مباشرة لاختيار المشروع"""
@@ -16,7 +15,6 @@ def index():
     
     # الذهاب مباشرة لاختيار المشروع
     return redirect(url_for('main.select_project'))
-
 
 @bp.route('/select-project')
 def select_project():
@@ -33,7 +31,6 @@ def select_project():
     return render_template('projects/select_simple.html', 
                          projects=projects,
                          current_project=current_project)
-
 
 @bp.route('/set-project/<project_id>')
 def set_project(project_id):
@@ -55,7 +52,6 @@ def set_project(project_id):
     if next_url:
         return redirect(next_url)
     return redirect(url_for('dashboard.index'))
-
 
 @bp.route('/clear-project')
 def clear_project():

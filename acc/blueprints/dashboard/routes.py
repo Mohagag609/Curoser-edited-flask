@@ -8,7 +8,6 @@ from acc.services.utils import format_currency
 from acc.services.project_selection import project_required, get_current_project
 from acc.services.project_context import filter_by_project
 
-
 @bp.route('/')
 @project_required
 def index():

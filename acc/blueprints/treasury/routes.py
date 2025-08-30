@@ -11,7 +11,6 @@ import io
 from datetime import datetime, date
 from decimal import Decimal
 
-
 @bp.route('/safes')
 def safes_index():
     page = request.args.get('page', 1, type=int)
@@ -46,7 +45,6 @@ def safes_index():
                          total_safes=total_safes,
                          total_balance=total_balance,
                          format_currency=format_currency)
-
 
 @bp.route('/safes/search')
 def safes_search():
@@ -86,7 +84,6 @@ def safes_search():
                          pagination=pagination,
                          q=q,
                          format_currency=format_currency)
-
 
 @bp.route('/safes/add', methods=['GET', 'POST'])
 def safes_add():
@@ -175,7 +172,6 @@ def safes_add():
     
     return render_template('treasury/safes/add.html')
 
-
 @bp.route('/safes/<string:id>')
 def safes_detail(id):
     safe = Safe.query.get_or_404(id)
@@ -204,7 +200,6 @@ def safes_detail(id):
                          total_payments=total_payments,
                          format_currency=format_currency,
                          format_date=format_date)
-
 
 @bp.route('/safes/<string:id>/edit', methods=['GET', 'POST'])
 def safes_edit(id):
@@ -286,7 +281,6 @@ def safes_edit(id):
     
     return render_template('treasury/safes/edit.html', safe=safe, name=name)
 
-
 @bp.route('/safes/<string:id>/delete', methods=['POST'])
 def safes_delete(id):
     try:
@@ -344,7 +338,6 @@ def safes_delete(id):
         
         flash(f'❌ {error_msg}', 'error')
         return redirect(url_for('treasury.safes_index'))
-
 
 @bp.route('/safes/export')
 def safes_export():
@@ -410,7 +403,6 @@ def safes_export():
                              safes=safes,
                              datetime=datetime,
                              format_currency=format_currency)
-
 
 @bp.route('/safes/report')
 def safes_report():

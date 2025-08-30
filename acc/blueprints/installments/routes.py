@@ -77,7 +77,6 @@ def index():
                          total_remaining=total_remaining,
                          today=get_today())
 
-
 @bp.route('/<id>')
 def detail(id):
     installment = Installment.query.get_or_404(id)
@@ -92,7 +91,6 @@ def detail(id):
                          installment=installment,
                          vouchers=vouchers,
                          today=get_today())
-
 
 @bp.route('/<id>/pay', methods=['POST'])
 def pay(id):
@@ -147,7 +145,6 @@ def pay(id):
     
     return redirect(url_for('installments.detail', id=id))
 
-
 @bp.route('/<id>/cancel-payment/<voucher_id>', methods=['POST'])
 def cancel_payment(id, voucher_id):
     installment = Installment.query.get_or_404(id)
@@ -178,7 +175,6 @@ def cancel_payment(id, voucher_id):
     flash('تم إلغاء الدفعة بنجاح', 'success')
     
     return redirect(url_for('installments.detail', id=id))
-
 
 @bp.route('/batch-update', methods=['POST'])
 def batch_update():

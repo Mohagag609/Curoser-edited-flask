@@ -273,4 +273,3 @@ def search():
                          pagination=pagination,
                          q=q,
                          status=status)
-

@@ -10,7 +10,6 @@ from acc.services.utils import generate_uid, log_action, get_today
 from acc.services.project_context import filter_by_project, get_current_project
 from datetime import datetime
 
-
 @bp.route('/phases')
 def phases_index():
     """قائمة المراحل"""
@@ -61,7 +60,6 @@ def phases_index():
                          project_id=project_id,
                          status=status)
 
-
 @bp.route('/phases/add', methods=['GET', 'POST'])
 def add_phase():
     """إضافة مرحلة جديدة"""
@@ -104,7 +102,6 @@ def add_phase():
                          current_project=current_project,
                          today=get_today())
 
-
 @bp.route('/phases/<id>')
 def phase_detail(id):
     """تفاصيل المرحلة"""
@@ -141,7 +138,6 @@ def phase_detail(id):
                          materials=materials,
                          Partner=Partner,
                          get_today=get_today)
-
 
 @bp.route('/phases/<id>/add-expense', methods=['POST'])
 def add_expense(id):
@@ -181,7 +177,6 @@ def add_expense(id):
     flash('تم إضافة المصروف بنجاح', 'success')
     return redirect(url_for('settlement.phase_detail', id=id))
 
-
 @bp.route('/phases/<id>/add-material', methods=['POST'])
 def add_material_issue(id):
     """إضافة صرف مواد للمرحلة"""
@@ -220,7 +215,6 @@ def add_material_issue(id):
     flash('تم إضافة صرف المواد بنجاح', 'success')
     return redirect(url_for('settlement.phase_detail', id=id))
 
-
 @bp.route('/phase/<id>/preview', methods=['GET'])
 def preview_settlement(id):
     """معاينة تسوية المرحلة (JSON)"""
@@ -254,7 +248,6 @@ def preview_settlement(id):
     
     return jsonify(result)
 
-
 @bp.route('/phase/<id>/settle', methods=['POST'])
 def settle_phase_route(id):
     """تنفيذ تسوية المرحلة"""
@@ -268,7 +261,6 @@ def settle_phase_route(id):
     else:
         flash(result['error'], 'error')
         return redirect(url_for('settlement.phase_detail', id=id))
-
 
 @bp.route('/projects/<project_id>/ledger')
 def project_ledger(project_id):
@@ -285,7 +277,6 @@ def project_ledger(project_id):
                          ledger_data=ledger_data,
                          total_debit=total_debit,
                          total_credit=total_credit)
-
 
 @bp.route('/phase-partners')
 def phase_partners_index():
@@ -327,7 +318,6 @@ def phase_partners_index():
                          PhasePartnerGroup=PhasePartnerGroup,
                          func=db.func)
 
-
 @bp.route('/project-partners/add', methods=['POST'])
 def add_project_partner():
     """إضافة شريك للمشروع"""
@@ -359,7 +349,6 @@ def add_project_partner():
     
     flash('تم إضافة الشريك بنجاح', 'success')
     return redirect(request.referrer or url_for('settlement.project_partners_index'))
-
 
 @bp.route('/phase-partner-groups/add', methods=['GET', 'POST'])
 def add_phase_partner_group():
@@ -407,7 +396,6 @@ def add_phase_partner_group():
                          func=db.func,
                          PhasePartnerGroup=PhasePartnerGroup)
 
-
 @bp.route('/phase-partner-groups/<id>/edit', methods=['GET', 'POST'])
 def edit_phase_partner_group(id):
     """تعديل مجموعة شركاء"""
@@ -438,7 +426,6 @@ def edit_phase_partner_group(id):
                          group=group,
                          func=db.func,
                          PhasePartnerGroup=PhasePartnerGroup)
-
 
 @bp.route('/phase-partners/add', methods=['GET', 'POST'])
 def add_phase_partner():
@@ -494,7 +481,6 @@ def add_phase_partner():
                          func=db.func,
                          PhasePartner=PhasePartner)
 
-
 @bp.route('/phase-partners/<id>/edit', methods=['GET', 'POST'])
 def edit_phase_partner(id):
     """تعديل شريك في مجموعة"""
@@ -527,7 +513,6 @@ def edit_phase_partner(id):
                          func=db.func,
                          PhasePartner=PhasePartner)
 
-
 @bp.route('/phase-partners/<id>/delete')
 def delete_phase_partner(id):
     """حذف شريك من مجموعة"""
@@ -540,7 +525,6 @@ def delete_phase_partner(id):
     
     flash('تم حذف الشريك من المجموعة بنجاح', 'success')
     return redirect(url_for('settlement.phase_partners_index', phase_id=phase_id))
-
 
 @bp.route('/phases/<id>/settlement-view')
 def settlement_view(id):
