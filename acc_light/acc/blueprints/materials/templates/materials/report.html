@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}تقارير المواد{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header with Back Button -->
+    <div class="flex items-center gap-4 mb-4">
+        <a href="{{ url_for('materials.index') }}" class="modern-btn modern-btn-back modern-btn-sm">
+            <i class="fas fa-arrow-right"></i>
+            <span>رجوع</span>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">تقارير المواد</h1>
+            <p class="text-sm text-gray-600">إحصائيات وتحليلات المواد</p>
+        </div>
+    </div>
+    
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100">إجمالي المواد</p>
+                    <p class="text-3xl font-bold">{{ total_materials }}</p>
+                </div>
+                <i class="fas fa-boxes text-4xl text-blue-200"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-100">عدد الفئات</p>
+                    <p class="text-3xl font-bold">{{ total_categories }}</p>
+                </div>
+                <i class="fas fa-tags text-4xl text-purple-200"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-orange-100">مواد نقص المخزون</p>
+                    <p class="text-3xl font-bold">{{ low_stock|length }}</p>
+                </div>
+                <i class="fas fa-exclamation-triangle text-4xl text-orange-200"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100">المواد المستخدمة</p>
+                    <p class="text-3xl font-bold">{{ most_used|length }}</p>
+                </div>
+                <i class="fas fa-chart-line text-4xl text-green-200"></i>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Most Used Materials -->
+    <div class="card">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">المواد الأكثر استخداماً</h3>
+            <button onclick="exportReport('most-used')" class="modern-btn modern-btn-export modern-btn-sm">
+                <i class="fas fa-file-excel"></i>
+                تصدير Excel
+            </button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الكود</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المادة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الكمية المستخدمة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">عدد المرات</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for material, total_qty, count in most_used %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ material.code }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <a href="{{ url_for('materials.detail', id=material.id) }}" class="text-blue-600 hover:underline">
+                                {{ material.name }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ "{:,.2f}".format(total_qty) }} {{ material.unit }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ count }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-4 text-center text-gray-500">لا توجد بيانات</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Low Stock Materials -->
+    <div class="card">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-red-600">المواد منخفضة المخزون</h3>
+            <button onclick="exportReport('low-stock')" class="modern-btn modern-btn-export modern-btn-sm">
+                <i class="fas fa-file-excel"></i>
+                تصدير Excel
+            </button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الكود</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المادة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المخزون الحالي</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الحد الأدنى</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">العجز</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for material in low_stock %}
+                    <tr class="bg-red-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ material.code }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <a href="{{ url_for('materials.detail', id=material.id) }}" class="text-blue-600 hover:underline">
+                                {{ material.name }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-semibold">
+                            {{ material.current_stock }} {{ material.unit }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ material.min_stock }} {{ material.unit }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600">
+                            {{ material.min_stock - material.current_stock }} {{ material.unit }}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">جميع المواد في المستوى الآمن</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Category Statistics -->
+    <div class="card">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">إحصائيات حسب الفئة</h3>
+            <button onclick="exportReport('categories')" class="modern-btn modern-btn-export modern-btn-sm">
+                <i class="fas fa-file-excel"></i>
+                تصدير Excel
+            </button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الفئة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">عدد المواد</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">متوسط السعر</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for category, count, avg_cost in category_stats %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {{ category or 'غير مصنف' }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ count }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ format_currency(avg_cost or 0) }}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" class="px-6 py-4 text-center text-gray-500">لا توجد بيانات</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function exportReport(type) {
+    // Implement export functionality
+    toast.info('جاري تصدير التقرير...');
+    // Redirect to export endpoint based on type
+    window.location.href = `/materials/report/export/${type}`;
+}
+</script>
+{% endblock %}

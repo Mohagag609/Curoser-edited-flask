@@ -1,90 +1,291 @@
 {% extends "base.html" %}
 
 {% block title %}المواد{% endblock %}
+{% block page_title %}المواد{% endblock %}
 
 {% block content %}
-<div class="mb-8">
-    <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold text-gray-900">المواد</h2>
-        <a href="{{ url_for('materials.add') }}" class="btn btn-primary">
-            <i class="fas fa-plus ml-2"></i>
-            إضافة مادة
+<div class="space-y-6">
+    <!-- Header with Back Button -->
+    <div class="flex items-center gap-4 mb-4">
+        <a href="{{ url_for('dashboard.index') }}" class="modern-btn modern-btn-back modern-btn-sm">
+            <i class="fas fa-arrow-right"></i>
+            <span>الرئيسية</span>
         </a>
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">إدارة المواد</h1>
+            <p class="text-sm text-gray-600">إدارة المواد والمخزون</p>
+        </div>
     </div>
     
-    <!-- Search -->
-    <div class="card mb-6">
-        <form method="get" class="flex gap-4">
-            <div class="flex-1">
-                <input type="text" name="search" value="{{ search }}" 
-                       placeholder="بحث في المواد..."
-                       class="form-input">
-            </div>
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-search"></i>
-                بحث
-            </button>
-            {% if search %}
-            <a href="{{ url_for('materials.index') }}" class="btn btn-secondary">
-                <i class="fas fa-redo"></i>
-                إلغاء
+    <!-- Header with Actions -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div class="flex flex-wrap gap-3">
+            <a href="{{ url_for('materials.add') }}" class="modern-btn modern-btn-add">
+                <i class="fas fa-plus"></i>
+                إضافة مادة جديدة
             </a>
-            {% endif %}
-        </form>
+            
+            <!-- Export Dropdown -->
+            <div class="relative" x-data="{ open: false }">
+                <button @click="open = !open" class="modern-btn modern-btn-export">
+                    <i class="fas fa-download"></i>
+                    تصدير
+                    <i class="fas fa-chevron-down text-xs"></i>
+                </button>
+                <div x-show="open" @click.away="open = false" x-transition
+                     class="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                    <div class="py-1">
+                        <a href="{{ url_for('materials.export', format='excel') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-file-excel ml-2 text-green-600"></i>
+                            Excel
+                        </a>
+                        <a href="{{ url_for('materials.export', format='csv') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-file-csv ml-2 text-blue-600"></i>
+                            CSV
+                        </a>
+                        <a href="{{ url_for('materials.export', format='json') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-file-code ml-2 text-purple-600"></i>
+                            JSON
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <a href="{{ url_for('materials.import_data') }}" class="modern-btn modern-btn-import">
+                <i class="fas fa-upload"></i>
+                استيراد
+            </a>
+            
+            <a href="{{ url_for('materials.report') }}" class="modern-btn modern-btn-secondary">
+                <i class="fas fa-chart-bar"></i>
+                تقارير
+            </a>
+        </div>
     </div>
     
-    <!-- Table -->
-    <div class="card">
-        <div class="table-container">
-            <table class="table">
-                <thead>
+    <!-- Enhanced Search Bar -->
+    {% set search_url = url_for('materials.search') %}
+    {% set show_filters = true %}
+    {% set show_date_filter = false %}
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div class="flex flex-col lg:flex-row gap-4">
+            <!-- Search Input -->
+            <div class="flex-1">
+                <div class="relative">
+                    <input type="text" 
+                           id="search-input"
+                           name="q"
+                           value="{{ q }}"
+                           placeholder="ابحث بالاسم، الكود، الوحدة، الفئة..."
+                           class="w-full pl-10 pr-10 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                           data-advanced-search
+                           data-search-url="{{ search_url }}"
+                           data-results-container="#results-container"
+                           data-min-chars="1"
+                           data-delay="300">
+                    
+                    <!-- Search Icon -->
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                    
+                    <!-- Clear Button -->
+                    <button type="button" 
+                            class="search-clear absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                            style="display: none;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Filters -->
+            <div class="flex flex-wrap gap-3 items-end">
+                <!-- Category Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">الفئة</label>
+                    <select name="category" 
+                            data-filter="category"
+                            class="px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">جميع الفئات</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}" {{ 'selected' if category == cat }}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Search Button -->
+                <button type="button" 
+                        onclick="document.getElementById('search-input').dispatchEvent(new Event('input'))"
+                        class="modern-btn modern-btn-secondary modern-btn-sm">
+                    <i class="fas fa-filter"></i>
+                    تطبيق
+                </button>
+                
+                <!-- Reset Button -->
+                <button type="button" 
+                        onclick="resetSearch()"
+                        class="modern-btn modern-btn-secondary modern-btn-sm">
+                    <i class="fas fa-redo"></i>
+                    إعادة تعيين
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Results Container -->
+    <div id="results-container">
+        <!-- Materials Table -->
+        <div class="card overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gradient-to-l from-gray-50 to-gray-100">
                     <tr>
-                        <th>اسم المادة</th>
-                        <th>الوحدة</th>
-                        <th>سعر الوحدة</th>
-                        <th>الوصف</th>
-                        <th>الإجراءات</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الكود</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الاسم</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الوحدة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">السعر الافتراضي</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الفئة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">المخزون</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الإجراءات</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="bg-white divide-y divide-gray-200">
                     {% for material in materials %}
-                    <tr>
-                        <td>
-                            <a href="{{ url_for('materials.detail', id=material.id) }}" class="text-blue-600 hover:underline font-medium">
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ material.code }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{{ url_for('materials.detail', id=material.id) }}" 
+                               class="text-sm font-medium text-gray-900 hover:text-blue-600">
                                 {{ material.name }}
                             </a>
                         </td>
-                        <td>{{ material.unit }}</td>
-                        <td>{{ format_currency(material.unit_cost) }}</td>
-                        <td>{{ material.description[:50] + '...' if material.description and material.description|length > 50 else material.description or '-' }}</td>
-                        <td>
-                            <div class="flex gap-2">
-                                <a href="{{ url_for('materials.detail', id=material.id) }}" class="btn btn-sm btn-secondary">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ material.unit }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ format_currency(material.unit_cost) }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if material.category %}
+                                <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                                    {{ material.category }}
+                                </span>
+                            {% else %}
+                                <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <span class="px-2 py-1 text-xs rounded-full {% if material.current_stock < material.min_stock %}bg-red-100 text-red-800{% else %}bg-green-100 text-green-800{% endif %}">
+                                {{ material.current_stock or 0 }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="modern-btn-group">
+                                <a href="{{ url_for('materials.detail', id=material.id) }}" 
+                                   class="modern-btn modern-btn-view modern-btn-sm">
                                     <i class="fas fa-eye"></i>
+                                    <span>عرض</span>
                                 </a>
-                                <a href="{{ url_for('materials.edit', id=material.id) }}" class="btn btn-sm btn-primary">
+                                <a href="{{ url_for('materials.edit', id=material.id) }}" 
+                                   class="modern-btn modern-btn-edit modern-btn-sm">
                                     <i class="fas fa-edit"></i>
+                                    <span>تعديل</span>
                                 </a>
+                                <button type="button"
+                                        data-confirm-delete="true"
+                                        data-delete-url="{{ url_for('materials.delete', id=material.id) }}"
+                                        data-confirm-message="هل أنت متأكد من حذف المادة '{{ material.name }}'؟"
+                                        data-remove-element="tr"
+                                        class="modern-btn modern-btn-delete modern-btn-sm">
+                                    <i class="fas fa-trash"></i>
+                                    <span>حذف</span>
+                                </button>
                             </div>
                         </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="5" class="text-center py-8 text-gray-500">
-                            لا توجد مواد مسجلة
+                        <td colspan="7" class="px-6 py-10 text-center text-gray-500">
+                            <i class="fas fa-boxes text-4xl text-gray-300 mb-3 block"></i>
+                            {% if q or category %}
+                                <p class="text-lg">لم يتم العثور على نتائج</p>
+                                <p class="text-sm mt-2">جرب البحث بكلمات أخرى أو تغيير الفلاتر</p>
+                            {% else %}
+                                <p class="text-lg">لا توجد مواد مسجلة</p>
+                                <a href="{{ url_for('materials.add') }}" class="modern-btn modern-btn-add modern-btn-sm mt-4">
+                                    <i class="fas fa-plus"></i>
+                                    إضافة مادة جديدة
+                                </a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
-            </table>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if pagination and (pagination.prev_num or pagination.next_num) %}
+            <div class="bg-gray-50 px-6 py-3 border-t">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div class="text-sm text-gray-700">
+                        عرض <span class="font-medium">{{ pagination.start_index }}</span> 
+                        إلى <span class="font-medium">{{ pagination.end_index }}</span> 
+                        من <span class="font-medium">{{ pagination.total }}</span> نتيجة
+                    </div>
+                    <div>
+                        <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm">
+                            {% if pagination.prev_num %}
+                            <a href="{{ url_for('materials.index', page=pagination.prev_num, q=q, category=category) }}" 
+                               class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                                <i class="fas fa-chevron-right text-sm"></i>
+                            </a>
+                            {% endif %}
+                            
+                            {% for page_num in pagination.iter_pages() %}
+                                {% if page_num %}
+                                    <a href="{{ url_for('materials.index', page=page_num, q=q, category=category) }}"
+                                       class="relative inline-flex items-center px-4 py-2 text-sm font-semibold {% if page_num == pagination.page %}bg-blue-600 text-white{% else %}text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50{% endif %}">
+                                        {{ page_num }}
+                                    </a>
+                                {% else %}
+                                    <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300">...</span>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if pagination.next_num %}
+                            <a href="{{ url_for('materials.index', page=pagination.next_num, q=q, category=category) }}" 
+                               class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                                <i class="fas fa-chevron-left text-sm"></i>
+                            </a>
+                            {% endif %}
+                        </nav>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
-        
-        <!-- Pagination -->
-        {% if pagination and pagination.pages > 1 %}
-        <div class="mt-6">
-            {{ render_pagination(pagination, 'materials.index', search=search) }}
-        </div>
-        {% endif %}
-    </div>
+    </div> <!-- End Results Container -->
 </div>
+
+<!-- Floating Action Button -->
+<a href="{{ url_for('materials.add') }}" class="modern-fab">
+    <i class="fas fa-plus text-xl"></i>
+</a>
+
+<script>
+function resetSearch() {
+    document.getElementById('search-input').value = '';
+    document.querySelectorAll('[data-filter]').forEach(element => {
+        if (element.type === 'checkbox' || element.type === 'radio') {
+            element.checked = false;
+        } else {
+            element.value = '';
+        }
+    });
+    document.getElementById('search-input').dispatchEvent(new Event('input'));
+}
+</script>
 {% endblock %}

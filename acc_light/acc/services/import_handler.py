@@ -7,7 +7,6 @@ import io
 import zipfile
 import xml.etree.ElementTree as ET
 from typing import List, Dict, Any, Tuple, Optional
-import chardet
 
 
 class ImportHandler:
@@ -50,20 +49,27 @@ class ImportHandler:
     
     @classmethod
     def detect_encoding(cls, file_content: bytes) -> str:
-        """Detect file encoding using chardet"""
-        try:
-            result = chardet.detect(file_content)
-            if result['encoding'] and result['confidence'] > 0.7:
-                return result['encoding']
-        except:
-            pass
+        """Detect file encoding by trying common encodings"""
+        # Try BOM detection first
+        if file_content.startswith(b'\xef\xbb\xbf'):
+            return 'utf-8-sig'
+        elif file_content.startswith(b'\xff\xfe'):
+            return 'utf-16-le'
+        elif file_content.startswith(b'\xfe\xff'):
+            return 'utf-16-be'
         
         # Try common encodings
         for encoding in cls.ENCODINGS:
             try:
-                file_content.decode(encoding)
+                # Try to decode the entire content
+                decoded = file_content.decode(encoding)
+                # If successful, check for common Arabic characters
+                if any('\u0600' <= char <= '\u06FF' for char in decoded[:1000]):
+                    # Prefer windows-1256 for Arabic content if it works
+                    if encoding == 'windows-1256':
+                        return encoding
                 return encoding
-            except:
+            except (UnicodeDecodeError, LookupError):
                 continue
         
         return 'utf-8'
