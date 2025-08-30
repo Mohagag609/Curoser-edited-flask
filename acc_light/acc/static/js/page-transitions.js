@@ -39,12 +39,12 @@
         // Mark body as loaded
         document.body.classList.add('page-loaded');
         
-        // Fade in page content
+        // Make sure content is visible
         const pageContent = document.querySelector('.page-content');
         if (pageContent) {
-            setTimeout(() => {
-                pageContent.classList.add('loaded');
-            }, 100);
+            pageContent.style.opacity = '1';
+            pageContent.style.transform = 'none';
+            pageContent.classList.add('loaded');
         }
         
         // Animate cards

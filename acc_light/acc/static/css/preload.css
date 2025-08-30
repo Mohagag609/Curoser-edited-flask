@@ -1,12 +1,13 @@
 /* Preload styles to prevent FOUC */
 
-/* Hide body until loaded */
-body:not(.page-loaded) {
+/* Hide body until loaded - DISABLED to prevent white screen */
+/* body:not(.page-loaded) {
     opacity: 0;
-}
+} */
 
 body {
     transition: opacity 0.3s ease-out;
+    opacity: 1; /* Always visible */
 }
 
 body.page-loaded {

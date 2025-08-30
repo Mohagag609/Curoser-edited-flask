@@ -49,7 +49,7 @@ def login():
         else:
             flash('اسم المستخدم أو كلمة المرور غير صحيحة', 'error')
     
-    return render_template('auth/login_new.html')
+    return render_template('auth/login.html')
 
 
 @bp.route('/welcome')
@@ -69,7 +69,7 @@ def welcome():
     # آخر الأنشطة (يمكن تحسينها لاحقاً)
     recent_activities = []
     
-    return render_template('welcome_new.html',
+    return render_template('welcome.html',
                          total_projects=total_projects,
                          total_customers=total_customers,
                          total_contracts=total_contracts,

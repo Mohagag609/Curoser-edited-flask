@@ -37,10 +37,10 @@
     100% { transform: rotate(360deg); }
 }
 
-/* Page content fade in */
+/* Page content fade in - DISABLED to prevent white screen */
 .page-content {
-    opacity: 0;
-    transform: translateY(10px);
+    opacity: 1; /* Always visible */
+    transform: none;
     transition: opacity 0.4s ease-out, transform 0.4s ease-out;
 }
 
@@ -89,14 +89,14 @@ body:not(.page-loaded) .hide-during-load {
     transform: translateX(0);
 }
 
-/* Prevent FOUC (Flash of Unstyled Content) */
-.no-fouc {
+/* Prevent FOUC (Flash of Unstyled Content) - DISABLED */
+/* .no-fouc {
     visibility: hidden;
 }
 
 body.page-loaded .no-fouc {
     visibility: visible;
-}
+} */
 
 /* Quick switcher transitions */
 #quick-switcher {
