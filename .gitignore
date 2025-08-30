@@ -60,6 +60,9 @@ htmlcov/
 # Instance folder (Flask)
 instance/
 
+# Duplicate folders
+acc_light/
+
 # Build files
 dist/
 build/
