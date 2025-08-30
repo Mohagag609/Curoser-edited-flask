@@ -1,0 +1,243 @@
+<!-- نموذج الاستيراد والتصدير المتقدم -->
+<div id="importExportModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+        <!-- رأس النموذج -->
+        <div class="flex justify-between items-center mb-4 pb-3 border-b">
+            <h3 class="text-xl font-bold text-gray-900">
+                <span id="modalTitle">استيراد وتصدير البيانات</span>
+            </h3>
+            <button onclick="closeImportExportModal()" class="text-gray-400 hover:text-gray-500">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <!-- التبويبات -->
+        <div class="flex border-b mb-6">
+            <button onclick="switchTab('import')" id="importTab" class="tab-btn px-6 py-3 text-sm font-medium border-b-2 border-blue-500 text-blue-600">
+                <i class="fas fa-upload ml-2"></i>استيراد
+            </button>
+            <button onclick="switchTab('export')" id="exportTab" class="tab-btn px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700">
+                <i class="fas fa-download ml-2"></i>تصدير
+            </button>
+        </div>
+
+        <!-- محتوى الاستيراد -->
+        <div id="importContent" class="tab-content">
+            <!-- الخطوة 1: رفع الملف -->
+            <div id="uploadStep" class="step-content">
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold mb-3">اختر ملف للاستيراد</h4>
+                    
+                    <!-- منطقة السحب والإفلات -->
+                    <div id="dropZone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
+                        <i class="fas fa-cloud-upload-alt text-5xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-600 mb-2">اسحب الملف هنا أو</p>
+                        <input type="file" id="fileInput" class="hidden" accept=".csv,.xlsx,.xls,.json">
+                        <button onclick="document.getElementById('fileInput').click()" class="modern-btn modern-btn-primary">
+                            <i class="fas fa-folder-open ml-2"></i>
+                            اختر ملف
+                        </button>
+                        <p class="text-sm text-gray-500 mt-3">
+                            الملفات المدعومة: CSV, Excel (xlsx/xls), JSON
+                        </p>
+                    </div>
+
+                    <!-- معلومات الملف -->
+                    <div id="fileInfo" class="hidden mt-4 p-4 bg-blue-50 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-semibold text-blue-900">
+                                    <i class="fas fa-file ml-2"></i>
+                                    <span id="fileName"></span>
+                                </p>
+                                <p class="text-sm text-blue-700">
+                                    الحجم: <span id="fileSize"></span> | النوع: <span id="fileType"></span>
+                                </p>
+                            </div>
+                            <button onclick="clearFile()" class="text-red-600 hover:text-red-800">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- نموذج تحميل للمساعدة -->
+                <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                    <h5 class="font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-info-circle ml-1"></i>
+                        تحتاج إلى نموذج؟
+                    </h5>
+                    <p class="text-sm text-gray-600 mb-3">
+                        قم بتحميل نموذج فارغ بالتنسيق المطلوب لملئه بالبيانات
+                    </p>
+                    <div class="flex gap-2">
+                        <button onclick="downloadTemplate('csv')" class="text-blue-600 hover:text-blue-800 text-sm">
+                            <i class="fas fa-file-csv ml-1"></i> نموذج CSV
+                        </button>
+                        <button onclick="downloadTemplate('excel')" class="text-green-600 hover:text-green-800 text-sm">
+                            <i class="fas fa-file-excel ml-1"></i> نموذج Excel
+                        </button>
+                        <button onclick="downloadTemplate('json')" class="text-orange-600 hover:text-orange-800 text-sm">
+                            <i class="fas fa-file-code ml-1"></i> نموذج JSON
+                        </button>
+                    </div>
+                </div>
+
+                <!-- أزرار التحكم -->
+                <div class="flex justify-end mt-6">
+                    <button onclick="closeImportExportModal()" class="modern-btn modern-btn-secondary ml-3">
+                        إلغاء
+                    </button>
+                    <button id="previewBtn" onclick="previewImport()" class="modern-btn modern-btn-primary" disabled>
+                        <i class="fas fa-eye ml-2"></i>
+                        معاينة البيانات
+                    </button>
+                </div>
+            </div>
+
+            <!-- الخطوة 2: معاينة البيانات -->
+            <div id="previewStep" class="step-content hidden">
+                <div class="mb-4">
+                    <h4 class="text-lg font-semibold mb-2">معاينة البيانات</h4>
+                    <p class="text-sm text-gray-600">راجع البيانات قبل الاستيراد</p>
+                </div>
+
+                <!-- معلومات الملف -->
+                <div id="importMetadata" class="mb-4 p-3 bg-blue-50 rounded-lg text-sm">
+                    <!-- سيتم ملؤها ديناميكياً -->
+                </div>
+
+                <!-- رسائل التحذير -->
+                <div id="importWarnings" class="hidden mb-4">
+                    <!-- سيتم ملؤها ديناميكياً -->
+                </div>
+
+                <!-- جدول المعاينة -->
+                <div class="overflow-x-auto mb-4 max-h-96">
+                    <table id="previewTable" class="min-w-full divide-y divide-gray-200">
+                        <!-- سيتم ملؤه ديناميكياً -->
+                    </table>
+                </div>
+
+                <!-- أزرار التحكم -->
+                <div class="flex justify-between mt-6">
+                    <button onclick="backToUpload()" class="modern-btn modern-btn-secondary">
+                        <i class="fas fa-arrow-right ml-2"></i>
+                        رجوع
+                    </button>
+                    <button id="importBtn" onclick="confirmImport()" class="modern-btn modern-btn-primary">
+                        <i class="fas fa-check ml-2"></i>
+                        تأكيد الاستيراد
+                    </button>
+                </div>
+            </div>
+
+            <!-- الخطوة 3: النتائج -->
+            <div id="resultStep" class="step-content hidden">
+                <div id="importResults">
+                    <!-- سيتم ملؤها ديناميكياً -->
+                </div>
+
+                <div class="flex justify-end mt-6">
+                    <button onclick="closeImportExportModal()" class="modern-btn modern-btn-primary">
+                        إغلاق
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- محتوى التصدير -->
+        <div id="exportContent" class="tab-content hidden">
+            <div class="mb-6">
+                <h4 class="text-lg font-semibold mb-3">اختر تنسيق التصدير</h4>
+                
+                <div class="grid grid-cols-3 gap-4">
+                    <!-- CSV -->
+                    <div class="export-option border rounded-lg p-4 text-center hover:border-blue-500 cursor-pointer transition-colors" onclick="exportData('csv')">
+                        <i class="fas fa-file-csv text-4xl text-blue-600 mb-3"></i>
+                        <h5 class="font-semibold">CSV</h5>
+                        <p class="text-sm text-gray-600 mt-1">متوافق مع Excel</p>
+                    </div>
+
+                    <!-- Excel -->
+                    <div class="export-option border rounded-lg p-4 text-center hover:border-green-500 cursor-pointer transition-colors" onclick="exportData('excel')">
+                        <i class="fas fa-file-excel text-4xl text-green-600 mb-3"></i>
+                        <h5 class="font-semibold">Excel</h5>
+                        <p class="text-sm text-gray-600 mt-1">تنسيق احترافي</p>
+                    </div>
+
+                    <!-- JSON -->
+                    <div class="export-option border rounded-lg p-4 text-center hover:border-orange-500 cursor-pointer transition-colors" onclick="exportData('json')">
+                        <i class="fas fa-file-code text-4xl text-orange-600 mb-3"></i>
+                        <h5 class="font-semibold">JSON</h5>
+                        <p class="text-sm text-gray-600 mt-1">للمطورين</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- خيارات التصدير -->
+            <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                <h5 class="font-semibold text-gray-700 mb-3">خيارات التصدير</h5>
+                <div class="space-y-2">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="exportActive" class="ml-2" checked>
+                        <span class="text-sm">تصدير العملاء النشطين فقط</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="exportWithStats" class="ml-2" checked>
+                        <span class="text-sm">تضمين الإحصائيات (Excel فقط)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex justify-end mt-6">
+                <button onclick="closeImportExportModal()" class="modern-btn modern-btn-secondary">
+                    إلغاء
+                </button>
+            </div>
+        </div>
+
+        <!-- مؤشر التحميل -->
+        <div id="loadingOverlay" class="hidden absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-md">
+            <div class="text-center">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <p class="mt-3 text-gray-600" id="loadingText">جاري المعالجة...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.tab-btn {
+    transition: all 0.3s ease;
+}
+
+.tab-btn:hover {
+    background-color: #f9fafb;
+}
+
+.export-option:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+#dropZone.drag-over {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
+}
+
+.import-error {
+    background-color: #fee;
+    border-left: 4px solid #dc2626;
+}
+
+.import-warning {
+    background-color: #fffbeb;
+    border-left: 4px solid #f59e0b;
+}
+
+.import-success {
+    background-color: #f0fdf4;
+    border-left: 4px solid #22c55e;
+}
+</style>

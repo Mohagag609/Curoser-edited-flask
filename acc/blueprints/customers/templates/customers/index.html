@@ -115,36 +115,10 @@
             <span>لصق قائمة</span>
         </button>
         
-        <div class="relative" x-data="{ open: false }">
-            <button @click="open = !open" class="modern-btn modern-btn-secondary">
-                <i class="fas fa-download"></i>
-                <span>تصدير</span>
-                <i class="fas fa-chevron-down text-xs mr-1"></i>
-            </button>
-            <div x-show="open" @click.away="open = false" x-transition
-                 class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
-                <a href="{{ url_for('customers.export', format='excel') }}" 
-                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                    <i class="fas fa-file-excel text-green-600 ml-2"></i>
-                    تصدير Excel
-                </a>
-                <a href="{{ url_for('customers.export', format='csv') }}" 
-                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                    <i class="fas fa-file-csv text-blue-600 ml-2"></i>
-                    تصدير CSV
-                </a>
-                <a href="{{ url_for('customers.export', format='json') }}" 
-                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                    <i class="fas fa-file-code text-purple-600 ml-2"></i>
-                    تصدير JSON
-                </a>
-            </div>
-        </div>
-        
-        <a href="{{ url_for('customers.import_data') }}" class="modern-btn modern-btn-secondary">
-            <i class="fas fa-upload"></i>
-            <span>استيراد</span>
-        </a>
+        <button onclick="openImportExportModal('customers')" class="modern-btn modern-btn-secondary">
+            <i class="fas fa-exchange-alt"></i>
+            <span>استيراد/تصدير</span>
+        </button>
         
         <a href="{{ url_for('customers.report') }}" class="modern-btn modern-btn-secondary">
             <i class="fas fa-chart-bar"></i>
@@ -392,4 +366,12 @@
     </div>
 </div>
 
+<!-- Include Import/Export Modal -->
+{% include 'components/import_export_modal.html' %}
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/import_export.js') }}"></script>
 {% endblock %}
