@@ -4,7 +4,25 @@
 {% block page_title %}العملاء{% endblock %}
 
 {% block content %}
-<div class="space-y-6 page-content">
+<div class="space-y-6 page-content" x-data="{ 
+    showQuickAdd: false,
+    init() {
+        // Keyboard shortcut: Alt+N for new customer
+        document.addEventListener('keydown', (e) => {
+            if (e.altKey && e.key === 'n') {
+                e.preventDefault();
+                this.showQuickAdd = true;
+                this.$nextTick(() => {
+                    document.querySelector('input[name=name]')?.focus();
+                });
+            }
+            // ESC to close
+            if (e.key === 'Escape' && this.showQuickAdd) {
+                this.showQuickAdd = false;
+            }
+        });
+    }
+}">
     <!-- Header with Back Button -->
     <div class="flex items-center gap-4 mb-4">
         <a href="{{ url_for('dashboard.index') }}" class="modern-btn modern-btn-back modern-btn-sm">
@@ -17,12 +35,85 @@
         </div>
     </div>
     
+    <!-- Quick Add Form -->
+    <div x-show="showQuickAdd" x-transition class="mb-6">
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+            <form method="post" action="{{ url_for('customers.add') }}" 
+                  data-ajax="true"
+                  data-no-loading="true"
+                  data-success-message="تم إضافة العميل بنجاح!"
+                  data-reset-on-success="true"
+                  class="flex gap-3 items-end">
+                
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-user text-gray-400 ml-1"></i>
+                        اسم العميل
+                    </label>
+                    <input type="text" 
+                           name="name" 
+                           placeholder="ادخل اسم العميل واضغط Enter" 
+                           required
+                           autofocus
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <div class="flex-shrink-0">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-phone text-gray-400 ml-1"></i>
+                        الهاتف (اختياري)
+                    </label>
+                    <input type="tel" 
+                           name="phone" 
+                           placeholder="رقم الهاتف"
+                           class="w-48 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <input type="hidden" name="status" value="نشط">
+                
+                <button type="submit" 
+                        class="px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all transform hover:scale-105 shadow-md">
+                    <i class="fas fa-check ml-1"></i>
+                    حفظ
+                </button>
+                
+                <button type="button" 
+                        @click="showQuickAdd = false"
+                        class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all">
+                    <i class="fas fa-times"></i>
+                </button>
+            </form>
+            
+            <p class="text-xs text-gray-500 mt-2">
+                <i class="fas fa-info-circle ml-1"></i>
+                نصيحة: اضغط Enter للحفظ السريع
+            </p>
+        </div>
+    </div>
+    
     <!-- Action Buttons -->
     <div class="flex flex-wrap gap-2 mb-6">
-        <a href="{{ url_for('customers.add') }}" class="modern-btn modern-btn-primary">
-            <i class="fas fa-plus-circle"></i>
-            <span>إضافة عميل جديد</span>
+        <button @click="showQuickAdd = !showQuickAdd" 
+                class="modern-btn modern-btn-primary transform transition-all relative group"
+                :class="{ 'scale-95': showQuickAdd }"
+                title="اختصار: Alt+N">
+            <i class="fas" :class="showQuickAdd ? 'fa-times' : 'fa-plus-circle'"></i>
+            <span x-text="showQuickAdd ? 'إلغاء' : 'إضافة عميل سريع'"></span>
+            <!-- Keyboard shortcut hint -->
+            <span class="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                Alt+N للإضافة السريعة
+            </span>
+        </button>
+        
+        <a href="{{ url_for('customers.add') }}" class="modern-btn modern-btn-secondary">
+            <i class="fas fa-user-plus"></i>
+            <span>إضافة مفصلة</span>
         </a>
+        
+        <button @click="$dispatch('open-bulk-add')" class="modern-btn modern-btn-secondary">
+            <i class="fas fa-paste"></i>
+            <span>لصق قائمة</span>
+        </button>
         
         <div class="relative" x-data="{ open: false }">
             <button @click="open = !open" class="modern-btn modern-btn-secondary">
@@ -214,8 +305,89 @@
 </div>
 
 <!-- Floating Action Button -->
-<a href="{{ url_for('customers.add') }}" class="modern-fab">
+<button @click="showQuickAdd = true" class="modern-fab" title="إضافة عميل سريع (Alt+N)">
     <i class="fas fa-plus text-xl"></i>
-</a>
+</button>
+
+<!-- Bulk Add Modal -->
+<div x-data="{ 
+    showBulkModal: false,
+    bulkNames: '',
+    processBulkAdd() {
+        const names = this.bulkNames.split('\n').filter(n => n.trim());
+        if (names.length === 0) {
+            toast.error('الرجاء إدخال أسماء العملاء');
+            return;
+        }
+        
+        // Process each name
+        let successCount = 0;
+        names.forEach(async (name, index) => {
+            const formData = new FormData();
+            formData.append('name', name.trim());
+            formData.append('status', 'نشط');
+            
+            try {
+                const response = await fetch('{{ url_for("customers.add") }}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                if (response.ok) {
+                    successCount++;
+                    if (successCount === names.length) {
+                        toast.success(`تم إضافة ${successCount} عميل بنجاح!`);
+                        this.showBulkModal = false;
+                        this.bulkNames = '';
+                        setTimeout(() => window.location.reload(), 1500);
+                    }
+                }
+            } catch (error) {
+                console.error('Error adding customer:', error);
+            }
+        });
+    }
+}"
+     @open-bulk-add.window="showBulkModal = true">
+    
+    <!-- Modal -->
+    <div x-show="showBulkModal" 
+         x-transition 
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+         @click.self="showBulkModal = false">
+        
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4">
+            <h3 class="text-xl font-bold mb-4">
+                <i class="fas fa-paste text-blue-600 ml-2"></i>
+                إضافة عملاء بالجملة
+            </h3>
+            
+            <p class="text-sm text-gray-600 mb-4">
+                الصق أسماء العملاء (كل اسم في سطر منفصل)
+            </p>
+            
+            <textarea 
+                x-model="bulkNames"
+                placeholder="محمد أحمد&#10;فاطمة علي&#10;أحمد محمود&#10;..."
+                class="w-full h-48 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                autofocus></textarea>
+            
+            <div class="mt-4 flex gap-3">
+                <button @click="processBulkAdd()" 
+                        class="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all">
+                    <i class="fas fa-check ml-2"></i>
+                    إضافة الكل
+                </button>
+                <button @click="showBulkModal = false; bulkNames = ''" 
+                        class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all">
+                    إلغاء
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endblock %}
