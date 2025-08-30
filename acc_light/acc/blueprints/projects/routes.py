@@ -220,11 +220,11 @@ def add():
                 return jsonify({
                     'success': True,
                     'message': f'✅ {success_msg}',
-                    'redirect': url_for('projects.detail', id=project.id)
+                    'redirect': url_for('main.select_project')
                 })
             
             flash(f'✅ {success_msg}', 'success')
-            return redirect(url_for('projects.detail', id=project.id))
+            return redirect(url_for('main.select_project'))
             
         except Exception as e:
             db.session.rollback()
