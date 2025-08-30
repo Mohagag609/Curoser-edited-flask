@@ -2,7 +2,7 @@
 مسارات الاستيراد والتصدير
 """
 from flask import Blueprint, request, jsonify, render_template, g
-from flask_login import login_required
+from acc.decorators import login_required
 from werkzeug.utils import secure_filename
 from .importer import GenericImporter
 from .exporter import GenericExporter
