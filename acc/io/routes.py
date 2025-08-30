@@ -33,7 +33,7 @@ def index():
     })
 
 @bp.route('/<resource>')
-@login_required
+@login_required  
 def resource_page(resource):
     """صفحة استيراد/تصدير مورد محدد"""
     try:
@@ -41,10 +41,77 @@ def resource_page(resource):
         if not schema:
             return jsonify({'error': f'مورد غير موجود: {resource}'}), 404
         
-        return render_template('io/resource_simple.html', 
-                             resource=resource,
-                             schema=schema,
-                             current_project=g.get('current_project', None))
+        # HTML مباشر مؤقتاً
+        html = f'''
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>استيراد/تصدير {schema.plural_name}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-6">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h1 class="text-2xl font-bold mb-4">استيراد وتصدير {schema.plural_name}</h1>
+            
+            <form method="POST" action="/io/{resource}/import" enctype="multipart/form-data" class="mb-6">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">
+                        اختر ملف CSV:
+                    </label>
+                    <input type="file" name="file" accept=".csv" required 
+                           class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700">
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">
+                        وضع الاستيراد:
+                    </label>
+                    <select name="mode" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700">
+                        <option value="insert">إدراج فقط (تخطي المكررات)</option>
+                        <option value="upsert">إدراج أو تحديث</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    بدء الاستيراد
+                </button>
+            </form>
+            
+            <hr class="my-6">
+            
+            <div class="flex gap-4">
+                <a href="/io/{resource}/export?format=csv" 
+                   class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                    تصدير CSV
+                </a>
+                
+                <a href="/io/{resource}/template?format=csv" 
+                   class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                    تحميل قالب
+                </a>
+                
+                <a href="/customers" 
+                   class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
+                    رجوع
+                </a>
+            </div>
+            
+            <div class="mt-6 bg-gray-100 p-4 rounded">
+                <h3 class="font-bold mb-2">الأعمدة المطلوبة:</h3>
+                <ul class="list-disc list-inside">
+                    {"".join([f'<li>{col["label"]} {"(مطلوب)" if col.get("required") else "(اختياري)"}</li>' for col in schema.columns])}
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+        '''
+        
+        return html, 200, {'Content-Type': 'text/html; charset=utf-8'}
+        
     except Exception as e:
         current_app.logger.error(f"Error loading resource page for {resource}: {str(e)}", exc_info=True)
         return jsonify({'error': f'خطأ في تحميل الصفحة: {str(e)}'}), 500
