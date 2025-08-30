@@ -56,8 +56,17 @@ def add():
             # Check if customer with same name exists
             existing = Customer.query.filter_by(name=name).first()
             if existing:
-                flash(f'⚠️ عميل بنفس الاسم "{name}" موجود بالفعل', 'warning')
-                return redirect(url_for('customers.add'))
+                error_msg = f'عميل بنفس الاسم "{name}" موجود بالفعل'
+                
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({
+                        'success': False,
+                        'message': f'⚠️ {error_msg}',
+                        'redirect': url_for('customers.detail', id=existing.id)
+                    }), 400
+                
+                flash(f'⚠️ {error_msg}', 'warning')
+                return redirect(url_for('customers.detail', id=existing.id))
             
             # Validate phone length if provided
             if phone and len(phone) > 20:

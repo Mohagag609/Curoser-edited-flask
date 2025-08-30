@@ -51,6 +51,13 @@ document.addEventListener('DOMContentLoaded', function() {
                             }
                         } else {
                             toast.error(data.message || errorMessage);
+                            
+                            // If redirect URL provided for duplicate entry
+                            if (data.redirect) {
+                                setTimeout(() => {
+                                    window.location.href = data.redirect;
+                                }, 2000);
+                            }
                         }
                     } else {
                         // Handle HTML response (redirect)

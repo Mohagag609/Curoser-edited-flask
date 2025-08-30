@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}تقارير المشاريع{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header with Back Button -->
+    <div class="flex items-center gap-4 mb-4">
+        <a href="{{ url_for('projects.index') }}" class="modern-btn modern-btn-back modern-btn-sm">
+            <i class="fas fa-arrow-right"></i>
+            <span>رجوع</span>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">تقارير المشاريع</h1>
+            <p class="text-sm text-gray-600">إحصائيات وتحليلات شاملة للمشاريع</p>
+        </div>
+    </div>
+    
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100">إجمالي المشاريع</p>
+                    <p class="text-3xl font-bold">{{ total_projects }}</p>
+                </div>
+                <i class="fas fa-building text-4xl text-blue-200"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100">مشاريع نشطة</p>
+                    <p class="text-3xl font-bold">{{ active_projects }}</p>
+                </div>
+                <i class="fas fa-check-circle text-4xl text-green-200"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-yellow-100">مشاريع متوقفة</p>
+                    <p class="text-3xl font-bold">{{ paused_projects }}</p>
+                </div>
+                <i class="fas fa-pause-circle text-4xl text-yellow-200"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-100">مشاريع مكتملة</p>
+                    <p class="text-3xl font-bold">{{ completed_projects }}</p>
+                </div>
+                <i class="fas fa-flag-checkered text-4xl text-purple-200"></i>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Project Types -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="card">
+            <h3 class="text-lg font-semibold mb-4">توزيع المشاريع حسب النوع</h3>
+            <div class="space-y-4">
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-medium">مشاريع عقارية</span>
+                        <span class="text-sm font-bold">{{ real_estate_projects }}</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ (real_estate_projects / total_projects * 100) if total_projects > 0 else 0 }}%"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-medium">مشاريع محاسبية</span>
+                        <span class="text-sm font-bold">{{ accounting_projects }}</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-purple-600 h-2.5 rounded-full" style="width: {{ (accounting_projects / total_projects * 100) if total_projects > 0 else 0 }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Projects -->
+        <div class="card">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">أحدث المشاريع</h3>
+            </div>
+            <div class="space-y-3">
+                {% for project in recent_projects[:5] %}
+                <div class="flex justify-between items-center py-2 border-b">
+                    <div>
+                        <a href="{{ url_for('projects.detail', id=project.id) }}" class="text-sm font-medium text-blue-600 hover:underline">
+                            {{ project.name }}
+                        </a>
+                        <p class="text-xs text-gray-500">{{ project.created_at.strftime('%Y-%m-%d') }}</p>
+                    </div>
+                    <span class="px-2 py-1 text-xs rounded-full {% if project.status == 'نشط' %}bg-green-100 text-green-800{% elif project.status == 'متوقف' %}bg-yellow-100 text-yellow-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ project.status }}
+                    </span>
+                </div>
+                {% else %}
+                <p class="text-center text-gray-500 py-4">لا توجد مشاريع</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Budget Projects -->
+    <div class="card">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">المشاريع بأعلى ميزانية</h3>
+            <button onclick="exportReport('budget')" class="modern-btn modern-btn-export modern-btn-sm">
+                <i class="fas fa-file-excel"></i>
+                تصدير Excel
+            </button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الكود</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المشروع</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">النوع</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الميزانية</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الحالة</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for project in top_budget_projects %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ project.code }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <a href="{{ url_for('projects.detail', id=project.id) }}" class="text-blue-600 hover:underline">
+                                {{ project.name }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ project.project_type }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                            {{ format_currency(project.budget) }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-1 text-xs rounded-full {% if project.status == 'نشط' %}bg-green-100 text-green-800{% elif project.status == 'متوقف' %}bg-yellow-100 text-yellow-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ project.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">لا توجد بيانات</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Real Estate Projects Units Stats -->
+    {% if unit_stats %}
+    <div class="card">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">إحصائيات الوحدات للمشاريع العقارية</h3>
+            <button onclick="exportReport('units')" class="modern-btn modern-btn-export modern-btn-sm">
+                <i class="fas fa-file-excel"></i>
+                تصدير Excel
+            </button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المشروع</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">إجمالي الوحدات</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">وحدات مباعة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">وحدات متاحة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">نسبة الإشغال</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for stat in unit_stats %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <a href="{{ url_for('projects.detail', id=stat.project.id) }}" class="text-blue-600 hover:underline">
+                                {{ stat.project.name }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ stat.total }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-semibold">{{ stat.sold }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-semibold">{{ stat.available }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <span class="text-sm font-medium text-gray-900 ml-2">{{ "%.1f"|format(stat.occupancy_rate) }}%</span>
+                                <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                    <div class="{% if stat.occupancy_rate >= 80 %}bg-green-600{% elif stat.occupancy_rate >= 50 %}bg-yellow-600{% else %}bg-red-600{% endif %} h-2 rounded-full" 
+                                         style="width: {{ stat.occupancy_rate }}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function exportReport(type) {
+    toast.info('جاري تصدير التقرير...');
+    // Implement export functionality based on type
+    window.location.href = `/projects/report/export/${type}`;
+}
+</script>
+{% endblock %}
