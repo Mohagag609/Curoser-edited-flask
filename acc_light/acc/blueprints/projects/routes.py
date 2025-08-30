@@ -258,7 +258,7 @@ def edit(id):
         
         end_date = request.form.get('end_date')
         if end_date:
-            project.end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+            project.expected_end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
         
         project.status = request.form.get('status', project.status)
         project.description = request.form.get('description', '').strip()
