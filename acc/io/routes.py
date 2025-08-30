@@ -26,20 +26,28 @@ def allowed_file(filename):
 def index():
     """الصفحة الرئيسية للاستيراد/التصدير"""
     resources = list_resources()
-    return render_template('io/index.html', resources=resources)
+    # مؤقتاً - إرجاع JSON بسيط
+    return jsonify({
+        'message': 'نظام الاستيراد/التصدير',
+        'resources': resources
+    })
 
 @bp.route('/<resource>')
 @login_required
 def resource_page(resource):
     """صفحة استيراد/تصدير مورد محدد"""
-    schema = get_schema(resource)
-    if not schema:
-        return "مورد غير موجود", 404
-    
-    return render_template('io/resource.html', 
-                         resource=resource,
-                         schema=schema,
-                         current_project=g.get('current_project', None))
+    try:
+        schema = get_schema(resource)
+        if not schema:
+            return jsonify({'error': f'مورد غير موجود: {resource}'}), 404
+        
+        return render_template('io/resource_simple.html', 
+                             resource=resource,
+                             schema=schema,
+                             current_project=g.get('current_project', None))
+    except Exception as e:
+        current_app.logger.error(f"Error loading resource page for {resource}: {str(e)}", exc_info=True)
+        return jsonify({'error': f'خطأ في تحميل الصفحة: {str(e)}'}), 500
 
 @bp.route('/<resource>/import', methods=['POST'])
 @login_required
