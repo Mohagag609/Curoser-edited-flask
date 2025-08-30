@@ -591,8 +591,8 @@
         });
     </script>
     
-    <!-- Toast JS -->
-    <script src="{{ url_for('static', filename='js/toast-enhanced.js') }}"></script>
+    {# <!-- Toast JS - Disabled as per user request -->
+    <script src="{{ url_for('static', filename='js/toast-enhanced.js') }}"></script> #}
     
     <!-- Form Handler JS -->
     <script src="{{ url_for('static', filename='js/form-handler.js') }}"></script>
@@ -601,6 +601,7 @@
     <script src="{{ url_for('static', filename='js/advanced-search.js') }}"></script>
     
     <!-- Convert Flask messages to toasts -->
+    {# Toast notifications disabled as per user request
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             <script>
@@ -636,7 +637,7 @@
                 });
             </script>
         {% endif %}
-    {% endwith %}
+    {% endwith %} #}
     
     {% block extra_scripts %}{% endblock %}
     <!-- Page Loader (First) -->

@@ -219,9 +219,9 @@
     </div>
     
     <!-- Toast Container -->
-    <div id="toast-container" class="fixed top-4 left-4 z-50"></div>
+    {# <div id="toast-container" class="fixed top-4 left-4 z-50"></div> #}
     
-    <!-- Scripts -->
+    {# <!-- Scripts - Toast disabled as per user request -->
     <script src="{{ url_for('static', filename='js/toast-enhanced.js') }}"></script>
     
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -242,6 +242,6 @@
                 });
             </script>
         {% endif %}
-    {% endwith %}
+    {% endwith %} #}
 </body>
 </html>

@@ -316,7 +316,8 @@
     processBulkAdd() {
         const names = this.bulkNames.split('\n').filter(n => n.trim());
         if (names.length === 0) {
-            toast.error('الرجاء إدخال أسماء العملاء');
+            // toast.error('الرجاء إدخال أسماء العملاء'); // Disabled as per user request
+            alert('الرجاء إدخال أسماء العملاء');
             return;
         }
         
@@ -339,7 +340,8 @@
                 if (response.ok) {
                     successCount++;
                     if (successCount === names.length) {
-                        toast.success(`تم إضافة ${successCount} عميل بنجاح!`);
+                        // toast.success(`تم إضافة ${successCount} عميل بنجاح!`); // Disabled as per user request
+                        alert(`تم إضافة ${successCount} عميل بنجاح!`);
                         this.showBulkModal = false;
                         this.bulkNames = '';
                         setTimeout(() => window.location.reload(), 1500);

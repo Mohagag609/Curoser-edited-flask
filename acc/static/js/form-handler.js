@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const data = await response.json();
                         
                         if (data.success) {
-                            toast.success(data.message || successMessage);
+                            // // toast.success(data.message || successMessage); // Disabled as per user request
                             
                             // Redirect if URL provided
                             if (data.redirect) {
@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 form.reset();
                             }
                         } else {
-                            toast.error(data.message || errorMessage);
+                            // toast.error(data.message || errorMessage);
                             
                             // If redirect URL provided for duplicate entry
                             if (data.duplicate && data.redirect) {
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else {
                         // Handle HTML response (redirect)
                         if (response.redirected) {
-                            toast.success(successMessage);
+                            // toast.success(successMessage);
                             setTimeout(() => {
                                 window.location.href = response.url;
                             }, 1000);
@@ -90,17 +90,17 @@ document.addEventListener('DOMContentLoaded', function() {
                                     const message = msg.textContent.trim();
                                     
                                     if (type === 'error') {
-                                        toast.error(message);
+                                        // toast.error(message);
                                     } else if (type === 'success') {
-                                        toast.success(message);
+                                        // toast.success(message);
                                     } else if (type === 'warning') {
-                                        toast.warning(message);
+                                        // toast.warning(message);
                                     } else {
                                         toast.info(message);
                                     }
                                 });
                             } else {
-                                toast.success(successMessage);
+                                // toast.success(successMessage);
                             }
                         }
                     }
@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     if (contentType && contentType.indexOf("application/json") !== -1) {
                         const data = await response.json();
-                        toast.error(data.message || errorMessage);
+                        // toast.error(data.message || errorMessage);
                         
                         // Show field errors if any
                         if (data.errors) {
@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             });
                         }
                     } else {
-                        toast.error(`خطأ: ${response.status} - ${response.statusText}`);
+                        // toast.error(`خطأ: ${response.status} - ${response.statusText}`);
                     }
                 }
             } catch (error) {
@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (loadingToast) {
                     toast.remove(loadingToast);
                 }
-                toast.error(`خطأ في الاتصال: ${error.message}`);
+                // toast.error(`خطأ في الاتصال: ${error.message}`);
             } finally {
                 // Reset button state only if loading was shown
                 if (!form.dataset.noLoading) {
@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (response.ok) {
                         if (contentType && contentType.indexOf("application/json") !== -1) {
                             const data = await response.json();
-                            toast.success(data.message || 'تم الحذف بنجاح');
+                            // toast.success(data.message || 'تم الحذف بنجاح');
                             
                             if (data.redirect) {
                                 setTimeout(() => {
@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 }, 1000);
                             }
                         } else {
-                            toast.success('تم الحذف بنجاح');
+                            // toast.success('تم الحذف بنجاح');
                         }
                         
                         // Remove element from DOM if specified
@@ -207,16 +207,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else {
                         if (contentType && contentType.indexOf("application/json") !== -1) {
                             const data = await response.json();
-                            toast.error(data.message || 'فشل الحذف');
+                            // toast.error(data.message || 'فشل الحذف');
                         } else {
                             const text = await response.text();
-                            toast.error(text || 'فشل الحذف - الرجاء المحاولة مرة أخرى');
+                            // toast.error(text || 'فشل الحذف - الرجاء المحاولة مرة أخرى');
                         }
                     }
                 })
                 .catch(error => {
                     toast.remove(loadingToast);
-                    toast.error(`خطأ في الاتصال: ${error.message}`);
+                    // toast.error(`خطأ في الاتصال: ${error.message}`);
                 });
             }
         }
