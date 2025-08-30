@@ -4,8 +4,8 @@
 from flask import Blueprint, request, jsonify, render_template, g
 from acc.decorators import login_required
 from werkzeug.utils import secure_filename
-from .importer import GenericImporter
-from .exporter import GenericExporter
+from .importer_lite import GenericImporter
+from .exporter_lite import GenericExporter
 from .schemas import list_resources, get_schema
 import os
 

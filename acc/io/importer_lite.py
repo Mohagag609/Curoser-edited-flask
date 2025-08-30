@@ -1,5 +1,5 @@
 """
-محرك الاستيراد العام
+محرك الاستيراد الخفيف - بدون pandas
 """
 import csv
 import io
@@ -10,7 +10,19 @@ from sqlalchemy.exc import IntegrityError
 from acc.extensions import db
 from acc.models import Project
 from .schemas import get_schema, ResourceSchema
-import pandas as pd
+
+# محاولة استيراد pandas و openpyxl
+try:
+    import pandas as pd
+    PANDAS_AVAILABLE = True
+except ImportError:
+    PANDAS_AVAILABLE = False
+
+try:
+    import openpyxl
+    OPENPYXL_AVAILABLE = True
+except ImportError:
+    OPENPYXL_AVAILABLE = False
 
 class ImportResult:
     """نتيجة عملية الاستيراد"""
@@ -63,7 +75,7 @@ class GenericImporter:
             raise ValueError(f"مورد غير معرف: {resource_name}")
         
         self.model_class = self.schema.model_class
-        self.current_project_id = g.current_project.id if hasattr(g, 'current_project') and g.current_project else None
+        self.current_project_id = g.get('current_project', {}).get('id') if g.get('current_project') else None
     
     def import_file(self, file_content: bytes, filename: str, mode: str = 'insert') -> ImportResult:
         """استيراد ملف"""
@@ -74,9 +86,15 @@ class GenericImporter:
         
         try:
             if file_ext == 'csv':
-                df = self._read_csv(file_content)
+                rows = self._read_csv_lite(file_content)
             elif file_ext in ['xlsx', 'xls']:
-                df = self._read_excel(file_content)
+                if not OPENPYXL_AVAILABLE:
+                    result.errors.append({
+                        'row': 0,
+                        'error': 'دعم Excel غير متوفر. يرجى استخدام CSV.'
+                    })
+                    return result
+                rows = self._read_excel_lite(file_content)
             else:
                 result.errors.append({
                     'row': 0,
@@ -91,10 +109,10 @@ class GenericImporter:
             return result
         
         # معالجة البيانات
-        return self._process_dataframe(df, mode, result)
+        return self._process_rows(rows, mode, result)
     
-    def _read_csv(self, content: bytes) -> pd.DataFrame:
-        """قراءة ملف CSV"""
+    def _read_csv_lite(self, content: bytes) -> List[Dict[str, Any]]:
+        """قراءة CSV بدون pandas"""
         # محاولة اكتشاف الترميز
         try:
             text = content.decode('utf-8-sig')
@@ -104,35 +122,78 @@ class GenericImporter:
             except:
                 text = content.decode('windows-1256')
         
-        return pd.read_csv(io.StringIO(text))
-    
-    def _read_excel(self, content: bytes) -> pd.DataFrame:
-        """قراءة ملف Excel"""
-        return pd.read_excel(io.BytesIO(content), engine='openpyxl')
-    
-    def _process_dataframe(self, df: pd.DataFrame, mode: str, result: ImportResult) -> ImportResult:
-        """معالجة DataFrame"""
-        # توحيد أسماء الأعمدة
-        df.columns = [col.strip().lower() for col in df.columns]
+        # قراءة CSV
+        reader = csv.DictReader(io.StringIO(text))
+        rows = []
+        for row in reader:
+            # تنظيف أسماء الأعمدة
+            clean_row = {}
+            for key, value in row.items():
+                if key:
+                    clean_key = key.strip().lower()
+                    clean_row[clean_key] = value.strip() if value else ''
+            rows.append(clean_row)
         
-        # التحقق من الأعمدة المطلوبة
-        missing_required = []
-        for col in self.schema.required_columns:
-            if col not in df.columns:
-                missing_required.append(self.schema.column_map[col]['label'])
+        return rows
+    
+    def _read_excel_lite(self, content: bytes) -> List[Dict[str, Any]]:
+        """قراءة Excel بدون pandas"""
+        from openpyxl import load_workbook
         
-        if missing_required:
+        # تحميل الملف
+        wb = load_workbook(io.BytesIO(content), read_only=True, data_only=True)
+        ws = wb.active
+        
+        rows = []
+        headers = []
+        
+        # قراءة العناوين من الصف الأول
+        for row_idx, row in enumerate(ws.iter_rows(values_only=True)):
+            if row_idx == 0:
+                headers = [str(h).strip().lower() if h else '' for h in row]
+            else:
+                # إنشاء dictionary من الصف
+                row_dict = {}
+                for col_idx, value in enumerate(row):
+                    if col_idx < len(headers) and headers[col_idx]:
+                        row_dict[headers[col_idx]] = str(value).strip() if value is not None else ''
+                
+                # تخطي الصفوف الفارغة
+                if any(row_dict.values()):
+                    rows.append(row_dict)
+        
+        wb.close()
+        return rows
+    
+    def _process_rows(self, rows: List[Dict[str, Any]], mode: str, result: ImportResult) -> ImportResult:
+        """معالجة الصفوف"""
+        if not rows:
             result.errors.append({
                 'row': 0,
-                'error': f'أعمدة مطلوبة مفقودة: {", ".join(missing_required)}'
+                'error': 'الملف فارغ أو لا يحتوي على بيانات'
             })
             return result
+        
+        # التحقق من الأعمدة المطلوبة
+        if rows:
+            first_row_keys = set(rows[0].keys())
+            missing_required = []
+            for col in self.schema.required_columns:
+                if col not in first_row_keys:
+                    missing_required.append(self.schema.column_map[col]['label'])
+            
+            if missing_required:
+                result.errors.append({
+                    'row': 0,
+                    'error': f'أعمدة مطلوبة مفقودة: {", ".join(missing_required)}'
+                })
+                return result
         
         # تحميل السجلات الموجودة للمقارنة
         existing_records = self._load_existing_records()
         
         # معالجة كل صف
-        for idx, row in df.iterrows():
+        for idx, row in enumerate(rows):
             row_num = idx + 2  # رقم الصف في Excel (1-based + header)
             self._process_row(row, row_num, mode, existing_records, result)
         
@@ -179,8 +240,8 @@ class GenericImporter:
             if hasattr(obj_or_row, field):
                 # كائن SQLAlchemy
                 value = getattr(obj_or_row, field)
-            elif isinstance(obj_or_row, (dict, pd.Series)):
-                # صف من DataFrame
+            elif isinstance(obj_or_row, dict):
+                # صف من البيانات
                 value = obj_or_row.get(field)
             else:
                 return None
@@ -193,7 +254,7 @@ class GenericImporter:
         
         return tuple(values) if all(v is not None for v in values) else None
     
-    def _process_row(self, row: pd.Series, row_num: int, mode: str, 
+    def _process_row(self, row: Dict[str, Any], row_num: int, mode: str, 
                      existing_records: Dict, result: ImportResult):
         """معالجة صف واحد"""
         # تطبيع البيانات
@@ -201,7 +262,7 @@ class GenericImporter:
         errors = []
         
         for col_name, col_def in self.schema.column_map.items():
-            if col_name in row and pd.notna(row[col_name]):
+            if col_name in row and row[col_name]:
                 value = row[col_name]
                 
                 # تطبيق دالة التطبيع
@@ -288,7 +349,7 @@ class GenericImporter:
                     'error': f'خطأ في الإنشاء: {str(e)}'
                 })
     
-    def _process_relationships(self, data: Dict, row: pd.Series, errors: List[str]):
+    def _process_relationships(self, data: Dict, row: Dict[str, Any], errors: List[str]):
         """معالجة العلاقات (مثل المشروع، المورد)"""
         # معالجة كود المشروع للوحدات
         if self.resource_name == 'units' and 'project_code' in row:

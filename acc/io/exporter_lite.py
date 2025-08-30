@@ -1,14 +1,20 @@
 """
-محرك التصدير العام
+محرك التصدير الخفيف - بدون pandas
 """
 import csv
 import io
 from typing import List, Dict, Any, Optional
 from flask import g, make_response
-import pandas as pd
-from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill, Alignment
 from .schemas import get_schema, ResourceSchema
+
+# محاولة استيراد openpyxl
+try:
+    import openpyxl
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    OPENPYXL_AVAILABLE = True
+except ImportError:
+    OPENPYXL_AVAILABLE = False
 
 class GenericExporter:
     """مصدر عام للبيانات"""
@@ -20,7 +26,7 @@ class GenericExporter:
             raise ValueError(f"مورد غير معرف: {resource_name}")
         
         self.model_class = self.schema.model_class
-        self.current_project_id = g.current_project.id if hasattr(g, 'current_project') and g.current_project else None
+        self.current_project_id = g.get('current_project', {}).get('id') if g.get('current_project') else None
     
     def export_csv(self) -> Any:
         """تصدير كـ CSV"""
@@ -29,30 +35,42 @@ class GenericExporter:
         
         # إنشاء CSV
         output = io.StringIO()
-        writer = csv.DictWriter(output, fieldnames=self._get_export_columns(), extrasaction='ignore')
         
-        # كتابة العناوين
-        headers = {}
-        for col in self.schema.columns:
-            headers[col['name']] = col['label']
-        writer.writerow(headers)
+        # كتابة BOM لدعم Excel العربي
+        output.write('\ufeff')
         
-        # كتابة البيانات
-        for row in data:
-            writer.writerow(row)
+        if data:
+            # كتابة العناوين
+            writer = csv.DictWriter(output, fieldnames=self._get_export_columns())
+            
+            # كتابة أسماء الأعمدة بالعربية
+            headers = {}
+            for col in self.schema.columns:
+                headers[col['name']] = col['label']
+            writer.writerow(headers)
+            
+            # كتابة البيانات
+            for row in data:
+                writer.writerow(row)
+        else:
+            # إذا لم توجد بيانات، اكتب العناوين فقط
+            writer = csv.writer(output)
+            headers = [col['label'] for col in self.schema.columns]
+            writer.writerow(headers)
         
         # إنشاء الاستجابة
         response = make_response(output.getvalue())
         response.headers['Content-Type'] = 'text/csv; charset=utf-8-sig'
         response.headers['Content-Disposition'] = f'attachment; filename={self.resource_name}_export.csv'
         
-        # إضافة BOM لدعم Excel العربي
-        response.data = '\ufeff' + response.data
-        
         return response
     
     def export_excel(self) -> Any:
         """تصدير كـ Excel"""
+        if not OPENPYXL_AVAILABLE:
+            # إذا لم تكن openpyxl متوفرة، استخدم CSV
+            return self.export_csv()
+        
         # جلب البيانات
         data = self._fetch_data()
         
@@ -104,7 +122,7 @@ class GenericExporter:
                 row[col['name']] = col.get('example', '')
             example_data.append(row)
         
-        if format == 'xlsx':
+        if format == 'xlsx' and OPENPYXL_AVAILABLE:
             return self._generate_excel_template(example_data)
         else:
             return self._generate_csv_template(example_data)
@@ -112,6 +130,10 @@ class GenericExporter:
     def _generate_csv_template(self, example_data: List[Dict]) -> Any:
         """توليد قالب CSV"""
         output = io.StringIO()
+        
+        # كتابة BOM
+        output.write('\ufeff')
+        
         writer = csv.DictWriter(output, fieldnames=self._get_export_columns())
         
         # كتابة العناوين
@@ -127,9 +149,6 @@ class GenericExporter:
         response = make_response(output.getvalue())
         response.headers['Content-Type'] = 'text/csv; charset=utf-8-sig'
         response.headers['Content-Disposition'] = f'attachment; filename={self.resource_name}_template.csv'
-        
-        # إضافة BOM
-        response.data = '\ufeff' + response.data
         
         return response
     
@@ -200,6 +219,9 @@ class GenericExporter:
         # إضافة فلتر المشروع إذا لزم الأمر
         if self._needs_project_filter():
             query = query.filter_by(project_id=self.current_project_id)
+        
+        # تحديد عدد السجلات لتجنب مشاكل الذاكرة
+        query = query.limit(10000)
         
         # جلب البيانات
         records = query.all()
