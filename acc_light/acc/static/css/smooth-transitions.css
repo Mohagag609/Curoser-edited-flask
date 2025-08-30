@@ -2,9 +2,17 @@
 
 /* Base transitions */
 * {
-    transition-property: opacity, transform, background-color, border-color, box-shadow;
+    transition-property: opacity, background-color, border-color, box-shadow;
     transition-duration: 0.3s;
     transition-timing-function: ease-out;
+}
+
+/* Prevent zoom issues */
+html, body {
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 /* Page loading states */
@@ -44,11 +52,11 @@ body {
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: scale(0.95);
+        transform: translateY(10px);
     }
     to {
         opacity: 1;
-        transform: scale(1);
+        transform: translateY(0);
     }
 }
 
