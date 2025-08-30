@@ -329,14 +329,14 @@
                         :class="{ 'hidden': !sidebarOpen }">الأقسام الرئيسية</h3>
                     
                     <a href="{{ url_for('customers.index') }}" 
-                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if 'customers' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
+                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if request.endpoint and 'customers' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
                         <i class="fas fa-users text-lg" :class="{ 'mx-auto': !sidebarOpen }"></i>
                         <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">العملاء</span>
                     </a>
                     
                     {% if current_project.has_feature('units') %}
                     <a href="{{ url_for('units.index') }}" 
-                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if 'units' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
+                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if request.endpoint and 'units' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
                         <i class="fas fa-building text-lg" :class="{ 'mx-auto': !sidebarOpen }"></i>
                         <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">الوحدات</span>
                     </a>
@@ -344,20 +344,20 @@
                     
                     {% if current_project.has_feature('contracts') %}
                     <a href="{{ url_for('contracts.index') }}" 
-                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if 'contracts' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
+                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if request.endpoint and 'contracts' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
                         <i class="fas fa-file-contract text-lg" :class="{ 'mx-auto': !sidebarOpen }"></i>
                         <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">العقود</span>
                     </a>
                     {% endif %}
                     
                     <a href="{{ url_for('partners.index') }}" 
-                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if 'partners' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
+                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if request.endpoint and 'partners' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
                         <i class="fas fa-handshake text-lg" :class="{ 'mx-auto': !sidebarOpen }"></i>
                         <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">الشركاء</span>
                     </a>
                     
                     <a href="{{ url_for('treasury.safes_index') }}" 
-                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if 'treasury' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
+                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if request.endpoint and 'treasury' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
                         <i class="fas fa-vault text-lg" :class="{ 'mx-auto': !sidebarOpen }"></i>
                         <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">الخزينة</span>
                     </a>
@@ -370,20 +370,20 @@
                     
                     {% if current_project.has_feature('installments') %}
                     <a href="{{ url_for('installments.index') }}" 
-                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if 'installments' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
+                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if request.endpoint and 'installments' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
                         <i class="fas fa-calendar-alt text-lg" :class="{ 'mx-auto': !sidebarOpen }"></i>
                         <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">الأقساط</span>
                     </a>
                     {% endif %}
                     
                     <a href="{{ url_for('vouchers.index') }}" 
-                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if 'vouchers' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
+                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if request.endpoint and 'vouchers' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
                         <i class="fas fa-receipt text-lg" :class="{ 'mx-auto': !sidebarOpen }"></i>
                         <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">السندات</span>
                     </a>
                     
                     <a href="{{ url_for('transfers.index') }}" 
-                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if 'transfers' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
+                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if request.endpoint and 'transfers' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
                         <i class="fas fa-exchange-alt text-lg" :class="{ 'mx-auto': !sidebarOpen }"></i>
                         <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">التحويلات</span>
                     </a>
@@ -395,25 +395,25 @@
                         :class="{ 'hidden': !sidebarOpen }">الموارد</h3>
                     
                     <a href="{{ url_for('suppliers.index') }}" 
-                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if 'suppliers' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
+                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if request.endpoint and 'suppliers' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
                         <i class="fas fa-truck text-lg" :class="{ 'mx-auto': !sidebarOpen }"></i>
                         <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">الموردون</span>
                     </a>
                     
                     <a href="{{ url_for('contractors.index') }}" 
-                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if 'contractors' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
+                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if request.endpoint and 'contractors' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
                         <i class="fas fa-hard-hat text-lg" :class="{ 'mx-auto': !sidebarOpen }"></i>
                         <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">المقاولون</span>
                     </a>
                     
                     <a href="{{ url_for('materials.index') }}" 
-                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if 'materials' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
+                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if request.endpoint and 'materials' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
                         <i class="fas fa-cubes text-lg" :class="{ 'mx-auto': !sidebarOpen }"></i>
                         <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">المواد</span>
                     </a>
                     
                     <a href="{{ url_for('brokers.index') }}" 
-                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if 'brokers' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
+                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if request.endpoint and 'brokers' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
                         <i class="fas fa-user-tie text-lg" :class="{ 'mx-auto': !sidebarOpen }"></i>
                         <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">السماسرة</span>
                     </a>
@@ -425,13 +425,13 @@
                         :class="{ 'hidden': !sidebarOpen }">إدارة المشروع</h3>
                     
                     <a href="{{ url_for('settlement.phases_index') }}" 
-                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if 'phases' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
+                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if request.endpoint and 'phases' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
                         <i class="fas fa-tasks text-lg" :class="{ 'mx-auto': !sidebarOpen }"></i>
                         <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">المراحل</span>
                     </a>
                     
                     <a href="{{ url_for('settlement.phase_partners_index') }}" 
-                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if 'phase_partners' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
+                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if request.endpoint and 'phase_partners' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
                         <i class="fas fa-user-friends text-lg" :class="{ 'mx-auto': !sidebarOpen }"></i>
                         <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">شركاء المراحل</span>
                     </a>
@@ -443,31 +443,31 @@
                         :class="{ 'hidden': !sidebarOpen }">التقارير والإعدادات</h3>
                     
                     <a href="{{ url_for('reports.index') }}" 
-                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if 'reports' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
+                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if request.endpoint and 'reports' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
                         <i class="fas fa-chart-bar text-lg" :class="{ 'mx-auto': !sidebarOpen }"></i>
                         <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">التقارير</span>
                     </a>
                     
                     <a href="{{ url_for('projects.index') }}" 
-                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if 'projects' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
+                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if request.endpoint and 'projects' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
                         <i class="fas fa-folder text-lg" :class="{ 'mx-auto': !sidebarOpen }"></i>
                         <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">المشاريع</span>
                     </a>
                     
                     <a href="{{ url_for('system.settings') }}" 
-                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if 'settings' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
+                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if request.endpoint and 'settings' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
                         <i class="fas fa-cog text-lg" :class="{ 'mx-auto': !sidebarOpen }"></i>
                         <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">الإعدادات</span>
                     </a>
                     
                     <a href="{{ url_for('system.backup') }}" 
-                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if 'backup' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
+                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if request.endpoint and 'backup' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
                         <i class="fas fa-database text-lg" :class="{ 'mx-auto': !sidebarOpen }"></i>
                         <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">النسخ الاحتياطي</span>
                     </a>
                     
                     <a href="{{ url_for('system.audit_log') }}" 
-                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if 'audit' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
+                       class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if request.endpoint and 'audit' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
                         <i class="fas fa-history text-lg" :class="{ 'mx-auto': !sidebarOpen }"></i>
                         <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">سجل التدقيق</span>
                     </a>

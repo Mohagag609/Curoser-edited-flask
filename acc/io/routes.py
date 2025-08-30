@@ -39,7 +39,7 @@ def resource_page(resource):
     return render_template('io/resource.html', 
                          resource=resource,
                          schema=schema,
-                         current_project=g.current_project)
+                         current_project=g.get('current_project', None))
 
 @bp.route('/<resource>/import', methods=['POST'])
 @login_required
