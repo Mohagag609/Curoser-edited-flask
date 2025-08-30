@@ -30,10 +30,10 @@ def index():
     query = query.order_by(Customer.name)
     pagination = Pagination(query, page)
     
-    return render_template('customers/index.html', 
-                         customers=pagination.items,
-                         pagination=pagination,
-                         q=q)
+    # استخدام DataTables بدلاً من pagination
+    customers = query.all()  # جلب كل العملاء للجدول
+    return render_template('customers/index_datatables.html', 
+                         customers=customers)
 
 
 @bp.route('/add', methods=['GET', 'POST'])
@@ -467,21 +467,40 @@ def import_simple():
 
 @bp.route('/report/simple')
 def report_simple():
-    """صفحة تقارير بسيطة"""
+    """صفحة تقارير حديثة مع رسوم بيانية"""
     try:
         # إحصائيات بسيطة
         total_customers = Customer.query.count()
         active_customers = Customer.query.filter_by(status='نشط').count()
         inactive_customers = total_customers - active_customers
         
-        # أحدث 10 عملاء
-        recent_customers = Customer.query.order_by(Customer.created_at.desc()).limit(10).all()
+        # حساب معدل النمو
+        from datetime import datetime, timedelta
+        now = datetime.now()
+        last_month = now - timedelta(days=30)
+        new_customers = Customer.query.filter(Customer.created_at >= last_month).count()
+        growth_rate = round((new_customers / max(total_customers - new_customers, 1)) * 100, 1)
         
-        return render_template('customers/report_simple.html',
+        # بيانات العملاء الجدد خلال الشهور الماضية
+        monthly_labels = []
+        monthly_data = []
+        for i in range(6):
+            month_start = now - timedelta(days=(i+1)*30)
+            month_end = now - timedelta(days=i*30)
+            count = Customer.query.filter(
+                Customer.created_at >= month_start,
+                Customer.created_at < month_end
+            ).count()
+            monthly_labels.insert(0, month_start.strftime('%B'))
+            monthly_data.insert(0, count)
+        
+        return render_template('customers/report_charts.html',
                              total_customers=total_customers,
                              active_customers=active_customers,
                              inactive_customers=inactive_customers,
-                             recent_customers=recent_customers)
+                             growth_rate=growth_rate,
+                             monthly_labels=monthly_labels,
+                             monthly_data=monthly_data)
                              
     except Exception as e:
         flash(f'خطأ في عرض التقارير: {str(e)}', 'error')

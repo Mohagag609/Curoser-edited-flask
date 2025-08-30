@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}تقارير العملاء{% endblock %}
+{% block page_title %}تقارير العملاء{% endblock %}
+
+{% block head %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- الإحصائيات -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">إجمالي العملاء</h5>
+                    <h2 class="mb-0">{{ total_customers }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">عملاء نشطون</h5>
+                    <h2 class="mb-0">{{ active_customers }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-danger">
+                <div class="card-body">
+                    <h5 class="card-title">غير نشطين</h5>
+                    <h2 class="mb-0">{{ inactive_customers }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">معدل النمو</h5>
+                    <h2 class="mb-0">{{ growth_rate }}%</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- الرسوم البيانية -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">توزيع حالة العملاء</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">العملاء الجدد خلال الشهور الماضية</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="monthlyChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- زر التصدير -->
+    <div class="mt-4">
+        <button onclick="exportCharts()" class="btn btn-primary">
+            <i class="fas fa-download"></i> تصدير التقرير كصورة
+        </button>
+        <a href="{{ url_for('customers.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> رجوع
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+// رسم بياني دائري لحالة العملاء
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+new Chart(statusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['نشط', 'غير نشط'],
+        datasets: [{
+            data: [{{ active_customers }}, {{ inactive_customers }}],
+            backgroundColor: ['#28a745', '#dc3545'],
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    font: {
+                        size: 14
+                    }
+                }
+            }
+        }
+    }
+});
+
+// رسم بياني خطي للعملاء الجدد
+const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+new Chart(monthlyCtx, {
+    type: 'line',
+    data: {
+        labels: {{ monthly_labels|tojson }},
+        datasets: [{
+            label: 'عملاء جدد',
+            data: {{ monthly_data|tojson }},
+            borderColor: '#007bff',
+            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+            tension: 0.3,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        }
+    }
+});
+
+// تصدير الرسوم البيانية
+function exportCharts() {
+    alert('يمكنك أخذ لقطة شاشة للصفحة أو استخدام Print للحصول على PDF');
+    window.print();
+}
+</script>
+{% endblock %}
