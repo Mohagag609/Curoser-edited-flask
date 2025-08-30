@@ -1,5 +1,6 @@
 from functools import wraps
 from flask import session, redirect, url_for, request
+import hashlib
 
 
 def login_required(f):
@@ -26,3 +27,8 @@ def get_current_user():
 def is_admin():
     """التحقق من أن المستخدم مدير"""
     return session.get('user_role') == 'admin'
+
+
+def hash_password(password):
+    """Hash a password using SHA256"""
+    return hashlib.sha256(password.encode()).hexdigest()

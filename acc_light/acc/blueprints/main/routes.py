@@ -31,7 +31,7 @@ def select_project():
     if not projects:
         flash('لا توجد مشاريع. يرجى إضافة مشروع جديد للمتابعة.', 'info')
     
-    return render_template('main/select_project.html', 
+    return render_template('projects/select.html', 
                          projects=projects,
                          current_project=current_project)
 
