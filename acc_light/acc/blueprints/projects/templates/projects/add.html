@@ -19,7 +19,7 @@
     <div class="card">
         <form method="post" action="{{ url_for('projects.add') }}"
               data-ajax="true"
-              data-loading-message="جاري إنشاء المشروع..."
+              data-no-loading="true"
               data-success-message="تم إنشاء المشروع بنجاح!"
               data-error-message="حدث خطأ أثناء إنشاء المشروع"
               data-redirect-on-success="true">

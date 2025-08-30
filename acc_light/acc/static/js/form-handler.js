@@ -25,7 +25,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const formData = new FormData(form);
                 const response = await fetch(form.action, {
                     method: form.method || 'POST',
-                    body: formData
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
                 });
                 
                 // Remove loading toast if it exists

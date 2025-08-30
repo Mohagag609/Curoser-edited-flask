@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, jsonify
 from datetime import datetime
 from config import Config
 from acc.extensions import db
@@ -15,17 +15,24 @@ def create_app(config_class=Config):
     db.init_app(app)
     
     # Configure logging
-    if not app.debug and not app.testing:
-        if not os.path.exists('logs'):
-            os.mkdir('logs')
-        file_handler = RotatingFileHandler('logs/acc.log', maxBytes=10240, backupCount=10)
-        file_handler.setFormatter(logging.Formatter(
-            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-        ))
-        file_handler.setLevel(logging.INFO)
-        app.logger.addHandler(file_handler)
-        app.logger.setLevel(logging.INFO)
-        app.logger.info('ACC application startup')
+    if not os.path.exists('logs'):
+        os.mkdir('logs')
+    
+    # Always log errors to file
+    file_handler = RotatingFileHandler('logs/acc.log', maxBytes=10240000, backupCount=10)
+    file_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+    ))
+    file_handler.setLevel(logging.ERROR)
+    app.logger.addHandler(file_handler)
+    
+    # Console logging
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    app.logger.addHandler(console_handler)
+    
+    app.logger.setLevel(logging.INFO)
+    app.logger.info('ACC application startup')
     
     # Template context processors
     @app.context_processor
@@ -124,8 +131,16 @@ def create_app(config_class=Config):
     
     @app.errorhandler(Exception)
     def handle_exception(e):
-        # Log the error
-        app.logger.error(f'Unhandled exception: {str(e)}')
+        # Log the error with full traceback
+        import traceback
+        app.logger.error(f'Unhandled exception: {str(e)}\n{traceback.format_exc()}')
+        
+        # If AJAX request, return JSON error
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({
+                'success': False,
+                'message': f'❌ خطأ في الخادم: {str(e)}'
+            }), 500
         
         # If in debug mode, re-raise to see the full traceback
         if app.debug:

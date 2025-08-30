@@ -228,6 +228,10 @@ def add():
             
         except Exception as e:
             db.session.rollback()
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"Project creation error: {error_details}")
+            
             error_msg = f'حدث خطأ أثناء إنشاء المشروع: {str(e)}'
             
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
