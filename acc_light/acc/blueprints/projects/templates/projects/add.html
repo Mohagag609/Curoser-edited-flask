@@ -129,7 +129,7 @@
                         تاريخ البداية
                     </label>
                     <input type="date" name="start_date" 
-                           value="{{ get_today() }}"
+                           value="{{ datetime.now().strftime('%Y-%m-%d') }}"
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
                 

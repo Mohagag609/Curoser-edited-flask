@@ -233,7 +233,7 @@ def add():
             return redirect(url_for('projects.add'))
     
     contractors = Contractor.query.order_by(Contractor.name).all()
-    return render_template('projects/add.html', contractors=contractors, get_today=get_today)
+    return render_template('projects/add.html', contractors=contractors, datetime=datetime)
 
 
 @bp.route('/<id>/edit', methods=['GET', 'POST'])

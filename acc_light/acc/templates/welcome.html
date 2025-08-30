@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}مرحباً بك{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center py-12">
+    <div class="max-w-4xl mx-auto text-center">
+        <!-- Welcome Animation -->
+        <div class="mb-8">
+            <div class="inline-flex items-center justify-center w-32 h-32 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full mb-6 animate-pulse">
+                <i class="fas fa-hands-clapping text-5xl text-white"></i>
+            </div>
+            
+            <h1 class="text-5xl font-bold text-gray-800 mb-4 animate-fade-in">
+                مرحباً بك، {{ current_user.name if current_user.is_authenticated else 'ضيفنا العزيز' }}! 👋
+            </h1>
+            
+            <p class="text-xl text-gray-600 mb-8 animate-fade-in-delay">
+                سعداء بعودتك إلى نظام إدارة المشاريع المتكامل
+            </p>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+            <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white transform hover:scale-105 transition-transform duration-300">
+                <i class="fas fa-building text-4xl mb-3"></i>
+                <h3 class="text-3xl font-bold">{{ total_projects|default(0) }}</h3>
+                <p class="text-blue-100">المشاريع النشطة</p>
+            </div>
+            
+            <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white transform hover:scale-105 transition-transform duration-300">
+                <i class="fas fa-users text-4xl mb-3"></i>
+                <h3 class="text-3xl font-bold">{{ total_customers|default(0) }}</h3>
+                <p class="text-green-100">العملاء</p>
+            </div>
+            
+            <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white transform hover:scale-105 transition-transform duration-300">
+                <i class="fas fa-file-contract text-4xl mb-3"></i>
+                <h3 class="text-3xl font-bold">{{ total_contracts|default(0) }}</h3>
+                <p class="text-purple-100">العقود</p>
+            </div>
+            
+            <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white transform hover:scale-105 transition-transform duration-300">
+                <i class="fas fa-coins text-4xl mb-3"></i>
+                <h3 class="text-3xl font-bold">{{ format_currency(total_revenue|default(0)) }}</h3>
+                <p class="text-orange-100">الإيرادات</p>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="space-y-6">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-6">ماذا تريد أن تفعل اليوم؟</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Select Project -->
+                <a href="{{ url_for('main.select_project') }}" class="group">
+                    <div class="bg-white rounded-xl shadow-lg p-8 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+                        <div class="w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-project-diagram text-3xl text-white"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-2">اختيار مشروع</h3>
+                        <p class="text-gray-600">اختر المشروع الذي تريد العمل عليه</p>
+                    </div>
+                </a>
+                
+                <!-- Dashboard -->
+                <a href="{{ url_for('dashboard.index') }}" class="group">
+                    <div class="bg-white rounded-xl shadow-lg p-8 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+                        <div class="w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-chart-line text-3xl text-white"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-2">لوحة التحكم</h3>
+                        <p class="text-gray-600">عرض الإحصائيات والتقارير</p>
+                    </div>
+                </a>
+                
+                <!-- Quick Add -->
+                <div class="group cursor-pointer" onclick="showQuickAdd()">
+                    <div class="bg-white rounded-xl shadow-lg p-8 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+                        <div class="w-20 h-20 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-plus text-3xl text-white"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-2">إضافة سريعة</h3>
+                        <p class="text-gray-600">إضافة عميل أو عقد أو مشروع</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        {% if recent_activities %}
+        <div class="mt-12">
+            <h3 class="text-xl font-semibold text-gray-700 mb-4">آخر الأنشطة</h3>
+            <div class="bg-white rounded-lg shadow-md p-6 text-right">
+                <ul class="space-y-3">
+                    {% for activity in recent_activities[:5] %}
+                    <li class="flex items-center gap-3 text-gray-600">
+                        <i class="fas fa-circle text-xs text-blue-500"></i>
+                        <span>{{ activity.description }}</span>
+                        <span class="text-sm text-gray-400 mr-auto">{{ activity.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Quick Add Modal -->
+<div id="quickAddModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg p-8 max-w-md w-full">
+        <h3 class="text-xl font-semibold mb-6">إضافة سريعة</h3>
+        <div class="grid grid-cols-2 gap-4">
+            <a href="{{ url_for('customers.add') }}" class="btn modern-btn modern-btn-add">
+                <i class="fas fa-user-plus"></i>
+                عميل جديد
+            </a>
+            <a href="{{ url_for('projects.add') }}" class="btn modern-btn modern-btn-add">
+                <i class="fas fa-building"></i>
+                مشروع جديد
+            </a>
+            <a href="{{ url_for('contracts.add') }}" class="btn modern-btn modern-btn-add">
+                <i class="fas fa-file-contract"></i>
+                عقد جديد
+            </a>
+            <a href="{{ url_for('suppliers.add') }}" class="btn modern-btn modern-btn-add">
+                <i class="fas fa-truck"></i>
+                مورد جديد
+            </a>
+        </div>
+        <button onclick="hideQuickAdd()" class="mt-6 w-full btn modern-btn modern-btn-secondary">
+            إلغاء
+        </button>
+    </div>
+</div>
+
+<style>
+    @keyframes fade-in {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .animate-fade-in {
+        animation: fade-in 0.8s ease-out;
+    }
+    
+    .animate-fade-in-delay {
+        animation: fade-in 0.8s ease-out 0.2s both;
+    }
+</style>
+
+<script>
+function showQuickAdd() {
+    document.getElementById('quickAddModal').classList.remove('hidden');
+}
+
+function hideQuickAdd() {
+    document.getElementById('quickAddModal').classList.add('hidden');
+}
+</script>
+{% endblock %}
