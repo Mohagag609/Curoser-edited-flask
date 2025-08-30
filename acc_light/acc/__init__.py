@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from datetime import datetime
 from config import Config
 from acc.extensions import db
@@ -105,5 +105,34 @@ def create_app(config_class=Config):
     # Register error handlers
     from acc.error_handlers import register_error_handlers
     register_error_handlers(app)
+    
+    # Register context processors
+    from acc.context_processors import inject_global_vars
+    app.context_processor(inject_global_vars)
+    
+    # Error handlers
+    @app.errorhandler(404)
+    def not_found_error(error):
+        return render_template('error/404.html'), 404
+    
+    @app.errorhandler(500)
+    def internal_error(error):
+        db.session.rollback()
+        import traceback
+        error_details = traceback.format_exc() if app.debug else None
+        return render_template('error/500.html', error=error_details), 500
+    
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        # Log the error
+        app.logger.error(f'Unhandled exception: {str(e)}')
+        
+        # If in debug mode, re-raise to see the full traceback
+        if app.debug:
+            raise e
+            
+        # Otherwise show a generic error page
+        db.session.rollback()
+        return render_template('error/500.html'), 500
     
     return app
