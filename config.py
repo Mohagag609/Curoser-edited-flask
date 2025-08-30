@@ -19,8 +19,12 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         'connect_args': {
-            'check_same_thread': False
-        } if 'sqlite' in db_url else {}
+            'check_same_thread': False,
+            'timeout': 30  # 30 seconds timeout
+        } if 'sqlite' in db_url else {},
+        'pool_size': 10,
+        'pool_recycle': 3600,  # Recycle connections after 1 hour
+        'pool_pre_ping': True  # Verify connections before using
     }
     
     # Pagination

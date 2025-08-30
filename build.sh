@@ -17,36 +17,14 @@ echo "Installing Node dependencies and building CSS..."
 npm install
 npm run build
 
-# DROP AND RECREATE ALL TABLES
-echo "Recreating database tables..."
+# Create tables only if they don't exist (SAFE MODE)
+echo "Checking database tables..."
 python3 -c "
 from app import app, db
-from sqlalchemy import text
 with app.app_context():
-    print('Dropping all existing tables with CASCADE...')
-    # Get all table names
-    inspector = db.inspect(db.engine)
-    tables = inspector.get_table_names()
-    
-    # Drop all tables with CASCADE
-    with db.engine.connect() as conn:
-        # Drop each table with CASCADE
-        for table in tables:
-            try:
-                # Use quotes for table names to handle reserved words
-                conn.execute(text(f'DROP TABLE IF EXISTS \"{table}\" CASCADE'))
-                print(f'Dropped table: {table}')
-            except Exception as e:
-                print(f'Warning dropping {table}: {e}')
-        conn.commit()
-    
-    print('Creating fresh tables...')
+    print('Creating tables if not exist...')
     db.create_all()
-    print('Database tables created successfully')
+    print('Database tables ready!')
 "
-
-# Seed initial data
-echo "Seeding initial data..."
-python3 seed_data.py
 
 echo "=== Build completed successfully ==="
