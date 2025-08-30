@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>قائمة العملاء</title>
+    <style>
+        table { border-collapse: collapse; width: 100%; direction: rtl; }
+        th { background-color: #f2f2f2; font-weight: bold; text-align: right; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+    </style>
+</head>
+<body>
+    <h2>قائمة العملاء</h2>
+    <p>تاريخ التصدير: {{ moment().format('YYYY-MM-DD HH:mm') }}</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>الكود</th>
+                <th>الاسم</th>
+                <th>الهاتف</th>
+                <th>الرقم القومي</th>
+                <th>العنوان</th>
+                <th>الحالة</th>
+                <th>تاريخ التسجيل</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for customer in customers %}
+            <tr>
+                <td>{{ customer.code }}</td>
+                <td>{{ customer.name }}</td>
+                <td>{{ customer.phone or '' }}</td>
+                <td>{{ customer.national_id or '' }}</td>
+                <td>{{ customer.address or '' }}</td>
+                <td>{{ customer.status }}</td>
+                <td>{{ customer.created_at.strftime('%Y-%m-%d') if customer.created_at else '' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <p style="margin-top: 20px;">
+        <strong>إجمالي العملاء:</strong> {{ customers|length }}
+    </p>
+</body>
+</html>
