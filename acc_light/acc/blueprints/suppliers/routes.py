@@ -1,8 +1,9 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify, make_response
+from flask import render_template, request, redirect, url_for, flash, jsonify, Response, send_file
 from acc.blueprints.suppliers import bp
 from acc.extensions import db
 from acc.models import Supplier
-from acc.services.utils import generate_uid, log_action, Pagination, format_currency
+from acc.services.utils import generate_uid, log_action, Pagination
+from acc.services.import_handler import ImportHandler
 from acc.services.code_generator import generate_supplier_code
 from sqlalchemy import or_, func
 import json
@@ -15,459 +16,480 @@ from datetime import datetime
 def index():
     page = request.args.get('page', 1, type=int)
     q = request.args.get('q', '')
+    status = request.args.get('status', '')
     
-    suppliers = Supplier.query
+    query = Supplier.query
     
+    # Text search
     if q:
-        suppliers = suppliers.filter(
+        search_term = f'%{q}%'
+        query = query.filter(
             or_(
-                Supplier.name.contains(q),
-                Supplier.phone.contains(q),
-                Supplier.email.contains(q),
-                Supplier.address.contains(q)
+                Supplier.name.ilike(search_term),
+                Supplier.code.ilike(search_term),
+                Supplier.phone.ilike(search_term),
+                Supplier.email.ilike(search_term),
+                Supplier.address.ilike(search_term),
+                Supplier.contact_person.ilike(search_term)
             )
         )
     
-    suppliers = suppliers.order_by(Supplier.name)
-    pagination = Pagination(suppliers, page)
+    # Status filter
+    if status:
+        query = query.filter(Supplier.status == status)
     
-    return render_template('suppliers/index.html', 
-                         suppliers=pagination.items, 
+    # Order by
+    query = query.order_by(Supplier.created_at.desc())
+    
+    # Pagination
+    pagination = Pagination(query, page, per_page=20)
+    
+    # Calculate stats
+    total_suppliers = Supplier.query.count()
+    active_suppliers = Supplier.query.filter_by(status='نشط').count()
+    inactive_suppliers = Supplier.query.filter_by(status='غير نشط').count()
+    
+    return render_template('suppliers/index.html',
+                         suppliers=pagination.items,
                          pagination=pagination,
-                         q=q)
+                         q=q,
+                         status=status,
+                         total_suppliers=total_suppliers,
+                         active_suppliers=active_suppliers,
+                         inactive_suppliers=inactive_suppliers)
+
+
+@bp.route('/search')
+def search():
+    """Advanced search endpoint for AJAX"""
+    q = request.args.get('q', '')
+    status = request.args.get('status', '')
+    page = request.args.get('page', 1, type=int)
+    
+    query = Supplier.query
+    
+    # Text search
+    if q:
+        search_term = f'%{q}%'
+        query = query.filter(
+            or_(
+                Supplier.name.ilike(search_term),
+                Supplier.code.ilike(search_term),
+                Supplier.phone.ilike(search_term),
+                Supplier.email.ilike(search_term),
+                Supplier.address.ilike(search_term),
+                Supplier.contact_person.ilike(search_term)
+            )
+        )
+    
+    # Status filter
+    if status:
+        query = query.filter(Supplier.status == status)
+    
+    # Order by
+    query = query.order_by(Supplier.created_at.desc())
+    
+    # Pagination
+    pagination = Pagination(query, page, per_page=20)
+    
+    # Check if AJAX request
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return render_template('suppliers/_results.html',
+                             suppliers=pagination.items,
+                             pagination=pagination,
+                             q=q,
+                             status=status)
+    
+    # Otherwise return full page
+    return render_template('suppliers/index.html',
+                         suppliers=pagination.items,
+                         pagination=pagination,
+                         q=q,
+                         status=status)
 
 
 @bp.route('/add', methods=['GET', 'POST'])
 def add():
     if request.method == 'POST':
         try:
-            # Get form data
             name = request.form.get('name', '').strip()
-            phone = request.form.get('phone', '').strip()
-            email = request.form.get('email', '').strip()
-            address = request.form.get('address', '').strip()
-            notes = request.form.get('notes', '').strip()
+            contact_person = request.form.get('contact_person', '').strip()
+            phone = request.form.get('phone', '').strip() or None
+            email = request.form.get('email', '').strip() or None
+            address = request.form.get('address', '').strip() or None
+            status = request.form.get('status', 'نشط')
+            notes = request.form.get('notes', '').strip() or None
             
-            # Validate required fields
             if not name:
-                flash('⚠️ الرجاء إدخال اسم المورد', 'warning')
+                error_msg = 'الرجاء إدخال اسم المورد'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'success': False, 'message': f'❌ {error_msg}'}), 400
+                flash(f'❌ {error_msg}', 'error')
                 return redirect(url_for('suppliers.add'))
             
-            # Check if supplier exists
+            # Check for duplicate name
             existing = Supplier.query.filter_by(name=name).first()
             if existing:
-                flash('⚠️ يوجد مورد بنفس الاسم', 'warning')
-                return redirect(url_for('suppliers.add'))
+                error_msg = f'مورد بنفس الاسم "{name}" موجود بالفعل'
+                
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({
+                        'success': False,
+                        'message': f'⚠️ {error_msg}',
+                        'redirect': url_for('suppliers.detail', id=existing.id)
+                    }), 400
+                
+                flash(f'⚠️ {error_msg}', 'warning')
+                return redirect(url_for('suppliers.detail', id=existing.id))
             
-            # Create supplier with auto-generated code
+            # Generate code automatically
+            code = generate_supplier_code()
+            
             supplier = Supplier(
-                id=generate_uid('S'),
-                code=generate_supplier_code(),
+                id=generate_uid('SUP'),
+                code=code,
                 name=name,
+                contact_person=contact_person,
                 phone=phone,
                 email=email,
                 address=address,
+                status=status,
                 notes=notes
             )
             
             db.session.add(supplier)
             db.session.commit()
             
-            # Log action
             log_action('إضافة مورد', {'id': supplier.id, 'name': supplier.name})
             
-            flash(f'✅ تم إضافة المورد "{supplier.name}" بنجاح', 'success')
+            success_msg = f'تم إضافة المورد بنجاح! رقم المورد: {code}'
             
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({
                     'success': True,
-                    'message': f'تم إضافة المورد "{supplier.name}" بنجاح',
-                    'redirect': url_for('suppliers.index')
+                    'message': f'✅ {success_msg}',
+                    'redirect': url_for('suppliers.detail', id=supplier.id)
                 })
             
-            return redirect(url_for('suppliers.index'))
+            flash(f'✅ {success_msg}', 'success')
+            return redirect(url_for('suppliers.detail', id=supplier.id))
             
         except Exception as e:
             db.session.rollback()
-            error_msg = f'❌ خطأ في إضافة المورد: {str(e)}'
-            flash(error_msg, 'error')
+            error_msg = f'حدث خطأ أثناء إضافة المورد: {str(e)}'
             
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'success': False, 'message': error_msg}), 500
-                
+                return jsonify({'success': False, 'message': f'❌ {error_msg}'}), 500
+            
+            flash(f'❌ {error_msg}', 'error')
             return redirect(url_for('suppliers.add'))
     
     return render_template('suppliers/add.html')
 
 
-@bp.route('/edit/<id>', methods=['GET', 'POST'])
+@bp.route('/<string:id>')
+def detail(id):
+    supplier = Supplier.query.get_or_404(id)
+    
+    # Get purchase statistics
+    # TODO: Add purchase orders model later
+    total_purchases = 0
+    pending_payments = 0
+    
+    return render_template('suppliers/detail.html',
+                         supplier=supplier,
+                         total_purchases=total_purchases,
+                         pending_payments=pending_payments)
+
+
+@bp.route('/<string:id>/edit', methods=['GET', 'POST'])
 def edit(id):
     supplier = Supplier.query.get_or_404(id)
     
     if request.method == 'POST':
         try:
-            # Get form data
-            name = request.form.get('name', '').strip()
-            phone = request.form.get('phone', '').strip()
-            email = request.form.get('email', '').strip()
-            address = request.form.get('address', '').strip()
-            notes = request.form.get('notes', '').strip()
+            supplier.name = request.form.get('name', '').strip()
+            supplier.contact_person = request.form.get('contact_person', '').strip()
+            supplier.phone = request.form.get('phone', '').strip() or None
+            supplier.email = request.form.get('email', '').strip() or None
+            supplier.address = request.form.get('address', '').strip() or None
+            supplier.status = request.form.get('status', supplier.status)
+            supplier.notes = request.form.get('notes', '').strip() or None
             
-            # Validate
-            if not name:
-                flash('⚠️ الرجاء إدخال اسم المورد', 'warning')
+            if not supplier.name:
+                error_msg = 'الرجاء إدخال اسم المورد'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'success': False, 'message': f'❌ {error_msg}'}), 400
+                flash(f'❌ {error_msg}', 'error')
                 return redirect(url_for('suppliers.edit', id=id))
             
-            # Check duplicate name
-            existing = Supplier.query.filter_by(name=name).filter(Supplier.id != id).first()
+            # Check for duplicate name (excluding current supplier)
+            existing = Supplier.query.filter(
+                Supplier.name == supplier.name,
+                Supplier.id != supplier.id
+            ).first()
+            
             if existing:
-                flash('⚠️ يوجد مورد آخر بنفس الاسم', 'warning')
+                error_msg = f'مورد آخر بنفس الاسم "{supplier.name}" موجود بالفعل'
+                
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({
+                        'success': False,
+                        'message': f'⚠️ {error_msg}',
+                        'redirect': url_for('suppliers.detail', id=existing.id)
+                    }), 400
+                
+                flash(f'⚠️ {error_msg}', 'warning')
                 return redirect(url_for('suppliers.edit', id=id))
             
-            # Update supplier
-            supplier.name = name
-            supplier.phone = phone
-            supplier.email = email
-            supplier.address = address
-            supplier.notes = notes
-            
+            log_action('تعديل مورد', {'id': supplier.id, 'name': supplier.name})
             db.session.commit()
             
-            # Log action
-            log_action('تعديل مورد', {'id': supplier.id, 'name': supplier.name})
-            
-            flash(f'✅ تم تحديث المورد "{supplier.name}" بنجاح', 'success')
+            success_msg = 'تم تعديل المورد بنجاح'
             
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({
                     'success': True,
-                    'message': f'تم تحديث المورد "{supplier.name}" بنجاح',
+                    'message': f'✅ {success_msg}',
                     'redirect': url_for('suppliers.detail', id=id)
                 })
             
+            flash(f'✅ {success_msg}', 'success')
             return redirect(url_for('suppliers.detail', id=id))
             
         except Exception as e:
             db.session.rollback()
-            error_msg = f'❌ خطأ في تحديث المورد: {str(e)}'
-            flash(error_msg, 'error')
+            error_msg = f'حدث خطأ أثناء تعديل المورد: {str(e)}'
             
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'success': False, 'message': error_msg}), 500
-                
+                return jsonify({'success': False, 'message': f'❌ {error_msg}'}), 500
+            
+            flash(f'❌ {error_msg}', 'error')
             return redirect(url_for('suppliers.edit', id=id))
     
     return render_template('suppliers/edit.html', supplier=supplier)
 
 
-@bp.route('/detail/<id>')
-def detail(id):
-    supplier = Supplier.query.get_or_404(id)
-    
-    # Get related data
-    materials_count = supplier.project_materials.count()
-    total_amount = db.session.query(func.sum(supplier.project_materials.subquery().c.total_amount)).scalar() or 0
-    
-    return render_template('suppliers/detail.html', 
-                         supplier=supplier,
-                         materials_count=materials_count,
-                         total_amount=total_amount,
-                         format_currency=format_currency)
-
-
-@bp.route('/delete/<id>', methods=['POST'])
+@bp.route('/<string:id>/delete', methods=['POST'])
 def delete(id):
     try:
         supplier = Supplier.query.get_or_404(id)
         
-        # Check if has materials
-        if supplier.project_materials.count() > 0:
-            flash('⚠️ لا يمكن حذف هذا المورد لوجود مواد مرتبطة به', 'warning')
-            return redirect(url_for('suppliers.index'))
+        # TODO: Check if supplier has purchase orders
+        # if supplier has orders, prevent deletion
         
-        # Store info before deletion
         supplier_name = supplier.name
         supplier_id = supplier.id
         
-        # Delete supplier
         db.session.delete(supplier)
         db.session.commit()
         
-        # Log action
         log_action('حذف مورد', {'id': supplier_id, 'name': supplier_name})
         
-        flash(f'✅ تم حذف المورد "{supplier_name}" بنجاح', 'success')
+        success_msg = f'تم حذف المورد "{supplier_name}" بنجاح'
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({
+                'success': True,
+                'message': f'✅ {success_msg}'
+            })
+        
+        flash(f'✅ {success_msg}', 'success')
         return redirect(url_for('suppliers.index'))
         
     except Exception as e:
         db.session.rollback()
-        flash(f'❌ خطأ في حذف المورد: {str(e)}', 'error')
-        return redirect(url_for('suppliers.index'))
-
-
-@bp.route('/export/<format>')
-def export(format):
-    suppliers = Supplier.query.order_by(Supplier.name).all()
-    
-    if format == 'excel':
-        # Generate HTML table for Excel
-        html = generate_excel_html(suppliers)
+        error_msg = f'خطأ في حذف المورد: {str(e)}'
         
-        response = make_response(html)
-        response.headers['Content-Type'] = 'application/vnd.ms-excel; charset=utf-8'
-        response.headers['Content-Disposition'] = f'attachment; filename=suppliers_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xls'
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': f'❌ {error_msg}'}), 500
         
-        return response
-        
-    elif format == 'json':
-        data = [{
-            'id': s.id,
-            'code': s.code,
-            'name': s.name,
-            'phone': s.phone,
-            'email': s.email,
-            'address': s.address,
-            'notes': s.notes,
-            'created_at': s.created_at.isoformat() if s.created_at else None
-        } for s in suppliers]
-        
-        response = make_response(json.dumps(data, ensure_ascii=False, indent=2))
-        response.headers['Content-Type'] = 'application/json; charset=utf-8'
-        response.headers['Content-Disposition'] = f'attachment; filename=suppliers_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
-        
-        return response
-        
-    elif format == 'csv':
-        output = io.StringIO()
-        writer = csv.writer(output)
-        
-        # Headers
-        writer.writerow(['الكود', 'الاسم', 'الهاتف', 'البريد الإلكتروني', 'العنوان', 'ملاحظات', 'تاريخ التسجيل'])
-        
-        # Data
-        for s in suppliers:
-            writer.writerow([
-                s.code,
-                s.name,
-                s.phone or '',
-                s.email or '',
-                s.address or '',
-                s.notes or '',
-                s.created_at.strftime('%Y-%m-%d') if s.created_at else ''
-            ])
-        
-        response = make_response('\ufeff' + output.getvalue())
-        response.headers['Content-Type'] = 'text/csv; charset=utf-8-sig'
-        response.headers['Content-Disposition'] = f'attachment; filename=suppliers_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
-        
-        return response
-        
-    else:
-        flash('صيغة التصدير غير مدعومة', 'error')
+        flash(f'❌ {error_msg}', 'error')
         return redirect(url_for('suppliers.index'))
 
 
 @bp.route('/import', methods=['GET', 'POST'])
 def import_data():
+    """Import suppliers from file"""
     if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('❌ الرجاء اختيار ملف', 'error')
+            return redirect(url_for('suppliers.import_data'))
+        
+        file = request.files['file']
+        if file.filename == '':
+            flash('❌ الرجاء اختيار ملف', 'error')
+            return redirect(url_for('suppliers.import_data'))
+        
         try:
-            file = request.files.get('file')
-            if not file:
-                flash('⚠️ الرجاء اختيار ملف', 'warning')
+            handler = ImportHandler()
+            data, error = handler.read_file(file)
+            
+            if error:
+                flash(f'❌ خطأ في قراءة الملف: {error}', 'error')
                 return redirect(url_for('suppliers.import_data'))
             
-            # Read file content
-            content = file.read()
-            filename = file.filename.lower()
-            
-            imported = 0
-            skipped = 0
+            # Process data
+            success_count = 0
+            error_count = 0
             errors = []
             
-            if filename.endswith('.json'):
-                # Import JSON
+            for row in data:
                 try:
-                    data = json.loads(content.decode('utf-8'))
-                    for item in data:
-                        if not item.get('name'):
-                            skipped += 1
-                            continue
-                        
-                        # Check if exists
-                        if Supplier.query.filter_by(name=item['name']).first():
-                            skipped += 1
-                            continue
-                        
-                        supplier = Supplier(
-                            id=generate_uid('S'),
-                            code=generate_supplier_code(),
-                            name=item['name'],
-                            phone=item.get('phone', ''),
-                            email=item.get('email', ''),
-                            address=item.get('address', ''),
-                            notes=item.get('notes', '')
-                        )
-                        db.session.add(supplier)
-                        imported += 1
-                        
-                except Exception as e:
-                    errors.append(f'خطأ في معالجة JSON: {str(e)}')
+                    # Check required fields
+                    if not row.get('name'):
+                        error_count += 1
+                        errors.append(f"السطر {data.index(row) + 1}: اسم المورد مطلوب")
+                        continue
                     
-            elif filename.endswith('.csv'):
-                # Import CSV
-                try:
-                    # Try different encodings
-                    for encoding in ['utf-8-sig', 'utf-8', 'windows-1256', 'iso-8859-1']:
-                        try:
-                            text = content.decode(encoding)
-                            break
-                        except:
-                            continue
-                    else:
-                        raise ValueError('لا يمكن قراءة ترميز الملف')
+                    # Check for duplicates
+                    existing = Supplier.query.filter_by(name=row['name']).first()
+                    if existing:
+                        error_count += 1
+                        errors.append(f"السطر {data.index(row) + 1}: المورد '{row['name']}' موجود بالفعل")
+                        continue
                     
-                    reader = csv.DictReader(io.StringIO(text))
-                    for row in reader:
-                        name = row.get('الاسم') or row.get('name') or row.get('Name')
-                        if not name:
-                            skipped += 1
-                            continue
-                        
-                        # Check if exists
-                        if Supplier.query.filter_by(name=name).first():
-                            skipped += 1
-                            continue
-                        
-                        supplier = Supplier(
-                            id=generate_uid('S'),
-                            code=generate_supplier_code(),
-                            name=name,
-                            phone=row.get('الهاتف') or row.get('phone') or row.get('Phone') or '',
-                            email=row.get('البريد الإلكتروني') or row.get('email') or row.get('Email') or '',
-                            address=row.get('العنوان') or row.get('address') or row.get('Address') or '',
-                            notes=row.get('ملاحظات') or row.get('notes') or row.get('Notes') or ''
-                        )
-                        db.session.add(supplier)
-                        imported += 1
-                        
+                    # Create supplier
+                    supplier = Supplier(
+                        id=generate_uid('SUP'),
+                        code=row.get('code') or generate_supplier_code(),
+                        name=row['name'],
+                        contact_person=row.get('contact_person', ''),
+                        phone=row.get('phone'),
+                        email=row.get('email'),
+                        address=row.get('address'),
+                        status=row.get('status', 'نشط'),
+                        notes=row.get('notes')
+                    )
+                    
+                    db.session.add(supplier)
+                    success_count += 1
+                    
                 except Exception as e:
-                    errors.append(f'خطأ في معالجة CSV: {str(e)}')
+                    error_count += 1
+                    errors.append(f"السطر {data.index(row) + 1}: {str(e)}")
             
-            else:
-                flash('⚠️ نوع الملف غير مدعوم. يرجى استخدام JSON أو CSV', 'warning')
-                return redirect(url_for('suppliers.import_data'))
-            
-            if imported > 0:
+            if success_count > 0:
                 db.session.commit()
-                log_action('استيراد موردين', {'count': imported})
+                log_action('استيراد موردين', {'count': success_count})
             
-            # Show results
-            if imported > 0:
-                flash(f'✅ تم استيراد {imported} مورد بنجاح', 'success')
-            if skipped > 0:
-                flash(f'ℹ️ تم تخطي {skipped} مورد (موجود مسبقاً)', 'info')
-            if errors:
-                for error in errors:
-                    flash(f'❌ {error}', 'error')
-            
-            return redirect(url_for('suppliers.index'))
+            return render_template('suppliers/import_result.html',
+                                 success_count=success_count,
+                                 error_count=error_count,
+                                 errors=errors)
             
         except Exception as e:
-            db.session.rollback()
-            flash(f'❌ خطأ في الاستيراد: {str(e)}', 'error')
+            flash(f'❌ خطأ في معالجة الملف: {str(e)}', 'error')
             return redirect(url_for('suppliers.import_data'))
     
     return render_template('suppliers/import.html')
 
 
+@bp.route('/export')
+def export():
+    """Export suppliers"""
+    format = request.args.get('format', 'excel')
+    
+    suppliers = Supplier.query.order_by(Supplier.name).all()
+    
+    if format == 'json':
+        # JSON export
+        data = []
+        for supplier in suppliers:
+            data.append({
+                'code': supplier.code,
+                'name': supplier.name,
+                'contact_person': supplier.contact_person or '',
+                'phone': supplier.phone or '',
+                'email': supplier.email or '',
+                'address': supplier.address or '',
+                'status': supplier.status,
+                'notes': supplier.notes or ''
+            })
+        
+        output = io.StringIO()
+        json.dump(data, output, ensure_ascii=False, indent=2)
+        output.seek(0)
+        
+        return Response(
+            output.getvalue(),
+            mimetype='application/json',
+            headers={
+                'Content-Disposition': f'attachment;filename=suppliers_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
+            }
+        )
+    
+    elif format == 'csv':
+        # CSV export
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Header
+        writer.writerow(['الكود', 'الاسم', 'الشخص المسؤول', 'الهاتف', 'البريد الإلكتروني', 'العنوان', 'الحالة', 'ملاحظات'])
+        
+        # Data
+        for supplier in suppliers:
+            writer.writerow([
+                supplier.code,
+                supplier.name,
+                supplier.contact_person or '',
+                supplier.phone or '',
+                supplier.email or '',
+                supplier.address or '',
+                supplier.status,
+                supplier.notes or ''
+            ])
+        
+        output.seek(0)
+        output_bytes = io.BytesIO(output.getvalue().encode('utf-8-sig'))
+        
+        return Response(
+            output_bytes.getvalue(),
+            mimetype='text/csv',
+            headers={
+                'Content-Disposition': f'attachment;filename=suppliers_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+            }
+        )
+    
+    else:
+        # Excel export (HTML table)
+        return render_template('suppliers/export_excel.html', suppliers=suppliers)
+
+
 @bp.route('/report')
 def report():
-    # Get statistics
-    total_suppliers = Supplier.query.count()
-    active_suppliers = Supplier.query.join(Supplier.project_materials).distinct().count()
+    """Generate suppliers report"""
+    # Get filters
+    status = request.args.get('status', '')
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
     
-    # Top suppliers by amount
-    top_suppliers = db.session.query(
-        Supplier,
-        func.count(Supplier.project_materials).label('materials_count'),
-        func.sum(Supplier.project_materials.subquery().c.total_amount).label('total_amount')
-    ).join(Supplier.project_materials).group_by(Supplier.id).order_by(
-        func.sum(Supplier.project_materials.subquery().c.total_amount).desc()
-    ).limit(10).all()
+    query = Supplier.query
+    
+    # Apply filters
+    if status:
+        query = query.filter(Supplier.status == status)
+    
+    if date_from:
+        query = query.filter(Supplier.created_at >= datetime.strptime(date_from, '%Y-%m-%d'))
+    
+    if date_to:
+        query = query.filter(Supplier.created_at <= datetime.strptime(date_to, '%Y-%m-%d'))
+    
+    suppliers = query.order_by(Supplier.name).all()
+    
+    # Calculate statistics
+    total_suppliers = len(suppliers)
+    active_suppliers = len([s for s in suppliers if s.status == 'نشط'])
+    inactive_suppliers = len([s for s in suppliers if s.status == 'غير نشط'])
+    
+    # TODO: Add purchase statistics
     
     return render_template('suppliers/report.html',
+                         suppliers=suppliers,
                          total_suppliers=total_suppliers,
                          active_suppliers=active_suppliers,
-                         top_suppliers=top_suppliers,
-                         format_currency=format_currency)
-
-
-def generate_excel_html(suppliers):
-    """Generate HTML table for Excel export"""
-    html = '''
-    <html xmlns:o="urn:schemas-microsoft-com:office:office"
-          xmlns:x="urn:schemas-microsoft-com:office:excel"
-          xmlns="http://www.w3.org/TR/REC-html40">
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <style>
-            table {
-                border-collapse: collapse;
-                width: 100%;
-            }
-            th {
-                background-color: #366092;
-                color: white;
-                font-weight: bold;
-                padding: 10px;
-                text-align: right;
-                border: 1px solid #ddd;
-            }
-            td {
-                padding: 8px;
-                text-align: right;
-                border: 1px solid #ddd;
-            }
-            tr:nth-child(even) {
-                background-color: #f2f2f2;
-            }
-        </style>
-    </head>
-    <body>
-        <h1>قائمة الموردين</h1>
-        <table>
-            <thead>
-                <tr>
-                    <th>الكود</th>
-                    <th>الاسم</th>
-                    <th>الهاتف</th>
-                    <th>البريد الإلكتروني</th>
-                    <th>العنوان</th>
-                    <th>ملاحظات</th>
-                    <th>تاريخ التسجيل</th>
-                </tr>
-            </thead>
-            <tbody>
-    '''
-    
-    for supplier in suppliers:
-        html += f'''
-            <tr>
-                <td>{supplier.code}</td>
-                <td>{supplier.name}</td>
-                <td>{supplier.phone or ''}</td>
-                <td>{supplier.email or ''}</td>
-                <td>{supplier.address or ''}</td>
-                <td>{supplier.notes or ''}</td>
-                <td>{supplier.created_at.strftime('%Y-%m-%d') if supplier.created_at else ''}</td>
-            </tr>
-        '''
-    
-    html += '''
-            </tbody>
-        </table>
-    </body>
-    </html>
-    '''
-    
-    return html
+                         inactive_suppliers=inactive_suppliers,
+                         status=status,
+                         date_from=date_from,
+                         date_to=date_to)
