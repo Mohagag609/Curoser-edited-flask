@@ -30,10 +30,10 @@ def index():
     query = query.order_by(Customer.name)
     pagination = Pagination(query, page)
     
-    # استخدام DataTables بدلاً من pagination
-    customers = query.all()  # جلب كل العملاء للجدول
-    return render_template('customers/index_datatables.html', 
-                         customers=customers)
+    return render_template('customers/index.html', 
+                         customers=pagination.items,
+                         pagination=pagination,
+                         q=q)
 
 
 @bp.route('/add', methods=['GET', 'POST'])
@@ -494,13 +494,17 @@ def report_simple():
             monthly_labels.insert(0, month_start.strftime('%B'))
             monthly_data.insert(0, count)
         
-        return render_template('customers/report_charts.html',
+        # أحدث العملاء
+        recent_customers = Customer.query.order_by(Customer.created_at.desc()).limit(5).all()
+        
+        return render_template('customers/report_modern.html',
                              total_customers=total_customers,
                              active_customers=active_customers,
                              inactive_customers=inactive_customers,
                              growth_rate=growth_rate,
                              monthly_labels=monthly_labels,
-                             monthly_data=monthly_data)
+                             monthly_data=monthly_data,
+                             recent_customers=recent_customers)
                              
     except Exception as e:
         flash(f'خطأ في عرض التقارير: {str(e)}', 'error')
