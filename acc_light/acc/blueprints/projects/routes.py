@@ -1,6 +1,7 @@
 from flask import render_template, request, redirect, url_for, flash, jsonify, Response, send_file
 from acc.blueprints.projects import bp
-from acc.models import Project, ProjectStage, Contractor, Unit
+from acc.models import Project, ProjectStage, Unit
+from acc.models.contractor import Contractor
 from acc.extensions import db
 from acc.services.utils import generate_uid, log_action, Pagination, parse_number, get_today, format_currency
 from acc.services.project_selection import set_current_project
@@ -232,7 +233,7 @@ def add():
             return redirect(url_for('projects.add'))
     
     contractors = Contractor.query.order_by(Contractor.name).all()
-    return render_template('projects/add.html', contractors=contractors)
+    return render_template('projects/add.html', contractors=contractors, get_today=get_today)
 
 
 @bp.route('/<id>/edit', methods=['GET', 'POST'])
