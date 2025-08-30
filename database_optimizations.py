@@ -40,8 +40,8 @@ def add_database_indexes():
             "CREATE INDEX IF NOT EXISTS idx_vouchers_type ON vouchers(type)",
             "CREATE INDEX IF NOT EXISTS idx_vouchers_date ON vouchers(date)",
             
-            # Installments indexes
-            "CREATE INDEX IF NOT EXISTS idx_installments_contract_id ON installments(contract_id)",
+            # Installments indexes - Using unit_id instead of contract_id
+            "CREATE INDEX IF NOT EXISTS idx_installments_unit_id ON installments(unit_id)",
             "CREATE INDEX IF NOT EXISTS idx_installments_due_date ON installments(due_date)",
             "CREATE INDEX IF NOT EXISTS idx_installments_status ON installments(status)",
         ]
@@ -64,6 +64,11 @@ def optimize_sqlite_settings():
     app = create_app()
     
     with app.app_context():
+        # Check if we're using SQLite
+        if 'sqlite' not in db.engine.url.drivername:
+            print("⏭️ Skipping SQLite optimizations (using PostgreSQL)")
+            return
+            
         optimizations = [
             "PRAGMA journal_mode = WAL",  # Write-Ahead Logging للأداء
             "PRAGMA synchronous = NORMAL",  # توازن بين الأداء والأمان

@@ -176,12 +176,12 @@ def add_search_indexes():
             "CREATE INDEX IF NOT EXISTS idx_contracts_project_customer ON contracts(project_id, customer_id)",
             "CREATE INDEX IF NOT EXISTS idx_contracts_project_status ON contracts(project_id, status)",
             "CREATE INDEX IF NOT EXISTS idx_vouchers_project_date ON vouchers(project_id, date)",
-            "CREATE INDEX IF NOT EXISTS idx_installments_contract_status ON installments(contract_id, status)",
+            "CREATE INDEX IF NOT EXISTS idx_installments_unit_status ON installments(unit_id, status)",
             
             # Partial indexes للقيم الشائعة
             "CREATE INDEX IF NOT EXISTS idx_units_available ON units(project_id) WHERE status = 'متاحة'",
             "CREATE INDEX IF NOT EXISTS idx_contracts_active ON contracts(project_id) WHERE status = 'نشط'",
-            "CREATE INDEX IF NOT EXISTS idx_installments_unpaid ON installments(contract_id) WHERE paid_amount < amount",
+            "CREATE INDEX IF NOT EXISTS idx_installments_unpaid ON installments(unit_id) WHERE amount > 0",
         ]
         
         print("🔧 Adding extra search indexes...")
