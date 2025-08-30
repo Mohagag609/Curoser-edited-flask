@@ -352,7 +352,7 @@
                         <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">الشركاء</span>
                     </a>
                     
-                    <a href="{{ url_for('treasury.index') }}" 
+                    <a href="{{ url_for('treasury.safes_index') }}" 
                        class="sidebar-link flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg transition-all hover:bg-gray-50 {% if 'treasury' in request.endpoint %}bg-blue-50 text-blue-700 active{% endif %}">
                         <i class="fas fa-vault text-lg" :class="{ 'mx-auto': !sidebarOpen }"></i>
                         <span class="mr-3" :class="{ 'hidden': !sidebarOpen }">الخزينة</span>

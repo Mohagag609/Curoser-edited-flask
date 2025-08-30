@@ -8,30 +8,29 @@ from acc.extensions import db
 
 @bp.route('/')
 def index():
-    """الصفحة الرئيسية - التحقق من تسجيل الدخول أولاً"""
-    # التحقق من تسجيل الدخول
+    """الصفحة الرئيسية - الذهاب مباشرة لاختيار المشروع"""
+    # تسجيل دخول تلقائي
     if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-    # إذا كان مسجل دخول، نحوله لصفحة الترحيب
-    return redirect(url_for('auth.welcome'))
+        session['user_id'] = 'default-user'
+        session['user_name'] = 'المستخدم'
+    
+    # الذهاب مباشرة لاختيار المشروع
+    return redirect(url_for('main.select_project'))
 
 
 @bp.route('/select-project')
 def select_project():
     """صفحة اختيار المشروع"""
-    # التحقق من تسجيل الدخول
+    # تسجيل دخول تلقائي إذا لم يكن موجود
     if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
+        session['user_id'] = 'default-user'
+        session['user_name'] = 'المستخدم'
     
     # الحصول على جميع المشاريع النشطة
     projects = Project.query.filter_by(status='نشط').order_by(Project.name).all()
     current_project = get_current_project()
     
-    # إذا لم توجد مشاريع، نعرض رسالة خاصة
-    if not projects:
-        flash('لا توجد مشاريع. يرجى إضافة مشروع جديد للمتابعة.', 'info')
-    
-    return render_template('projects/select.html', 
+    return render_template('projects/select_simple.html', 
                          projects=projects,
                          current_project=current_project)
 
