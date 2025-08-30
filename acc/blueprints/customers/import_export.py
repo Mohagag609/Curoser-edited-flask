@@ -6,10 +6,23 @@ from flask import request, jsonify, render_template
 from acc.blueprints.customers import bp
 from acc.extensions import db
 from acc.models import Customer
-from acc.services.import_export_v2 import UniversalImportExport, ImportResult
+try:
+    from acc.services.import_export_v2 import UniversalImportExport, ImportResult
+    V2_AVAILABLE = True
+except ImportError:
+    V2_AVAILABLE = False
+    # Fallback classes
+    class UniversalImportExport:
+        pass
+    class ImportResult:
+        pass
 from acc.services.utils import generate_uid, log_action
 from acc.services.code_generator import generate_customer_code
-import pandas as pd
+try:
+    import pandas as pd
+    PANDAS_AVAILABLE = True
+except ImportError:
+    PANDAS_AVAILABLE = False
 from datetime import datetime
 
 
@@ -56,6 +69,9 @@ customer_handler = CustomerImportExport()
 @bp.route('/import/preview', methods=['POST'])
 def preview_import():
     """معاينة الاستيراد قبل التنفيذ"""
+    if not V2_AVAILABLE or not PANDAS_AVAILABLE:
+        return jsonify({'success': False, 'message': 'نظام الاستيراد الجديد يحتاج لتثبيت pandas و openpyxl'}), 503
+    
     if 'file' not in request.files:
         return jsonify({'success': False, 'message': 'لم يتم اختيار ملف'}), 400
     
@@ -127,6 +143,9 @@ def preview_import():
 @bp.route('/import', methods=['POST'])
 def import_customers():
     """تنفيذ الاستيراد الفعلي"""
+    if not V2_AVAILABLE or not PANDAS_AVAILABLE:
+        return jsonify({'success': False, 'message': 'نظام الاستيراد الجديد يحتاج لتثبيت pandas و openpyxl'}), 503
+    
     if 'file' not in request.files:
         return jsonify({'success': False, 'message': 'لم يتم اختيار ملف'}), 400
     
@@ -215,6 +234,9 @@ def import_customers():
 @bp.route('/export/<format>')
 def export_customers(format):
     """تصدير العملاء بالتنسيق المطلوب"""
+    if not V2_AVAILABLE or not PANDAS_AVAILABLE:
+        return jsonify({'success': False, 'message': 'نظام التصدير الجديد يحتاج لتثبيت pandas و openpyxl'}), 503
+    
     try:
         # بناء الاستعلام
         query = Customer.query

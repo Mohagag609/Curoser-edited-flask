@@ -2,22 +2,48 @@
 Advanced Import/Export System V2
 نظام متقدم للاستيراد والتصدير بأعلى مستوى من الأداء والموثوقية
 """
-import pandas as pd
-import chardet
+try:
+    import pandas as pd
+    PANDAS_AVAILABLE = True
+except ImportError:
+    PANDAS_AVAILABLE = False
+    pd = None
+
+try:
+    import chardet
+    CHARDET_AVAILABLE = True
+except ImportError:
+    CHARDET_AVAILABLE = False
+    chardet = None
 import json
 import io
 import os
 from datetime import datetime
 from typing import List, Dict, Any, Tuple, Optional
 from flask import Response, make_response
-from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from openpyxl.utils import get_column_letter
+try:
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    OPENPYXL_AVAILABLE = True
+except ImportError:
+    OPENPYXL_AVAILABLE = False
+    Workbook = None
 import csv
 
 
 class UniversalImportExport:
     """نظام موحد ومتقدم للاستيراد والتصدير"""
+    
+    @classmethod
+    def check_dependencies(cls):
+        """التحقق من وجود المتطلبات"""
+        if not PANDAS_AVAILABLE:
+            raise ImportError("pandas غير مثبت. الرجاء تشغيل: pip install pandas")
+        if not CHARDET_AVAILABLE:
+            raise ImportError("chardet غير مثبت. الرجاء تشغيل: pip install chardet")
+        if not OPENPYXL_AVAILABLE:
+            raise ImportError("openpyxl غير مثبت. الرجاء تشغيل: pip install openpyxl")
     
     # تعريف الحقول المدعومة
     FIELD_MAPPINGS = {
@@ -95,10 +121,14 @@ class UniversalImportExport:
     @classmethod
     def detect_encoding(cls, file_content: bytes) -> str:
         """اكتشاف ترميز الملف بدقة عالية"""
-        # محاولة اكتشاف الترميز باستخدام chardet
-        result = chardet.detect(file_content)
-        encoding = result['encoding']
-        confidence = result['confidence']
+        if CHARDET_AVAILABLE:
+            # محاولة اكتشاف الترميز باستخدام chardet
+            result = chardet.detect(file_content)
+            encoding = result['encoding']
+            confidence = result['confidence']
+        else:
+            encoding = None
+            confidence = 0
         
         # إذا كانت الثقة منخفضة، جرب ترميزات عربية شائعة
         if confidence < 0.7:
