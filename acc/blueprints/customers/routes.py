@@ -284,67 +284,72 @@ def search():
 @bp.route('/report')
 def report():
     """عرض صفحة التقارير"""
-    # إحصائيات عامة
-    total_customers = Customer.query.count()
-    active_customers = Customer.query.filter_by(status='نشط').count()
-    inactive_customers = Customer.query.filter_by(status='غير نشط').count()
-    
-    # العملاء الأكثر شراءً
-    top_customers = db.session.query(
-        Customer,
-        func.count(Contract.id).label('contracts_count'),
-        func.sum(Contract.total_price).label('total_value')
-    ).join(Contract).group_by(Customer.id).order_by(
-        func.sum(Contract.total_price).desc()
-    ).limit(10).all()
-    
-    # العملاء المدينون
-    debtors = []
-    customers_with_contracts = db.session.query(Customer).join(Contract).distinct().all()
-    
-    for customer in customers_with_contracts:
-        total_value = 0
-        total_paid = 0
+    try:
+        # إحصائيات عامة
+        total_customers = Customer.query.count()
+        active_customers = Customer.query.filter_by(status='نشط').count()
+        inactive_customers = Customer.query.filter_by(status='غير نشط').count()
         
-        for contract in customer.contracts:
-            total_value += contract.total_price or 0
+        # العملاء الأكثر شراءً
+        top_customers = db.session.query(
+            Customer,
+            func.count(Contract.id).label('contracts_count'),
+            func.sum(Contract.total_price).label('total_value')
+        ).join(Contract, Customer.id == Contract.customer_id, isouter=True).group_by(Customer.id).order_by(
+            func.sum(Contract.total_price).desc()
+        ).limit(10).all()
+        
+        # العملاء المدينون
+        debtors = []
+        customers_with_contracts = db.session.query(Customer).join(Contract).distinct().all()
+        
+        for customer in customers_with_contracts:
+            total_value = 0
+            total_paid = 0
             
-            # حساب المدفوعات
-            installment_ids = [i.id for i in Installment.query.filter_by(unit_id=contract.unit_id).all()]
-            voucher_query = db.session.query(func.sum(Voucher.amount)).filter(
-                Voucher.type == 'receipt'
-            )
-            
-            if installment_ids:
-                voucher_query = voucher_query.filter(
-                    or_(
-                        Voucher.linked_ref == contract.id,
-                        Voucher.linked_ref.in_(installment_ids)
-                    )
-                )
-            else:
-                voucher_query = voucher_query.filter(Voucher.linked_ref == contract.id)
+            for contract in customer.contracts:
+                total_value += contract.total_price or 0
                 
-            paid = voucher_query.scalar() or 0
-            total_paid += paid
+                # حساب المدفوعات
+                installment_ids = [i.id for i in Installment.query.filter_by(unit_id=contract.unit_id).all()]
+                voucher_query = db.session.query(func.sum(Voucher.amount)).filter(
+                    Voucher.type == 'receipt'
+                )
+                
+                if installment_ids:
+                    voucher_query = voucher_query.filter(
+                        or_(
+                            Voucher.linked_ref == contract.id,
+                            Voucher.linked_ref.in_(installment_ids)
+                        )
+                    )
+                else:
+                    voucher_query = voucher_query.filter(Voucher.linked_ref == contract.id)
+                    
+                paid = voucher_query.scalar() or 0
+                total_paid += paid
+            
+            debt = total_value - total_paid
+            if debt > 0:
+                debtors.append({
+                    'customer': customer,
+                    'total_value': total_value,
+                    'total_paid': total_paid,
+                    'debt': debt
+                })
         
-        debt = total_value - total_paid
-        if debt > 0:
-            debtors.append({
-                'customer': customer,
-                'total_value': total_value,
-                'total_paid': total_paid,
-                'debt': debt
-            })
-    
-    debtors.sort(key=lambda x: x['debt'], reverse=True)
-    
-    return render_template('customers/report.html',
-                         total_customers=total_customers,
-                         active_customers=active_customers,
-                         inactive_customers=inactive_customers,
-                         top_customers=top_customers,
-                         debtors=debtors[:10],  # أكبر 10 مدينين
-                         format_currency=format_currency)
+        debtors.sort(key=lambda x: x['debt'], reverse=True)
+        
+        return render_template('customers/report.html',
+                             total_customers=total_customers,
+                             active_customers=active_customers,
+                             inactive_customers=inactive_customers,
+                             top_customers=top_customers,
+                             debtors=debtors[:10],  # أكبر 10 مدينين
+                             format_currency=format_currency)
+    except Exception as e:
+        flash(f'حدث خطأ في عرض التقارير: {str(e)}', 'error')
+        return redirect(url_for('customers.index'))
+
 
 

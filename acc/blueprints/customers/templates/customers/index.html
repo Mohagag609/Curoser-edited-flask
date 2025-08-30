@@ -374,4 +374,17 @@
 {% block scripts %}
 {{ super() }}
 <script src="{{ url_for('static', filename='js/import_export.js') }}"></script>
+<script>
+// تأكد من تحميل DOM قبل استخدام الدوال
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Import/Export system loaded');
+    
+    // اختبار وجود الدالة
+    if (typeof openImportExportModal === 'function') {
+        console.log('openImportExportModal function is available');
+    } else {
+        console.error('openImportExportModal function not found!');
+    }
+});
+</script>
 {% endblock %}
