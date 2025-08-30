@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}استيراد الوحدات{% endblock %}
+{% block page_title %}استيراد الوحدات{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+    <!-- Import Form -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="text-lg font-semibold">رفع ملف الوحدات</h3>
+        </div>
+        <div class="p-6">
+            <form method="post" enctype="multipart/form-data">
+                <div class="mb-6">
+                    <label class="form-label">اختر الملف</label>
+                    <input type="file" 
+                           name="file" 
+                           accept=".csv,.json" 
+                           class="form-input"
+                           required>
+                    <p class="mt-2 text-sm text-gray-600">
+                        الصيغ المدعومة: CSV, JSON
+                    </p>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button type="submit" class="btn btn-import">
+                        <i class="fas fa-upload ml-2"></i>
+                        استيراد
+                    </button>
+                    <a href="{{ url_for('units.index') }}" class="btn btn-secondary">
+                        <i class="fas fa-times ml-2"></i>
+                        إلغاء
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Instructions -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="text-lg font-semibold">تعليمات الاستيراد</h3>
+        </div>
+        <div class="p-6 space-y-4">
+            <div>
+                <h4 class="font-semibold text-gray-900 mb-2">صيغة CSV:</h4>
+                <ul class="list-disc list-inside text-sm text-gray-700 space-y-1">
+                    <li>يجب أن يحتوي الملف على الأعمدة: الاسم، المبنى، الدور، المساحة، السعر، النوع، الحالة</li>
+                    <li>الأعمدة المطلوبة: الاسم، المبنى، الدور</li>
+                    <li>سيتم إنشاء كود تلقائي لكل وحدة من (المبنى-الدور-الاسم)</li>
+                    <li>سيتم تخطي الوحدات الموجودة مسبقاً بنفس الكود</li>
+                </ul>
+            </div>
+            
+            <div>
+                <h4 class="font-semibold text-gray-900 mb-2">صيغة JSON:</h4>
+                <pre class="bg-gray-100 p-3 rounded-lg text-xs overflow-x-auto" dir="ltr">[
+  {
+    "name": "101",
+    "building": "A",
+    "floor": "1",
+    "area": 150,
+    "price": 1500000,
+    "unit_type": "apartment",
+    "status": "available",
+    "description": "وصف الوحدة"
+  }
+]</pre>
+            </div>
+            
+            <div class="bg-teal-50 border border-teal-200 rounded-lg p-4">
+                <h4 class="font-semibold text-teal-900 mb-2">
+                    <i class="fas fa-info-circle ml-2"></i>
+                    ملاحظات مهمة:
+                </h4>
+                <ul class="text-sm text-teal-800 space-y-1 list-disc list-inside">
+                    <li>أنواع الوحدات: apartment (شقة)، villa (فيلا)، shop (محل)، office (مكتب)</li>
+                    <li>حالات الوحدات: available (متاح)، reserved (محجوز)، sold (مباع)</li>
+                    <li>الكود سيُنشأ تلقائياً مثال: A-3-101</li>
+                    <li>المساحة بالمتر المربع والسعر بالعملة المحلية</li>
+                </ul>
+            </div>
+            
+            <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <h4 class="font-semibold text-orange-900 mb-2">
+                    <i class="fas fa-exclamation-triangle ml-2"></i>
+                    تحذيرات:
+                </h4>
+                <ul class="text-sm text-orange-800 space-y-1 list-disc list-inside">
+                    <li>تأكد من عدم تكرار أسماء الوحدات في نفس المبنى والدور</li>
+                    <li>راجع البيانات قبل الاستيراد</li>
+                    <li>احتفظ بنسخة احتياطية من البيانات الأصلية</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Download Templates -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="text-lg font-semibold">قوالب فارغة</h3>
+        </div>
+        <div class="p-6">
+            <p class="text-sm text-gray-700 mb-4">يمكنك تحميل قالب فارغ وملؤه بالبيانات:</p>
+            <div class="flex gap-3">
+                <a href="{{ url_for('units.export', format='csv') }}?empty=true" class="btn btn-secondary">
+                    <i class="fas fa-file-csv ml-2"></i>
+                    تحميل قالب CSV
+                </a>
+                <a href="{{ url_for('units.export', format='json') }}?empty=true" class="btn btn-secondary">
+                    <i class="fas fa-file-code ml-2"></i>
+                    تحميل قالب JSON
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

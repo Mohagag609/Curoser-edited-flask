@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة شريك للمجموعة - {{ super() }}{% endblock %}
+
+{% block page_title %}إضافة شريك لمجموعة: {{ group.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="card mb-6">
+        <h3 class="text-lg font-medium mb-4">معلومات المجموعة</h3>
+        <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+                <span class="text-gray-600">المرحلة:</span>
+                <span class="font-medium mr-2">{{ group.phase.name }}</span>
+            </div>
+            <div>
+                <span class="text-gray-600">المشروع:</span>
+                <span class="font-medium mr-2">{{ group.phase.project.name }}</span>
+            </div>
+            <div>
+                <span class="text-gray-600">نسبة المجموعة:</span>
+                <span class="font-medium mr-2">{{ group.share_percentage }}%</span>
+            </div>
+            <div>
+                <span class="text-gray-600">النسبة المستخدمة:</span>
+                {% set used_percentage = group.members.filter_by(is_active=True).with_entities(func.sum(PhasePartner.share_percentage)).scalar() or 0 %}
+                <span class="font-medium mr-2 {% if used_percentage >= 100 %}text-red-600{% else %}text-green-600{% endif %}">
+                    {{ used_percentage }}%
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <form method="post">
+            <input type="hidden" name="group_id" value="{{ group.id }}">
+            
+            <div class="grid grid-cols-1 gap-6">
+                <!-- Partner Selection -->
+                <div>
+                    <label class="form-label required">الشريك</label>
+                    <select name="partner_id" class="form-select" required>
+                        <option value="">اختر الشريك</option>
+                        {% for partner in partners %}
+                            {% set already_member = group.members.filter_by(partner_id=partner.id).first() %}
+                            {% if not already_member %}
+                            <option value="{{ partner.id }}">
+                                {{ partner.name }}
+                                {% if partner.phone %}({{ partner.phone }}){% endif %}
+                            </option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Share Percentage -->
+                <div>
+                    <label class="form-label required">نسبة الشريك داخل المجموعة (%)</label>
+                    <input type="number" name="share_percentage" class="form-input" 
+                           min="0" max="{{ 100 - used_percentage }}" step="0.01" required>
+                    <p class="text-sm text-gray-500 mt-1">
+                        النسبة المتاحة: {{ 100 - used_percentage }}%
+                    </p>
+                </div>
+
+                <!-- Actual Share Calculation -->
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <p class="text-sm font-medium text-blue-900">
+                        النسبة الفعلية من المرحلة ستكون:
+                    </p>
+                    <p class="text-lg font-bold text-blue-900" id="actualPercentage">
+                        0.00%
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-6">
+                <a href="{{ url_for('settlement.phase_partners_index', phase_id=group.phase_id) }}" 
+                   class="btn btn-secondary">
+                    إلغاء
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    إضافة الشريك
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Calculate actual percentage
+document.querySelector('[name="share_percentage"]').addEventListener('input', function() {
+    const groupPercentage = {{ group.share_percentage }};
+    const partnerPercentage = parseFloat(this.value) || 0;
+    const actualPercentage = (groupPercentage * partnerPercentage / 100).toFixed(2);
+    document.getElementById('actualPercentage').textContent = actualPercentage + '%';
+});
+</script>
+{% endblock %}

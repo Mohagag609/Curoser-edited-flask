@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}تقارير العملاء{% endblock %}
+{% block page_title %}تقارير العملاء{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- إحصائيات عامة -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="card bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-600 text-sm font-medium">إجمالي العملاء</p>
+                    <p class="text-3xl font-bold text-blue-800 mt-2">{{ total_customers }}</p>
+                </div>
+                <div class="text-blue-600">
+                    <i class="fas fa-users text-3xl opacity-30"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-600 text-sm font-medium">عملاء نشطون</p>
+                    <p class="text-3xl font-bold text-green-800 mt-2">{{ active_customers }}</p>
+                </div>
+                <div class="text-green-600">
+                    <i class="fas fa-user-check text-3xl opacity-30"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-600 text-sm font-medium">عملاء غير نشطين</p>
+                    <p class="text-3xl font-bold text-gray-800 mt-2">{{ inactive_customers }}</p>
+                </div>
+                <div class="text-gray-600">
+                    <i class="fas fa-user-slash text-3xl opacity-30"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- العملاء الأكثر شراءً -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="text-lg font-semibold text-gray-900">
+                <i class="fas fa-trophy text-yellow-500 ml-2"></i>
+                العملاء الأكثر شراءً
+            </h3>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">العميل</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">عدد العقود</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">إجمالي القيمة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in top_customers %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{{ url_for('customers.detail', id=item[0].id) }}" class="text-blue-600 hover:text-blue-900">
+                                {{ item[0].name }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-gray-900">{{ item[1] }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-green-600 font-semibold">{{ format_currency(item[2]) }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if item[0].status == 'نشط' %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ item[0].status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- العملاء المدينون -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="text-lg font-semibold text-gray-900">
+                <i class="fas fa-exclamation-triangle text-red-500 ml-2"></i>
+                العملاء المدينون
+            </h3>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">العميل</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">إجمالي القيمة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المدفوع</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المتبقي</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">نسبة السداد</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in debtors %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{{ url_for('customers.detail', id=item.customer.id) }}" class="text-blue-600 hover:text-blue-900">
+                                {{ item.customer.name }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-gray-900">{{ format_currency(item.total_value) }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-green-600">{{ format_currency(item.total_paid) }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-red-600 font-semibold">{{ format_currency(item.debt) }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% set payment_percentage = (item.total_paid / item.total_value * 100) if item.total_value > 0 else 0 %}
+                            <div class="flex items-center">
+                                <div class="w-24 bg-gray-200 rounded-full h-2 ml-2">
+                                    <div class="bg-green-600 h-2 rounded-full" style="width: {{ payment_percentage }}%"></div>
+                                </div>
+                                <span class="text-xs text-gray-600">{{ "%.1f"|format(payment_percentage) }}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- أزرار التصدير -->
+    <div class="flex flex-wrap gap-3 justify-center">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-download text-green-500 ml-2"></i>
+                تصدير التقارير
+            </h3>
+            <div class="flex flex-wrap gap-3">
+                <a href="{{ url_for('customers.export_report', type='summary') }}" 
+                   class="inline-flex items-center px-4 py-2 border border-green-600 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-green-50 transition-colors">
+                    <i class="fas fa-file-excel ml-2"></i>
+                    تصدير الإحصائيات
+                </a>
+                <a href="{{ url_for('customers.export_report', type='top_customers') }}" 
+                   class="inline-flex items-center px-4 py-2 border border-blue-600 text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50 transition-colors">
+                    <i class="fas fa-file-excel ml-2"></i>
+                    تصدير الأكثر شراءً
+                </a>
+                <a href="{{ url_for('customers.export_report', type='debtors') }}" 
+                   class="inline-flex items-center px-4 py-2 border border-red-600 text-sm font-medium rounded-md text-red-600 bg-white hover:bg-red-50 transition-colors">
+                    <i class="fas fa-file-excel ml-2"></i>
+                    تصدير المدينون
+                </a>
+            </div>
+        </div>
+        
+        <a href="{{ url_for('customers.index') }}" class="btn-secondary self-center">
+            <i class="fas fa-arrow-right ml-2"></i>
+            رجوع
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}تعديل مجموعة شركاء - {{ super() }}{% endblock %}
+
+{% block page_title %}تعديل مجموعة: {{ group.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="card">
+        <form method="post">
+            <div class="grid grid-cols-1 gap-6">
+                <!-- Phase Info (Read Only) -->
+                <div>
+                    <label class="form-label">المرحلة</label>
+                    <input type="text" class="form-input bg-gray-100" 
+                           value="{{ group.phase.name }} - {{ group.phase.project.name }}" readonly>
+                </div>
+
+                <!-- Group Name -->
+                <div>
+                    <label class="form-label required">اسم المجموعة</label>
+                    <input type="text" name="name" class="form-input" 
+                           value="{{ group.name }}" required>
+                </div>
+
+                <!-- Share Percentage -->
+                <div>
+                    <label class="form-label required">نسبة المجموعة في المرحلة (%)</label>
+                    <input type="number" name="share_percentage" class="form-input" 
+                           value="{{ group.share_percentage }}"
+                           min="0" max="100" step="0.01" required>
+                    {% set other_groups_total = group.phase.partner_groups.filter(PhasePartnerGroup.id != group.id).with_entities(func.sum(PhasePartnerGroup.share_percentage)).scalar() or 0 %}
+                    <p class="text-sm text-gray-500 mt-1">
+                        النسبة المستخدمة من المجموعات الأخرى: {{ other_groups_total }}%
+                    </p>
+                </div>
+
+                <!-- Group Members Summary -->
+                <div>
+                    <label class="form-label">الشركاء في المجموعة</label>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-2">
+                            عدد الشركاء: {{ group.members.count() }}
+                        </p>
+                        {% if group.members.count() > 0 %}
+                        <ul class="text-sm space-y-1">
+                            {% for member in group.members %}
+                            <li class="flex justify-between">
+                                <span>{{ member.partner.name }}</span>
+                                <span class="font-medium">{{ member.share_percentage }}%</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-6">
+                <a href="{{ url_for('settlement.phase_partners_index', phase_id=group.phase_id) }}" 
+                   class="btn btn-secondary">
+                    إلغاء
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    حفظ التعديلات
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}التحويلات بين الخزائن - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-900">التحويلات بين الخزائن</h2>
+            <p class="text-gray-600 mt-1">سجل التحويلات بين الخزائن</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{{ url_for('treasury.index') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i>
+                العودة للخزينة
+            </a>
+            <a href="{{ url_for('treasury.add_transfer') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                تحويل جديد
+            </a>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="card mb-6">
+        <form method="get" action="{{ url_for('treasury.transfers') }}" class="flex flex-wrap gap-4 items-end">
+            <div>
+                <label class="form-label">من تاريخ</label>
+                <input type="date" name="from_date" value="{{ from_date }}" class="form-input">
+            </div>
+            
+            <div>
+                <label class="form-label">إلى تاريخ</label>
+                <input type="date" name="to_date" value="{{ to_date }}" class="form-input">
+            </div>
+            
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+                بحث
+            </button>
+            
+            <a href="{{ url_for('treasury.transfers') }}" class="btn btn-secondary">
+                <i class="fas fa-redo"></i>
+                إعادة تعيين
+            </a>
+        </form>
+    </div>
+    
+    <!-- Table -->
+    <div class="card">
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>من خزينة</th>
+                        <th>إلى خزينة</th>
+                        <th>المبلغ</th>
+                        <th>البيان</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transfer in transfers %}
+                    <tr>
+                        <td>{{ transfer.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            <a href="{{ url_for('treasury.safe_detail', id=transfer.from_safe_id) }}" class="text-blue-600 hover:underline">
+                                {{ transfer.from_safe.name }}
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('treasury.safe_detail', id=transfer.to_safe_id) }}" class="text-blue-600 hover:underline">
+                                {{ transfer.to_safe.name }}
+                            </a>
+                        </td>
+                        <td class="font-semibold">{{ format_currency(transfer.amount) }}</td>
+                        <td>{{ transfer.description or '-' }}</td>
+                        <td>
+                            <form method="post" action="{{ url_for('treasury.delete_transfer', id=transfer.id) }}" 
+                                  class="inline" onsubmit="return confirm('هل أنت متأكد من حذف هذا التحويل؟')">
+                                <button type="submit" class="btn btn-sm btn-danger">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-gray-500">لا توجد تحويلات</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if pagination.pages > 1 %}
+            {% include '_partials/pagination.html' %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

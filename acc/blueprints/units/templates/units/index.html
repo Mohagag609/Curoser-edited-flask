@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}الوحدات{% endblock %}
+{% block page_title %}الوحدات{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header with Actions -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div class="flex flex-wrap gap-3">
+            <a href="{{ url_for('units.add') }}" class="btn btn-add">
+                <i class="fas fa-plus ml-2"></i>
+                إضافة وحدة جديدة
+            </a>
+            
+            <!-- Export Dropdown -->
+            <div class="relative" x-data="{ open: false }">
+                <button @click="open = !open" class="btn btn-export">
+                    <i class="fas fa-download ml-2"></i>
+                    تصدير
+                    <i class="fas fa-chevron-down mr-2 text-xs"></i>
+                </button>
+                <div x-show="open" @click.away="open = false" x-transition
+                     class="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                    <div class="py-1">
+                        <a href="{{ url_for('units.export', format='excel') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-file-excel ml-2 text-green-600"></i>
+                            Excel
+                        </a>
+                        <a href="{{ url_for('units.export', format='csv') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-file-csv ml-2 text-blue-600"></i>
+                            CSV
+                        </a>
+                        <a href="{{ url_for('units.export', format='json') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-file-code ml-2 text-purple-600"></i>
+                            JSON
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <a href="{{ url_for('units.import_data') }}" class="btn btn-import">
+                <i class="fas fa-upload ml-2"></i>
+                استيراد
+            </a>
+            
+            <a href="{{ url_for('units.report') }}" class="btn btn-report">
+                <i class="fas fa-chart-bar ml-2"></i>
+                تقارير
+            </a>
+        </div>
+    </div>
+    
+    <!-- Search and Filters -->
+    <div class="card">
+        <div class="p-4">
+            <form method="GET" action="{{ url_for('units.index') }}" class="space-y-4">
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <div class="flex-1">
+                        <input type="text" name="q" value="{{ q }}" 
+                               placeholder="بحث بالكود، الاسم، المبنى، أو الدور..."
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <select name="status" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="">جميع الحالات</option>
+                        <option value="available" {% if status_filter == 'available' %}selected{% endif %}>متاح</option>
+                        <option value="sold" {% if status_filter == 'sold' %}selected{% endif %}>مباع</option>
+                        <option value="reserved" {% if status_filter == 'reserved' %}selected{% endif %}>محجوز</option>
+                    </select>
+                    <button type="submit" class="btn btn-view">
+                        <i class="fas fa-search ml-2"></i>
+                        بحث
+                    </button>
+                    {% if q or status_filter %}
+                    <a href="{{ url_for('units.index') }}" class="btn btn-secondary">
+                        <i class="fas fa-times ml-2"></i>
+                        إلغاء
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Units Table -->
+    <div class="card overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gradient-to-l from-gray-50 to-gray-100">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الكود</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الوحدة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">المبنى</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الدور</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">المساحة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">السعر</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الحالة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الشركاء</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in units_data %}
+                    {% set unit = item.unit %}
+                    <tr class="hover:bg-gray-50 transition-colors duration-200">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
+                            <span class="bg-teal-50 text-teal-700 px-2 py-1 rounded-md font-mono">{{ unit.code }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{{ url_for('units.detail', id=unit.id) }}" 
+                               class="text-blue-600 hover:text-blue-900 font-medium">
+                                {{ unit.name }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded-md">
+                                <i class="fas fa-building ml-1 text-xs"></i>
+                                {{ unit.building }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded-md">
+                                <i class="fas fa-layer-group ml-1 text-xs"></i>
+                                {{ unit.floor }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ unit.area }} م²
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                            {{ format_currency(unit.price) }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if unit.status == 'available' %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle ml-1"></i>
+                                    متاح
+                                </span>
+                            {% elif unit.status == 'sold' %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                    <i class="fas fa-ban ml-1"></i>
+                                    مباع
+                                </span>
+                            {% elif unit.status == 'reserved' %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-clock ml-1"></i>
+                                    محجوز
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-900">
+                            <div class="max-w-xs truncate" title="{{ item.partners }}">
+                                {{ item.partners }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex gap-2">
+                                <a href="{{ url_for('units.detail', id=unit.id) }}" 
+                                   class="btn-icon btn-icon-view"
+                                   title="عرض">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('units.edit', id=unit.id) }}" 
+                                   class="btn-icon btn-icon-edit"
+                                   title="تعديل">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button type="button"
+                                        data-confirm-delete="true"
+                                        data-delete-url="{{ url_for('units.delete', id=unit.id) }}"
+                                        data-confirm-message="هل أنت متأكد من حذف الوحدة '{{ unit.name }}'؟"
+                                        data-remove-element="tr"
+                                        class="btn-icon btn-icon-delete"
+                                        title="حذف">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="px-6 py-10 text-center text-gray-500">
+                            <i class="fas fa-home text-4xl text-gray-300 mb-3 block"></i>
+                            لا يوجد وحدات حالياً
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if pagination and pagination.pages > 1 %}
+        <div class="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                {% if pagination.has_prev %}
+                <a href="{{ url_for('units.index', page=pagination.prev_num, q=q, status=status_filter) }}" class="btn btn-secondary">
+                    السابق
+                </a>
+                {% endif %}
+                {% if pagination.has_next %}
+                <a href="{{ url_for('units.index', page=pagination.next_num, q=q, status=status_filter) }}" class="btn btn-primary mr-auto">
+                    التالي
+                </a>
+                {% endif %}
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        عرض <span class="font-medium">{{ (pagination.page - 1) * pagination.per_page + 1 }}</span>
+                        إلى <span class="font-medium">{{ min(pagination.page * pagination.per_page, pagination.total) }}</span>
+                        من <span class="font-medium">{{ pagination.total }}</span> نتيجة
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        {% if pagination.has_prev %}
+                        <a href="{{ url_for('units.index', page=1, q=q, status=status_filter) }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                        <a href="{{ url_for('units.index', page=pagination.prev_num, q=q, status=status_filter) }}" class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                        {% endif %}
+                        
+                        {% for page_num in pagination.iter_pages(left_edge=1, left_current=1, right_current=1, right_edge=1) %}
+                            {% if page_num %}
+                                {% if page_num != pagination.page %}
+                                <a href="{{ url_for('units.index', page=page_num, q=q, status=status_filter) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    {{ page_num }}
+                                </a>
+                                {% else %}
+                                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">
+                                    {{ page_num }}
+                                </span>
+                                {% endif %}
+                            {% else %}
+                                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if pagination.has_next %}
+                        <a href="{{ url_for('units.index', page=pagination.next_num, q=q, status=status_filter) }}" class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                        <a href="{{ url_for('units.index', page=pagination.pages, q=q, status=status_filter) }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Floating Action Button -->
+<a href="{{ url_for('units.add') }}" class="fab">
+    <i class="fas fa-plus text-2xl"></i>
+</a>
+
+{% endblock %}

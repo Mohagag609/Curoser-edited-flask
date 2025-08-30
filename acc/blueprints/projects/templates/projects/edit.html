@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}تعديل {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-gray-900">تعديل المشروع</h2>
+        <a href="{{ url_for('projects.detail', id=project.id) }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-right ml-2"></i>
+            رجوع
+        </a>
+    </div>
+    
+    <form method="post" class="max-w-2xl">
+        <div class="card">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- اسم المشروع -->
+                <div class="md:col-span-2">
+                    <label class="form-label required">اسم المشروع</label>
+                    <input type="text" name="name" required 
+                           value="{{ project.name }}"
+                           class="form-input">
+                </div>
+                
+                <!-- كود المشروع -->
+                <div>
+                    <label class="form-label required">كود المشروع</label>
+                    <input type="text" name="code" required 
+                           value="{{ project.code }}"
+                           class="form-input">
+                </div>
+                
+                <!-- نوع المشروع -->
+                <div>
+                    <label class="form-label required">نوع المشروع</label>
+                    <div class="space-y-3">
+                        <label class="flex items-start space-x-3 space-x-reverse p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="project_type" value="عقاري" 
+                                   {% if project.project_type == 'عقاري' %}checked{% endif %}
+                                   class="mt-1 form-radio text-blue-600">
+                            <div>
+                                <div class="font-medium">مشروع عقاري</div>
+                                <div class="text-sm text-gray-500">نظام متكامل يشمل: الوحدات، العقود، الأقساط، وجميع الميزات</div>
+                            </div>
+                        </label>
+                        <label class="flex items-start space-x-3 space-x-reverse p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="project_type" value="محاسبي" 
+                                   {% if project.project_type == 'محاسبي' %}checked{% endif %}
+                                   class="mt-1 form-radio text-blue-600">
+                            <div>
+                                <div class="font-medium">مشروع محاسبي</div>
+                                <div class="text-sm text-gray-500">نظام محاسبي بدون: الوحدات، العقود، الأقساط</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- الحالة -->
+                <div>
+                    <label class="form-label">الحالة</label>
+                    <select name="status" class="form-input">
+                        <option value="نشط" {% if project.status == 'نشط' %}selected{% endif %}>نشط</option>
+                        <option value="معلق" {% if project.status == 'معلق' %}selected{% endif %}>معلق</option>
+                        <option value="مكتمل" {% if project.status == 'مكتمل' %}selected{% endif %}>مكتمل</option>
+                        <option value="ملغي" {% if project.status == 'ملغي' %}selected{% endif %}>ملغي</option>
+                    </select>
+                </div>
+                
+                <!-- الميزانية -->
+                <div>
+                    <label class="form-label">الميزانية</label>
+                    <input type="number" name="budget" 
+                           value="{{ project.budget or '' }}"
+                           class="form-input">
+                </div>
+                
+                <!-- مشروع افتراضي -->
+                <div>
+                    <label class="form-label">
+                        <input type="checkbox" name="is_default" value="1"
+                               {% if project.is_default %}checked{% endif %}>
+                        مشروع افتراضي
+                    </label>
+                    <p class="text-sm text-gray-500 mt-1">سيتم اختياره تلقائياً عند دخول النظام</p>
+                </div>
+                
+                <!-- تاريخ البداية -->
+                <div>
+                    <label class="form-label">تاريخ البداية</label>
+                    <input type="date" name="start_date" 
+                           value="{{ project.start_date.isoformat() if project.start_date else '' }}"
+                           class="form-input">
+                </div>
+                
+                <!-- التاريخ المتوقع للانتهاء -->
+                <div>
+                    <label class="form-label">التاريخ المتوقع للانتهاء</label>
+                    <input type="date" name="expected_end_date" 
+                           value="{{ project.expected_end_date.isoformat() if project.expected_end_date else '' }}"
+                           class="form-input">
+                </div>
+                
+                <!-- التاريخ الفعلي للانتهاء -->
+                <div>
+                    <label class="form-label">التاريخ الفعلي للانتهاء</label>
+                    <input type="date" name="actual_end_date" 
+                           value="{{ project.actual_end_date.isoformat() if project.actual_end_date else '' }}"
+                           class="form-input">
+                </div>
+                
+                <!-- الوصف -->
+                <div class="md:col-span-2">
+                    <label class="form-label">وصف المشروع</label>
+                    <textarea name="description" rows="4" 
+                              class="form-input">{{ project.description or '' }}</textarea>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex gap-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save ml-2"></i>
+                    حفظ التعديلات
+                </button>
+                <a href="{{ url_for('projects.detail', id=project.id) }}" class="btn btn-secondary">
+                    إلغاء
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

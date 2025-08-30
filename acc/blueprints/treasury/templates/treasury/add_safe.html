@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة خزينة - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-3xl font-bold text-gray-900">إضافة خزينة جديدة</h2>
+        <a href="{{ url_for('treasury.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i>
+            العودة للخزينة
+        </a>
+    </div>
+    
+    <!-- Auto Code Notice -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 max-w-2xl mx-auto">
+        <div class="flex items-center">
+            <i class="fas fa-info-circle text-blue-600 ml-2"></i>
+            <p class="text-blue-800">سيتم توليد رقم الخزينة تلقائياً عند الحفظ</p>
+        </div>
+    </div>
+    
+    <!-- Form -->
+    <div class="card max-w-2xl mx-auto">
+        <form method="post" action="{{ url_for('treasury.add_safe') }}"
+              data-ajax="true"
+              data-loading-message="جاري إضافة الخزينة..."
+              data-success-message="تم إضافة الخزينة بنجاح!"
+              data-error-message="حدث خطأ أثناء إضافة الخزينة"
+              data-redirect-on-success="true">
+            <div class="space-y-6">
+                <div>
+                    <label class="form-label">اسم الخزينة <span class="text-red-500">*</span></label>
+                    <input type="text" name="name" required class="form-input" autofocus>
+                </div>
+                
+                <div>
+                    <label class="form-label">النوع <span class="text-red-500">*</span></label>
+                    <select name="type" class="form-select" onchange="toggleBankFields(this)">
+                        <option value="cash">خزينة نقدية</option>
+                        <option value="bank">حساب بنكي</option>
+                    </select>
+                </div>
+                
+                <div id="bank-fields" class="hidden space-y-4">
+                    <div>
+                        <label class="form-label">اسم البنك</label>
+                        <input type="text" name="bank_name" class="form-input">
+                    </div>
+                    
+                    <div>
+                        <label class="form-label">رقم الحساب</label>
+                        <input type="text" name="account_number" class="form-input" dir="ltr">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="is_default" value="1" class="rounded">
+                        <span>تعيين كخزينة افتراضية</span>
+                    </label>
+                </div>
+                
+                <div>
+                    <label class="form-label">ملاحظات</label>
+                    <textarea name="notes" rows="3" class="form-input"></textarea>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex justify-end gap-2">
+                <a href="{{ url_for('treasury.index') }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i>
+                    إلغاء
+                </a>
+                <button type="submit" class="btn btn-add">
+                    <i class="fas fa-save"></i>
+                    حفظ
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function toggleBankFields(select) {
+    const bankFields = document.getElementById('bank-fields');
+    if (select.value === 'bank') {
+        bankFields.classList.remove('hidden');
+    } else {
+        bankFields.classList.add('hidden');
+    }
+}
+</script>
+{% endblock %}

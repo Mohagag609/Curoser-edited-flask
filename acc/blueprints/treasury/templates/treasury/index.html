@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة الخزينة - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-900">إدارة الخزينة</h2>
+            <p class="text-gray-600 mt-1">إدارة الخزائن والأرصدة</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{{ url_for('treasury.report') }}" class="btn btn-secondary">
+                <i class="fas fa-chart-bar"></i>
+                التقارير
+            </a>
+            <div class="relative group">
+                <button class="btn btn-export flex items-center gap-2">
+                    <i class="fas fa-file-export"></i>
+                    تصدير
+                    <i class="fas fa-chevron-down text-xs"></i>
+                </button>
+                <div class="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-xl hidden group-hover:block z-10">
+                    <a href="{{ url_for('treasury.export', format='excel') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-t-lg">
+                        <i class="fas fa-file-excel text-green-600 ml-2"></i>
+                        Excel
+                    </a>
+                    <a href="{{ url_for('treasury.export', format='csv') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <i class="fas fa-file-csv text-blue-600 ml-2"></i>
+                        CSV
+                    </a>
+                    <a href="{{ url_for('treasury.export', format='json') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-b-lg">
+                        <i class="fas fa-file-code text-purple-600 ml-2"></i>
+                        JSON
+                    </a>
+                </div>
+            </div>
+            <a href="{{ url_for('treasury.transfers') }}" class="btn btn-secondary">
+                <i class="fas fa-exchange-alt"></i>
+                التحويلات
+            </a>
+            <a href="{{ url_for('treasury.add_safe') }}" class="btn btn-add">
+                <i class="fas fa-plus"></i>
+                إضافة خزينة
+            </a>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100">إجمالي الأرصدة</p>
+                    <p class="text-3xl font-bold mt-2">{{ format_currency(total_balance) }}</p>
+                </div>
+                <i class="fas fa-wallet text-3xl opacity-50"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100">النقدية</p>
+                    <p class="text-3xl font-bold mt-2">{{ format_currency(total_cash) }}</p>
+                </div>
+                <i class="fas fa-money-bill-wave text-3xl opacity-50"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-100">البنوك</p>
+                    <p class="text-3xl font-bold mt-2">{{ format_currency(total_bank) }}</p>
+                </div>
+                <i class="fas fa-university text-3xl opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Safes List -->
+        <div class="lg:col-span-2">
+            <div class="card">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">الخزائن</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {% for safe in safes %}
+                    <div class="border rounded-lg p-4 hover:shadow-lg transition-shadow">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h4 class="font-semibold text-gray-900">
+                                    <a href="{{ url_for('treasury.safe_detail', id=safe.id) }}" class="hover:text-blue-600">
+                                        {{ safe.name }}
+                                        {% if safe.is_default %}
+                                            <span class="badge badge-secondary text-xs">افتراضية</span>
+                                        {% endif %}
+                                    </a>
+                                </h4>
+                                <p class="text-xs text-gray-500 mt-1">{{ safe.code }}</p>
+                                {% if safe.type == 'bank' %}
+                                    <p class="text-sm text-gray-600">
+                                        <i class="fas fa-university text-xs"></i>
+                                        {{ safe.bank_name }}
+                                    </p>
+                                {% else %}
+                                    <p class="text-sm text-gray-600">
+                                        <i class="fas fa-money-bill text-xs"></i>
+                                        خزينة نقدية
+                                    </p>
+                                {% endif %}
+                            </div>
+                            <div class="flex gap-1">
+                                <a href="{{ url_for('treasury.safe_detail', id=safe.id) }}" class="btn-view">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('treasury.edit_safe', id=safe.id) }}" class="btn-edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="text-2xl font-bold {% if safe.balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            {{ format_currency(safe.balance) }}
+                        </div>
+                        
+                        {% if safe.notes %}
+                        <p class="text-sm text-gray-500 mt-2">{{ safe.notes }}</p>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="col-span-2 text-center text-gray-500 py-8">
+                        لا توجد خزائن
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Transfers -->
+        <div>
+            <div class="card">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">آخر التحويلات</h3>
+                    <a href="{{ url_for('treasury.transfers') }}" class="text-sm text-blue-600 hover:underline">
+                        عرض الكل
+                    </a>
+                </div>
+                
+                <div class="space-y-3">
+                    {% for transfer in recent_transfers %}
+                    <div class="border-b pb-3 last:border-0">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm">
+                                    من <strong>{{ transfer.from_safe.name }}</strong>
+                                    إلى <strong>{{ transfer.to_safe.name }}</strong>
+                                </p>
+                                <p class="text-xs text-gray-500 mt-1">{{ transfer.date.strftime('%Y-%m-%d') }}</p>
+                            </div>
+                            <p class="font-semibold">{{ format_currency(transfer.amount) }}</p>
+                        </div>
+                        {% if transfer.description %}
+                        <p class="text-xs text-gray-600 mt-1">{{ transfer.description }}</p>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <p class="text-center text-gray-500">لا توجد تحويلات</p>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="card mt-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">إجراءات سريعة</h3>
+                
+                <div class="space-y-2">
+                    <a href="{{ url_for('treasury.add_transfer') }}" class="btn btn-primary w-full">
+                        <i class="fas fa-exchange-alt"></i>
+                        تحويل بين الخزائن
+                    </a>
+                    <a href="{{ url_for('vouchers.add') }}" class="btn btn-secondary w-full">
+                        <i class="fas fa-plus"></i>
+                        إضافة سند
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FAB - Floating Action Button -->
+<a href="{{ url_for('treasury.add_safe') }}" class="fab">
+    <i class="fas fa-plus"></i>
+</a>
+{% endblock %}

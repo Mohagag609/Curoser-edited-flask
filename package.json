@@ -1,0 +1,11 @@
+{
+  "name": "acc_light_ui",
+  "private": true,
+  "scripts": {
+    "watch": "tailwindcss -i ./acc/static/src/input.css -o ./acc/static/css/tailwind.css --watch",
+    "build": "tailwindcss -i ./acc/static/src/input.css -o ./acc/static/css/tailwind.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0"
+  }
+}
