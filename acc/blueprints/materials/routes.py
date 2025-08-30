@@ -1,14 +1,10 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify, Response, send_file
+from flask import render_template, request, redirect, url_for, flash, jsonify
 from acc.blueprints.materials import bp
 from acc.models import Material, ProjectMaterial, Project
 from acc.extensions import db
 from acc.services.utils import generate_uid, log_action, Pagination, format_currency
 from acc.services.code_generator import generate_material_code
 from sqlalchemy import func, or_
-import io
-import csv
-import json
-from datetime import datetime
 
 @bp.route('/')
 def index():
@@ -53,7 +49,6 @@ def index():
                          q=q,
                          category=category,
                          categories=categories)
-
 
 @bp.route('/search')
 def search():
@@ -107,7 +102,6 @@ def search():
                          category=category,
                          categories=categories)
 
-
 @bp.route('/<id>')
 def detail(id):
     material = Material.query.get_or_404(id)
@@ -124,7 +118,6 @@ def detail(id):
                          project_materials=project_materials,
                          total_used=total_used,
                          total_value=total_value)
-
 
 @bp.route('/add', methods=['GET', 'POST'])
 def add():
@@ -192,7 +185,6 @@ def add():
     
     return render_template('materials/add.html')
 
-
 @bp.route('/<id>/edit', methods=['GET', 'POST'])
 def edit(id):
     material = Material.query.get_or_404(id)
@@ -247,7 +239,6 @@ def edit(id):
     
     return render_template('materials/edit.html', material=material)
 
-
 @bp.route('/<id>/delete', methods=['POST'])
 def delete(id):
     try:
@@ -291,228 +282,6 @@ def delete(id):
         
         flash(f'❌ {error_msg}', 'error')
         return redirect(url_for('materials.index'))
-
-
-@bp.route('/export/<format>')
-def export(format):
-    """تصدير بيانات المواد"""
-    materials = Material.query.order_by(Material.name).all()
-    
-    if format == 'excel':
-        # Generate Excel file (HTML table format)
-        output = io.StringIO()
-        output.write('<html><head><meta charset="utf-8"></head><body>')
-        output.write('<table border="1">')
-        output.write('<tr>')
-        output.write('<th>الكود</th>')
-        output.write('<th>الاسم</th>')
-        output.write('<th>الوحدة</th>')
-        output.write('<th>السعر الافتراضي</th>')
-        output.write('<th>الفئة</th>')
-        output.write('<th>الحد الأدنى للمخزون</th>')
-        output.write('<th>المخزون الحالي</th>')
-        output.write('<th>الوصف</th>')
-        output.write('</tr>')
-        
-        for material in materials:
-            output.write('<tr>')
-            output.write(f'<td>{material.code}</td>')
-            output.write(f'<td>{material.name}</td>')
-            output.write(f'<td>{material.unit or "-"}</td>')
-            output.write(f'<td>{format_currency(material.unit_cost)}</td>')
-            output.write(f'<td>{material.category or "-"}</td>')
-            output.write(f'<td>{material.min_stock or 0}</td>')
-            output.write(f'<td>{material.current_stock or 0}</td>')
-            output.write(f'<td>{material.description or "-"}</td>')
-            output.write('</tr>')
-        
-        output.write('</table></body></html>')
-        
-        response = Response(output.getvalue(), mimetype='application/vnd.ms-excel')
-        response.headers['Content-Disposition'] = f'attachment; filename=materials_{datetime.now().strftime("%Y%m%d")}.xls'
-        return response
-    
-    elif format == 'csv':
-        output = io.StringIO()
-        writer = csv.writer(output)
-        
-        # Write headers
-        writer.writerow(['الكود', 'الاسم', 'الوحدة', 'السعر الافتراضي', 'الفئة', 'الحد الأدنى للمخزون', 'المخزون الحالي', 'الوصف'])
-        
-        # Write data
-        for material in materials:
-            writer.writerow([
-                material.code,
-                material.name,
-                material.unit or '-',
-                material.unit_cost or 0,
-                material.category or '-',
-                material.min_stock or 0,
-                material.current_stock or 0,
-                material.description or '-'
-            ])
-        
-        output.seek(0)
-        return send_file(
-            io.BytesIO(output.getvalue().encode('utf-8-sig')),
-            mimetype='text/csv',
-            as_attachment=True,
-            download_name=f'materials_{datetime.now().strftime("%Y%m%d")}.csv'
-        )
-    
-    elif format == 'json':
-        data = []
-        for material in materials:
-            data.append({
-                'code': material.code,
-                'name': material.name,
-                'unit': material.unit,
-                'unit_cost': float(material.unit_cost) if material.unit_cost else 0,
-                'category': material.category,
-                'min_stock': float(material.min_stock) if material.min_stock else 0,
-                'current_stock': float(material.current_stock) if material.current_stock else 0,
-                'description': material.description
-            })
-        
-        return jsonify({
-            'export_date': datetime.now().isoformat(),
-            'total_count': len(data),
-            'materials': data
-        })
-    
-    else:
-        flash('صيغة التصدير غير مدعومة', 'error')
-        return redirect(url_for('materials.index'))
-
-
-@bp.route('/import', methods=['GET', 'POST'])
-def import_data():
-    """استيراد بيانات المواد"""
-    if request.method == 'GET':
-        return render_template('materials/import.html')
-    
-    if 'file' not in request.files:
-        flash('❌ الرجاء اختيار ملف', 'error')
-        return redirect(url_for('materials.import_data'))
-    
-    file = request.files['file']
-    if file.filename == '':
-        flash('❌ الرجاء اختيار ملف', 'error')
-        return redirect(url_for('materials.import_data'))
-    
-    try:
-        # قراءة محتوى الملف
-        file_content = file.read()
-        
-        # تم تعطيل الاستيراد مؤقتاً - يحتاج لتحديث للنظام الجديد
-        flash('❌ نظام الاستيراد قيد التحديث', 'error')
-        return redirect(url_for('materials.index'))
-        
-        # استخدام ImportHandler
-        # data, import_errors, file_type = ImportHandler.import_file(file_content, file.filename)
-        
-        if False:  # import_errors and not data:
-            for error in import_errors[:5]:
-                flash(f'❌ {error}', 'error')
-            if len(import_errors) > 5:
-                flash(f'... و {len(import_errors) - 5} أخطاء أخرى', 'error')
-            return redirect(url_for('materials.import_data'))
-        
-        imported_count = 0
-        skipped_count = 0
-        failed_count = 0
-        errors = []
-        skipped_names = []
-        
-        # معالجة البيانات المستوردة
-        for index, item in enumerate(data):
-            try:
-                name = item.get('name', '').strip()
-                if not name:
-                    failed_count += 1
-                    errors.append(f"السطر {index + 2}: الاسم مطلوب")
-                    continue
-                
-                # التحقق من وجود المادة
-                existing = Material.query.filter_by(name=name).first()
-                if existing:
-                    skipped_count += 1
-                    skipped_names.append(name)
-                    continue
-                
-                # إنشاء مادة جديدة
-                material = Material(
-                    id=generate_uid('MAT'),
-                    code=generate_material_code(),
-                    name=name,
-                    unit=item.get('unit', '').strip() or 'قطعة',
-                    unit_cost=float(item.get('unit_cost', 0)) if item.get('unit_cost') else 0,
-                    category=item.get('category', '').strip() or None,
-                    description=item.get('description', '').strip() or None,
-                    min_stock=float(item.get('min_stock', 0)) if item.get('min_stock') else 0,
-                    current_stock=float(item.get('current_stock', 0)) if item.get('current_stock') else 0
-                )
-                
-                db.session.add(material)
-                imported_count += 1
-                
-            except Exception as e:
-                failed_count += 1
-                errors.append(f"السطر {index + 2}: {str(e)}")
-        
-        # حفظ التغييرات
-        if imported_count > 0:
-            log_action('استيراد مواد', {'imported': imported_count, 'skipped': skipped_count})
-            db.session.commit()
-        
-        # عرض النتائج
-        return render_template('materials/import_result.html',
-                             imported_count=imported_count,
-                             skipped_count=skipped_count,
-                             skipped_names=skipped_names,
-                             failed_count=failed_count,
-                             errors=errors)
-        
-    except Exception as e:
-        flash(f'❌ خطأ في معالجة الملف: {str(e)}', 'error')
-        return redirect(url_for('materials.import_data'))
-
-
-@bp.route('/report')
-def report():
-    """عرض صفحة التقارير"""
-    # إحصائيات عامة
-    total_materials = Material.query.count()
-    total_categories = db.session.query(func.count(func.distinct(Material.category))).scalar() or 0
-    
-    # المواد الأكثر استخداماً
-    most_used = db.session.query(
-        Material,
-        func.sum(ProjectMaterial.quantity).label('total_quantity'),
-        func.count(ProjectMaterial.id).label('usage_count')
-    ).join(ProjectMaterial).group_by(Material.id).order_by(
-        func.sum(ProjectMaterial.quantity).desc()
-    ).limit(10).all()
-    
-    # المواد منخفضة المخزون
-    low_stock = Material.query.filter(
-        Material.current_stock < Material.min_stock
-    ).order_by(Material.name).all()
-    
-    # إحصائيات حسب الفئة
-    category_stats = db.session.query(
-        Material.category,
-        func.count(Material.id).label('count'),
-        func.avg(Material.unit_cost).label('avg_cost')
-    ).group_by(Material.category).all()
-    
-    return render_template('materials/report.html',
-                         total_materials=total_materials,
-                         total_categories=total_categories,
-                         most_used=most_used,
-                         low_stock=low_stock,
-                         category_stats=category_stats)
-
 
 @bp.route('/api/materials')
 def api_materials():

@@ -23,31 +23,11 @@
                 <div x-show="open" @click.away="open = false" x-transition
                      class="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
                     <div class="py-1">
-                        <a href="{{ url_for('units.export', format='excel') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                            <i class="fas fa-file-excel ml-2 text-green-600"></i>
-                            Excel
-                        </a>
-                        <a href="{{ url_for('units.export', format='csv') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                            <i class="fas fa-file-csv ml-2 text-blue-600"></i>
-                            CSV
-                        </a>
-                        <a href="{{ url_for('units.export', format='json') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                            <i class="fas fa-file-code ml-2 text-purple-600"></i>
-                            JSON
-                        </a>
+
                     </div>
                 </div>
             </div>
-            
-            <a href="{{ url_for('units.import_data') }}" class="btn btn-import">
-                <i class="fas fa-upload ml-2"></i>
-                استيراد
-            </a>
-            
-            <a href="{{ url_for('units.report') }}" class="btn btn-report">
-                <i class="fas fa-chart-bar ml-2"></i>
-                تقارير
-            </a>
+
         </div>
     </div>
     

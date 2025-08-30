@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify, Response, send_file, session
+from flask import render_template, request, redirect, url_for, flash, jsonify, session
 from acc.blueprints.projects import bp
 from acc.models import Project, ProjectStage, Unit
 from acc.models.contractor import Contractor
@@ -7,10 +7,6 @@ from acc.services.utils import generate_uid, log_action, Pagination, parse_numbe
 from acc.services.project_selection import set_current_project
 from acc.services.code_generator import generate_project_code
 from sqlalchemy import func, or_
-from datetime import datetime
-import io
-import csv
-import json
 
 @bp.route('/')
 def index():
@@ -67,7 +63,6 @@ def index():
                          total_projects=total_projects,
                          active_projects=active_projects,
                          completed_projects=completed_projects)
-
 
 @bp.route('/search')
 def search():
@@ -129,7 +124,6 @@ def search():
                          active_projects=active_projects,
                          completed_projects=completed_projects)
 
-
 @bp.route('/<id>')
 def detail(id):
     project = Project.query.get_or_404(id)
@@ -148,7 +142,6 @@ def detail(id):
                          total_units=total_units,
                          sold_units=sold_units,
                          available_units=available_units)
-
 
 @bp.route('/add', methods=['GET', 'POST'])
 def add():
@@ -242,7 +235,6 @@ def add():
     contractors = Contractor.query.order_by(Contractor.name).all()
     return render_template('projects/add.html', contractors=contractors, datetime=datetime)
 
-
 @bp.route('/<id>/edit', methods=['GET', 'POST'])
 def edit(id):
     project = Project.query.get_or_404(id)
@@ -321,7 +313,6 @@ def edit(id):
     contractors = Contractor.query.order_by(Contractor.name).all()
     return render_template('projects/edit.html', project=project, contractors=contractors)
 
-
 @bp.route('/<id>/delete', methods=['POST'])
 def delete(id):
     try:
@@ -365,158 +356,6 @@ def delete(id):
         
         flash(f'❌ {error_msg}', 'error')
         return redirect(url_for('projects.index'))
-
-
-@bp.route('/export/<format>')
-def export(format):
-    """تصدير بيانات المشاريع"""
-    projects = Project.query.order_by(Project.name).all()
-    
-    if format == 'excel':
-        # Generate Excel file (HTML table format)
-        output = io.StringIO()
-        output.write('<html><head><meta charset="utf-8"></head><body>')
-        output.write('<table border="1">')
-        output.write('<tr>')
-        output.write('<th>رقم المشروع</th>')
-        output.write('<th>اسم المشروع</th>')
-        output.write('<th>النوع</th>')
-        output.write('<th>الموقع</th>')
-        output.write('<th>المساحة</th>')
-        output.write('<th>الميزانية</th>')
-        output.write('<th>المقاول</th>')
-        output.write('<th>تاريخ البداية</th>')
-        output.write('<th>تاريخ النهاية</th>')
-        output.write('<th>الحالة</th>')
-        output.write('<th>الوصف</th>')
-        output.write('</tr>')
-        
-        for project in projects:
-            output.write('<tr>')
-            output.write(f'<td>{project.code}</td>')
-            output.write(f'<td>{project.name}</td>')
-            output.write(f'<td>{project.project_type}</td>')
-            output.write(f'<td>{project.location or "-"}</td>')
-            output.write(f'<td>{project.area or "-"}</td>')
-            output.write(f'<td>{format_currency(project.budget)}</td>')
-            output.write(f'<td>{project.contractor.name if project.contractor else "-"}</td>')
-            output.write(f'<td>{project.start_date.strftime("%Y-%m-%d") if project.start_date else "-"}</td>')
-            output.write(f'<td>{project.end_date.strftime("%Y-%m-%d") if project.end_date else "-"}</td>')
-            output.write(f'<td>{project.status}</td>')
-            output.write(f'<td>{project.description or "-"}</td>')
-            output.write('</tr>')
-        
-        output.write('</table></body></html>')
-        
-        response = Response(output.getvalue(), mimetype='application/vnd.ms-excel')
-        response.headers['Content-Disposition'] = f'attachment; filename=projects_{datetime.now().strftime("%Y%m%d")}.xls'
-        return response
-    
-    elif format == 'csv':
-        output = io.StringIO()
-        writer = csv.writer(output)
-        
-        # Write headers
-        writer.writerow(['رقم المشروع', 'اسم المشروع', 'النوع', 'الموقع', 'المساحة', 'الميزانية', 'المقاول', 'تاريخ البداية', 'تاريخ النهاية', 'الحالة', 'الوصف'])
-        
-        # Write data
-        for project in projects:
-            writer.writerow([
-                project.code,
-                project.name,
-                project.project_type,
-                project.location or '-',
-                project.area or '-',
-                project.budget or 0,
-                project.contractor.name if project.contractor else '-',
-                project.start_date.strftime('%Y-%m-%d') if project.start_date else '-',
-                project.end_date.strftime('%Y-%m-%d') if project.end_date else '-',
-                project.status,
-                project.description or '-'
-            ])
-        
-        output.seek(0)
-        return send_file(
-            io.BytesIO(output.getvalue().encode('utf-8-sig')),
-            mimetype='text/csv',
-            as_attachment=True,
-            download_name=f'projects_{datetime.now().strftime("%Y%m%d")}.csv'
-        )
-    
-    elif format == 'json':
-        data = []
-        for project in projects:
-            data.append({
-                'code': project.code,
-                'name': project.name,
-                'type': project.project_type,
-                'location': project.location,
-                'area': project.area,
-                'budget': float(project.budget) if project.budget else 0,
-                'contractor': project.contractor.name if project.contractor else None,
-                'start_date': project.start_date.isoformat() if project.start_date else None,
-                'end_date': project.end_date.isoformat() if project.end_date else None,
-                'status': project.status,
-                'description': project.description
-            })
-        
-        return jsonify({
-            'export_date': datetime.now().isoformat(),
-            'total_count': len(data),
-            'projects': data
-        })
-    
-    else:
-        flash('صيغة التصدير غير مدعومة', 'error')
-        return redirect(url_for('projects.index'))
-
-
-@bp.route('/report')
-def report():
-    """عرض صفحة التقارير"""
-    # إحصائيات عامة
-    total_projects = Project.query.count()
-    active_projects = Project.query.filter_by(status='نشط').count()
-    completed_projects = Project.query.filter_by(status='مكتمل').count()
-    paused_projects = Project.query.filter_by(status='متوقف').count()
-    
-    # إحصائيات حسب النوع
-    real_estate_projects = Project.query.filter_by(project_type='عقاري').count()
-    accounting_projects = Project.query.filter_by(project_type='محاسبي').count()
-    
-    # المشاريع الأخيرة
-    recent_projects = Project.query.order_by(Project.created_at.desc()).limit(10).all()
-    
-    # المشاريع بالميزانية الأكبر
-    top_budget_projects = Project.query.order_by(Project.budget.desc()).limit(10).all()
-    
-    # إحصائيات الوحدات للمشاريع العقارية
-    unit_stats = []
-    real_estate = Project.query.filter_by(project_type='عقاري').all()
-    for project in real_estate:
-        total_units = project.units.count()
-        sold_units = project.units.filter_by(status='مباعة').count()
-        available_units = project.units.filter_by(status='متاحة').count()
-        
-        unit_stats.append({
-            'project': project,
-            'total': total_units,
-            'sold': sold_units,
-            'available': available_units,
-            'occupancy_rate': (sold_units / total_units * 100) if total_units > 0 else 0
-        })
-    
-    return render_template('projects/report.html',
-                         total_projects=total_projects,
-                         active_projects=active_projects,
-                         completed_projects=completed_projects,
-                         paused_projects=paused_projects,
-                         real_estate_projects=real_estate_projects,
-                         accounting_projects=accounting_projects,
-                         recent_projects=recent_projects,
-                         top_budget_projects=top_budget_projects,
-                         unit_stats=unit_stats)
-
 
 @bp.route('/api/projects')
 def api_projects():

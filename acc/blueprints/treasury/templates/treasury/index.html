@@ -11,10 +11,7 @@
             <p class="text-gray-600 mt-1">إدارة الخزائن والأرصدة</p>
         </div>
         <div class="flex gap-2">
-            <a href="{{ url_for('treasury.report') }}" class="btn btn-secondary">
-                <i class="fas fa-chart-bar"></i>
-                التقارير
-            </a>
+            
             <div class="relative group">
                 <button class="btn btn-export flex items-center gap-2">
                     <i class="fas fa-file-export"></i>
@@ -22,18 +19,7 @@
                     <i class="fas fa-chevron-down text-xs"></i>
                 </button>
                 <div class="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-xl hidden group-hover:block z-10">
-                    <a href="{{ url_for('treasury.export', format='excel') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-t-lg">
-                        <i class="fas fa-file-excel text-green-600 ml-2"></i>
-                        Excel
-                    </a>
-                    <a href="{{ url_for('treasury.export', format='csv') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-file-csv text-blue-600 ml-2"></i>
-                        CSV
-                    </a>
-                    <a href="{{ url_for('treasury.export', format='json') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-b-lg">
-                        <i class="fas fa-file-code text-purple-600 ml-2"></i>
-                        JSON
-                    </a>
+
                 </div>
             </div>
             <a href="{{ url_for('treasury.transfers') }}" class="btn btn-secondary">

@@ -1,15 +1,10 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify, Response, send_file
+from flask import render_template, request, redirect, url_for, flash, jsonify
 from acc.blueprints.brokers import bp
 from acc.extensions import db
 from acc.models import Broker
 from acc.services.utils import generate_uid, log_action, Pagination, format_currency
 from acc.services.code_generator import generate_broker_code
 from sqlalchemy import or_, func
-import json
-import csv
-import io
-from datetime import datetime
-
 
 @bp.route('/')
 def index():
@@ -55,7 +50,6 @@ def index():
                          total_brokers=total_brokers,
                          active_brokers=active_brokers,
                          inactive_brokers=inactive_brokers)
-
 
 @bp.route('/search')
 def search():
@@ -103,7 +97,6 @@ def search():
                          pagination=pagination,
                          q=q,
                          status=status)
-
 
 @bp.route('/add', methods=['GET', 'POST'])
 def add():
@@ -183,7 +176,6 @@ def add():
     
     return render_template('brokers/add.html')
 
-
 @bp.route('/<string:id>')
 def detail(id):
     broker = Broker.query.get_or_404(id)
@@ -199,7 +191,6 @@ def detail(id):
                          pending_commissions=pending_commissions,
                          total_contracts=total_contracts,
                          format_currency=format_currency)
-
 
 @bp.route('/<string:id>/edit', methods=['GET', 'POST'])
 def edit(id):
@@ -268,7 +259,6 @@ def edit(id):
     
     return render_template('brokers/edit.html', broker=broker)
 
-
 @bp.route('/<string:id>/delete', methods=['POST'])
 def delete(id):
     try:
@@ -312,159 +302,6 @@ def delete(id):
         
         flash(f'❌ {error_msg}', 'error')
         return redirect(url_for('brokers.index'))
-
-
-@bp.route('/import', methods=['GET', 'POST'])
-def import_data():
-    """Import brokers from file"""
-    if request.method == 'POST':
-        if 'file' not in request.files:
-            flash('❌ الرجاء اختيار ملف', 'error')
-            return redirect(url_for('brokers.import_data'))
-        
-        file = request.files['file']
-        if file.filename == '':
-            flash('❌ الرجاء اختيار ملف', 'error')
-            return redirect(url_for('brokers.import_data'))
-        
-        try:
-            # تم تعطيل الاستيراد مؤقتاً - يحتاج لتحديث للنظام الجديد
-            flash('❌ نظام الاستيراد قيد التحديث', 'error')
-            return redirect(url_for('brokers.index'))
-            
-            # handler = ImportHandler()
-            # data, error = handler.read_file(file)
-            
-            if False:  # error:
-                flash(f'❌ خطأ في قراءة الملف: {error}', 'error')
-                return redirect(url_for('brokers.import_data'))
-            
-            # Process data
-            success_count = 0
-            error_count = 0
-            errors = []
-            
-            for row in data:
-                try:
-                    # Check required fields
-                    if not row.get('name'):
-                        error_count += 1
-                        errors.append(f"السطر {data.index(row) + 1}: اسم الوسيط مطلوب")
-                        continue
-                    
-                    # Check for duplicates
-                    existing = Broker.query.filter_by(name=row['name']).first()
-                    if existing:
-                        error_count += 1
-                        errors.append(f"السطر {data.index(row) + 1}: الوسيط '{row['name']}' موجود بالفعل")
-                        continue
-                    
-                    # Create broker
-                    broker = Broker(
-                        id=generate_uid('BRK'),
-                        code=row.get('code') or generate_broker_code(),
-                        name=row['name'],
-                        phone=row.get('phone'),
-                        national_id=row.get('national_id'),
-                        address=row.get('address'),
-                        commission_percentage=float(row.get('commission_percentage', 0)),
-                        status=row.get('status', 'نشط'),
-                        notes=row.get('notes')
-                    )
-                    
-                    db.session.add(broker)
-                    success_count += 1
-                    
-                except Exception as e:
-                    error_count += 1
-                    errors.append(f"السطر {data.index(row) + 1}: {str(e)}")
-            
-            if success_count > 0:
-                db.session.commit()
-                log_action('استيراد وسطاء', {'count': success_count})
-            
-            return render_template('brokers/import_result.html',
-                                 success_count=success_count,
-                                 error_count=error_count,
-                                 errors=errors)
-            
-        except Exception as e:
-            flash(f'❌ خطأ في معالجة الملف: {str(e)}', 'error')
-            return redirect(url_for('brokers.import_data'))
-    
-    return render_template('brokers/import.html')
-
-
-@bp.route('/export')
-def export():
-    """Export brokers"""
-    format = request.args.get('format', 'excel')
-    
-    brokers = Broker.query.order_by(Broker.name).all()
-    
-    if format == 'json':
-        # JSON export
-        data = []
-        for broker in brokers:
-            data.append({
-                'code': broker.code,
-                'name': broker.name,
-                'phone': broker.phone or '',
-                'national_id': broker.national_id or '',
-                'address': broker.address or '',
-                'commission_percentage': broker.commission_percentage,
-                'status': broker.status,
-                'notes': broker.notes or ''
-            })
-        
-        output = io.StringIO()
-        json.dump(data, output, ensure_ascii=False, indent=2)
-        output.seek(0)
-        
-        return Response(
-            output.getvalue(),
-            mimetype='application/json',
-            headers={
-                'Content-Disposition': f'attachment;filename=brokers_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
-            }
-        )
-    
-    elif format == 'csv':
-        # CSV export
-        output = io.StringIO()
-        writer = csv.writer(output)
-        
-        # Header
-        writer.writerow(['الكود', 'الاسم', 'الهاتف', 'الرقم القومي', 'العنوان', 'نسبة العمولة', 'الحالة', 'ملاحظات'])
-        
-        # Data
-        for broker in brokers:
-            writer.writerow([
-                broker.code,
-                broker.name,
-                broker.phone or '',
-                broker.national_id or '',
-                broker.address or '',
-                broker.commission_percentage,
-                broker.status,
-                broker.notes or ''
-            ])
-        
-        output.seek(0)
-        output_bytes = io.BytesIO(output.getvalue().encode('utf-8-sig'))
-        
-        return Response(
-            output_bytes.getvalue(),
-            mimetype='text/csv',
-            headers={
-                'Content-Disposition': f'attachment;filename=brokers_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
-            }
-        )
-    
-    else:
-        # Excel export (HTML table)
-        return render_template('brokers/export_excel.html', brokers=brokers, datetime=datetime)
-
 
 @bp.route('/report')
 def report():

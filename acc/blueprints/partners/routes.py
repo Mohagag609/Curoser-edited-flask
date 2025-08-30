@@ -1,15 +1,10 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify, Response, send_file
+from flask import render_template, request, redirect, url_for, flash, jsonify
 from acc.blueprints.partners import bp
 from acc.extensions import db
 from acc.models import Partner
 from acc.services.utils import generate_uid, log_action, Pagination, format_currency
 from acc.services.code_generator import generate_partner_code
 from sqlalchemy import or_, func
-import json
-import csv
-import io
-from datetime import datetime
-
 
 @bp.route('/')
 def index():
@@ -55,7 +50,6 @@ def index():
                          total_partners=total_partners,
                          active_partners=active_partners,
                          inactive_partners=inactive_partners)
-
 
 @bp.route('/search')
 def search():
@@ -103,7 +97,6 @@ def search():
                          pagination=pagination,
                          q=q,
                          status=status)
-
 
 @bp.route('/add', methods=['GET', 'POST'])
 def add():
@@ -183,7 +176,6 @@ def add():
     
     return render_template('partners/add.html')
 
-
 @bp.route('/<string:id>')
 def detail(id):
     partner = Partner.query.get_or_404(id)
@@ -198,7 +190,6 @@ def detail(id):
                          total_share_value=total_share_value,
                          pending_payments=pending_payments,
                          format_currency=format_currency)
-
 
 @bp.route('/<string:id>/edit', methods=['GET', 'POST'])
 def edit(id):
@@ -267,7 +258,6 @@ def edit(id):
     
     return render_template('partners/edit.html', partner=partner)
 
-
 @bp.route('/<string:id>/delete', methods=['POST'])
 def delete(id):
     try:
@@ -303,159 +293,6 @@ def delete(id):
         
         flash(f'❌ {error_msg}', 'error')
         return redirect(url_for('partners.index'))
-
-
-@bp.route('/import', methods=['GET', 'POST'])
-def import_data():
-    """Import partners from file"""
-    if request.method == 'POST':
-        if 'file' not in request.files:
-            flash('❌ الرجاء اختيار ملف', 'error')
-            return redirect(url_for('partners.import_data'))
-        
-        file = request.files['file']
-        if file.filename == '':
-            flash('❌ الرجاء اختيار ملف', 'error')
-            return redirect(url_for('partners.import_data'))
-        
-        try:
-            # تم تعطيل الاستيراد مؤقتاً - يحتاج لتحديث للنظام الجديد
-            flash('❌ نظام الاستيراد قيد التحديث', 'error')
-            return redirect(url_for('partners.index'))
-            
-            # handler = ImportHandler()
-            # data, error = handler.read_file(file)
-            
-            if False:  # error:
-                flash(f'❌ خطأ في قراءة الملف: {error}', 'error')
-                return redirect(url_for('partners.import_data'))
-            
-            # Process data
-            success_count = 0
-            error_count = 0
-            errors = []
-            
-            for row in data:
-                try:
-                    # Check required fields
-                    if not row.get('name'):
-                        error_count += 1
-                        errors.append(f"السطر {data.index(row) + 1}: اسم الشريك مطلوب")
-                        continue
-                    
-                    # Check for duplicates
-                    existing = Partner.query.filter_by(name=row['name']).first()
-                    if existing:
-                        error_count += 1
-                        errors.append(f"السطر {data.index(row) + 1}: الشريك '{row['name']}' موجود بالفعل")
-                        continue
-                    
-                    # Create partner
-                    partner = Partner(
-                        id=generate_uid('PRT'),
-                        code=row.get('code') or generate_partner_code(),
-                        name=row['name'],
-                        phone=row.get('phone'),
-                        national_id=row.get('national_id'),
-                        address=row.get('address'),
-                        share_percentage=float(row.get('share_percentage', 0)),
-                        status=row.get('status', 'نشط'),
-                        notes=row.get('notes')
-                    )
-                    
-                    db.session.add(partner)
-                    success_count += 1
-                    
-                except Exception as e:
-                    error_count += 1
-                    errors.append(f"السطر {data.index(row) + 1}: {str(e)}")
-            
-            if success_count > 0:
-                db.session.commit()
-                log_action('استيراد شركاء', {'count': success_count})
-            
-            return render_template('partners/import_result.html',
-                                 success_count=success_count,
-                                 error_count=error_count,
-                                 errors=errors)
-            
-        except Exception as e:
-            flash(f'❌ خطأ في معالجة الملف: {str(e)}', 'error')
-            return redirect(url_for('partners.import_data'))
-    
-    return render_template('partners/import.html')
-
-
-@bp.route('/export')
-def export():
-    """Export partners"""
-    format = request.args.get('format', 'excel')
-    
-    partners = Partner.query.order_by(Partner.name).all()
-    
-    if format == 'json':
-        # JSON export
-        data = []
-        for partner in partners:
-            data.append({
-                'code': partner.code,
-                'name': partner.name,
-                'phone': partner.phone or '',
-                'national_id': partner.national_id or '',
-                'address': partner.address or '',
-                'share_percentage': partner.share_percentage,
-                'status': partner.status,
-                'notes': partner.notes or ''
-            })
-        
-        output = io.StringIO()
-        json.dump(data, output, ensure_ascii=False, indent=2)
-        output.seek(0)
-        
-        return Response(
-            output.getvalue(),
-            mimetype='application/json',
-            headers={
-                'Content-Disposition': f'attachment;filename=partners_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
-            }
-        )
-    
-    elif format == 'csv':
-        # CSV export
-        output = io.StringIO()
-        writer = csv.writer(output)
-        
-        # Header
-        writer.writerow(['الكود', 'الاسم', 'الهاتف', 'الرقم القومي', 'العنوان', 'نسبة الشراكة', 'الحالة', 'ملاحظات'])
-        
-        # Data
-        for partner in partners:
-            writer.writerow([
-                partner.code,
-                partner.name,
-                partner.phone or '',
-                partner.national_id or '',
-                partner.address or '',
-                partner.share_percentage,
-                partner.status,
-                partner.notes or ''
-            ])
-        
-        output.seek(0)
-        output_bytes = io.BytesIO(output.getvalue().encode('utf-8-sig'))
-        
-        return Response(
-            output_bytes.getvalue(),
-            mimetype='text/csv',
-            headers={
-                'Content-Disposition': f'attachment;filename=partners_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
-            }
-        )
-    
-    else:
-        # Excel export (HTML table)
-        return render_template('partners/export_excel.html', partners=partners, datetime=datetime)
-
 
 @bp.route('/report')
 def report():

@@ -1,16 +1,11 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify, Response, send_file, g
+from flask import render_template, request, redirect, url_for, flash, jsonify, g
 from acc.blueprints.contracts import bp
 from acc.extensions import db
 from acc.models import Contract, Customer, Unit, Broker, Installment, Safe, Voucher
 from acc.services.utils import generate_uid, log_action, Pagination, format_currency, format_date
 from acc.services.code_generator import generate_contract_code
 from sqlalchemy import or_, func
-import json
-import csv
-import io
-from datetime import datetime, date
 from decimal import Decimal
-
 
 @bp.route('/')
 def index():
@@ -59,7 +54,6 @@ def index():
                          cancelled_contracts=cancelled_contracts,
                          format_currency=format_currency)
 
-
 @bp.route('/search')
 def search():
     """Advanced search endpoint for AJAX"""
@@ -106,7 +100,6 @@ def search():
                          pagination=pagination,
                          q=q,
                          status=status)
-
 
 @bp.route('/add', methods=['GET', 'POST'])
 def add():
@@ -213,7 +206,6 @@ def add():
                          today=date.today(),
                          format_currency=format_currency)
 
-
 @bp.route('/<string:id>')
 def detail(id):
     contract = Contract.query.get_or_404(id)
@@ -239,7 +231,6 @@ def detail(id):
                          overdue_count=overdue_count,
                          format_currency=format_currency,
                          format_date=format_date)
-
 
 @bp.route('/<string:id>/edit', methods=['GET', 'POST'])
 def edit(id):
@@ -295,7 +286,6 @@ def edit(id):
     return render_template('contracts/edit.html',
                          contract=contract,
                          brokers=brokers)
-
 
 @bp.route('/<string:id>/delete', methods=['POST'])
 def delete(id):
@@ -353,92 +343,6 @@ def delete(id):
         
         flash(f'❌ {error_msg}', 'error')
         return redirect(url_for('contracts.index'))
-
-
-@bp.route('/export')
-def export():
-    """Export contracts"""
-    format = request.args.get('format', 'excel')
-    
-    contracts = Contract.query.filter_by(project_id=g.project.id).order_by(Contract.date.desc()).all()
-    
-    if format == 'json':
-        # JSON export
-        data = []
-        for contract in contracts:
-            data.append({
-                'code': contract.code,
-                'date': contract.date.isoformat() if contract.date else '',
-                'customer': contract.customer.name if contract.customer else '',
-                'unit': contract.unit.code if contract.unit else '',
-                'unit_price': float(contract.unit_price),
-                'booking_amount': float(contract.booking_amount),
-                'contract_amount': float(contract.contract_amount),
-                'paid_amount': float(contract.paid_amount),
-                'remaining_amount': float(contract.remaining_amount),
-                'broker': contract.broker.name if contract.broker else '',
-                'broker_commission': float(contract.broker_commission),
-                'status': contract.status,
-                'notes': contract.notes or ''
-            })
-        
-        output = io.StringIO()
-        json.dump(data, output, ensure_ascii=False, indent=2)
-        output.seek(0)
-        
-        return Response(
-            output.getvalue(),
-            mimetype='application/json',
-            headers={
-                'Content-Disposition': f'attachment;filename=contracts_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
-            }
-        )
-    
-    elif format == 'csv':
-        # CSV export
-        output = io.StringIO()
-        writer = csv.writer(output)
-        
-        # Header
-        writer.writerow(['الكود', 'التاريخ', 'العميل', 'الوحدة', 'سعر الوحدة', 'العربون', 'قيمة العقد', 
-                        'المدفوع', 'المتبقي', 'الوسيط', 'عمولة الوسيط', 'الحالة', 'ملاحظات'])
-        
-        # Data
-        for contract in contracts:
-            writer.writerow([
-                contract.code,
-                contract.date.strftime('%Y-%m-%d') if contract.date else '',
-                contract.customer.name if contract.customer else '',
-                contract.unit.code if contract.unit else '',
-                contract.unit_price,
-                contract.booking_amount,
-                contract.contract_amount,
-                contract.paid_amount,
-                contract.remaining_amount,
-                contract.broker.name if contract.broker else '',
-                contract.broker_commission,
-                contract.status,
-                contract.notes or ''
-            ])
-        
-        output.seek(0)
-        output_bytes = io.BytesIO(output.getvalue().encode('utf-8-sig'))
-        
-        return Response(
-            output_bytes.getvalue(),
-            mimetype='text/csv',
-            headers={
-                'Content-Disposition': f'attachment;filename=contracts_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
-            }
-        )
-    
-    else:
-        # Excel export (HTML table)
-        return render_template('contracts/export_excel.html', 
-                             contracts=contracts,
-                             datetime=datetime,
-                             format_currency=format_currency)
-
 
 @bp.route('/report')
 def report():

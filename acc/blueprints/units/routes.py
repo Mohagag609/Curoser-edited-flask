@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify, make_response
+from flask import render_template, request, redirect, url_for, flash, jsonify
 from acc.blueprints.units import bp
 from acc.extensions import db
 from acc.models import Unit, Partner, PartnerGroup, PartnerGroupMember, UnitPartner, Contract
@@ -6,11 +6,6 @@ from acc.services.utils import generate_uid, log_action, Pagination, format_curr
 from acc.services.project_context import get_current_project, filter_by_project
 from acc.services.code_generator import generate_unit_code
 from sqlalchemy import or_, func
-import json
-import csv
-import io
-from datetime import datetime
-
 
 @bp.route('/')
 def index():
@@ -57,7 +52,6 @@ def index():
                          q=q,
                          status_filter=status_filter,
                          format_currency=format_currency)
-
 
 @bp.route('/add', methods=['GET', 'POST'])
 def add():
@@ -136,7 +130,6 @@ def add():
     
     return render_template('units/add.html')
 
-
 @bp.route('/edit/<id>', methods=['GET', 'POST'])
 def edit(id):
     unit = Unit.query.get_or_404(id)
@@ -209,7 +202,6 @@ def edit(id):
     
     return render_template('units/edit.html', unit=unit)
 
-
 @bp.route('/detail/<id>')
 def detail(id):
     unit = Unit.query.get_or_404(id)
@@ -244,7 +236,6 @@ def detail(id):
                          remaining=remaining,
                          total_partners_percentage=total_partners_percentage,
                          format_currency=format_currency)
-
 
 @bp.route('/delete/<id>', methods=['POST'])
 def delete(id):
@@ -281,278 +272,6 @@ def delete(id):
         flash(f'❌ خطأ في حذف الوحدة: {str(e)}', 'error')
         return redirect(url_for('units.index'))
 
-
-@bp.route('/export/<format>')
-def export(format):
-    # Get filtered units
-    query = filter_by_project(Unit.query, Unit)
-    units = query.order_by(Unit.code).all()
-    
-    if format == 'excel':
-        # Generate HTML table for Excel
-        html = generate_excel_html(units)
-        
-        response = make_response(html)
-        response.headers['Content-Type'] = 'application/vnd.ms-excel; charset=utf-8'
-        response.headers['Content-Disposition'] = f'attachment; filename=units_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xls'
-        
-        return response
-        
-    elif format == 'json':
-        data = []
-        for unit in units:
-            partners = []
-            for up in unit.partners:
-                partner = Partner.query.get(up.partner_id)
-                if partner:
-                    partners.append({
-                        'name': partner.name,
-                        'percentage': up.percentage
-                    })
-            
-            data.append({
-                'id': unit.id,
-                'code': unit.code,
-                'name': unit.name,
-                'building': unit.building,
-                'floor': unit.floor,
-                'area': unit.area,
-                'price': unit.price,
-                'unit_type': unit.unit_type,
-                'status': unit.status,
-                'description': unit.description,
-                'partners': partners,
-                'created_at': unit.created_at.isoformat() if unit.created_at else None
-            })
-        
-        response = make_response(json.dumps(data, ensure_ascii=False, indent=2))
-        response.headers['Content-Type'] = 'application/json; charset=utf-8'
-        response.headers['Content-Disposition'] = f'attachment; filename=units_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
-        
-        return response
-        
-    elif format == 'csv':
-        output = io.StringIO()
-        writer = csv.writer(output)
-        
-        # Headers
-        writer.writerow(['الكود', 'الاسم', 'المبنى', 'الدور', 'المساحة', 'السعر', 'النوع', 'الحالة', 'الشركاء', 'تاريخ التسجيل'])
-        
-        # Data
-        for unit in units:
-            partners = []
-            for up in unit.partners:
-                partner = Partner.query.get(up.partner_id)
-                if partner:
-                    partners.append(f"{partner.name} ({up.percentage}%)")
-            
-            writer.writerow([
-                unit.code,
-                unit.name,
-                unit.building,
-                unit.floor,
-                unit.area,
-                unit.price,
-                unit.unit_type,
-                unit.status,
-                ', '.join(partners),
-                unit.created_at.strftime('%Y-%m-%d') if unit.created_at else ''
-            ])
-        
-        response = make_response('\ufeff' + output.getvalue())
-        response.headers['Content-Type'] = 'text/csv; charset=utf-8-sig'
-        response.headers['Content-Disposition'] = f'attachment; filename=units_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
-        
-        return response
-        
-    else:
-        flash('صيغة التصدير غير مدعومة', 'error')
-        return redirect(url_for('units.index'))
-
-
-@bp.route('/import', methods=['GET', 'POST'])
-def import_data():
-    # Get current project
-    project = get_current_project()
-    if not project:
-        flash('⚠️ الرجاء اختيار مشروع أولاً', 'warning')
-        return redirect(url_for('main.select_project'))
-    
-    if request.method == 'POST':
-        try:
-            file = request.files.get('file')
-            if not file:
-                flash('⚠️ الرجاء اختيار ملف', 'warning')
-                return redirect(url_for('units.import_data'))
-            
-            # Read file content
-            content = file.read()
-            filename = file.filename.lower()
-            
-            imported = 0
-            skipped = 0
-            errors = []
-            
-            if filename.endswith('.json'):
-                # Import JSON
-                try:
-                    data = json.loads(content.decode('utf-8'))
-                    for item in data:
-                        if not all([item.get('name'), item.get('building'), item.get('floor')]):
-                            skipped += 1
-                            continue
-                        
-                        # Generate code
-                        code = generate_unit_code(item['building'], item['floor'], item['name'])
-                        
-                        # Check if exists
-                        if Unit.query.filter_by(code=code).first():
-                            skipped += 1
-                            continue
-                        
-                        unit = Unit(
-                            id=generate_uid('U'),
-                            code=code,
-                            project_id=project.id,
-                            name=item['name'],
-                            building=item['building'],
-                            floor=item['floor'],
-                            area=float(item.get('area', 0)),
-                            price=float(item.get('price', 0)),
-                            unit_type=item.get('unit_type', 'apartment'),
-                            status=item.get('status', 'available'),
-                            description=item.get('description', '')
-                        )
-                        db.session.add(unit)
-                        imported += 1
-                        
-                except Exception as e:
-                    errors.append(f'خطأ في معالجة JSON: {str(e)}')
-                    
-            elif filename.endswith('.csv'):
-                # Import CSV
-                try:
-                    # Try different encodings
-                    for encoding in ['utf-8-sig', 'utf-8', 'windows-1256', 'iso-8859-1']:
-                        try:
-                            text = content.decode(encoding)
-                            break
-                        except:
-                            continue
-                    else:
-                        raise ValueError('لا يمكن قراءة ترميز الملف')
-                    
-                    reader = csv.DictReader(io.StringIO(text))
-                    for row in reader:
-                        name = row.get('الاسم') or row.get('name') or row.get('Name')
-                        building = row.get('المبنى') or row.get('building') or row.get('Building')
-                        floor = row.get('الدور') or row.get('floor') or row.get('Floor')
-                        
-                        if not all([name, building, floor]):
-                            skipped += 1
-                            continue
-                        
-                        # Generate code
-                        code = generate_unit_code(building, floor, name)
-                        
-                        # Check if exists
-                        if Unit.query.filter_by(code=code).first():
-                            skipped += 1
-                            continue
-                        
-                        unit = Unit(
-                            id=generate_uid('U'),
-                            code=code,
-                            project_id=project.id,
-                            name=name,
-                            building=building,
-                            floor=floor,
-                            area=float(row.get('المساحة') or row.get('area') or 0),
-                            price=float(row.get('السعر') or row.get('price') or 0),
-                            unit_type=row.get('النوع') or row.get('unit_type') or 'apartment',
-                            status=row.get('الحالة') or row.get('status') or 'available',
-                            description=row.get('الوصف') or row.get('description') or ''
-                        )
-                        db.session.add(unit)
-                        imported += 1
-                        
-                except Exception as e:
-                    errors.append(f'خطأ في معالجة CSV: {str(e)}')
-            
-            else:
-                flash('⚠️ نوع الملف غير مدعوم. يرجى استخدام JSON أو CSV', 'warning')
-                return redirect(url_for('units.import_data'))
-            
-            if imported > 0:
-                db.session.commit()
-                log_action('استيراد وحدات', {'count': imported})
-            
-            # Show results
-            if imported > 0:
-                flash(f'✅ تم استيراد {imported} وحدة بنجاح', 'success')
-            if skipped > 0:
-                flash(f'ℹ️ تم تخطي {skipped} وحدة (موجودة مسبقاً)', 'info')
-            if errors:
-                for error in errors:
-                    flash(f'❌ {error}', 'error')
-            
-            return redirect(url_for('units.index'))
-            
-        except Exception as e:
-            db.session.rollback()
-            flash(f'❌ خطأ في الاستيراد: {str(e)}', 'error')
-            return redirect(url_for('units.import_data'))
-    
-    return render_template('units/import.html')
-
-
-@bp.route('/report')
-def report():
-    # Get current project
-    project = get_current_project()
-    if not project:
-        flash('⚠️ الرجاء اختيار مشروع أولاً', 'warning')
-        return redirect(url_for('main.select_project'))
-    
-    # Get statistics
-    query = filter_by_project(Unit.query, Unit)
-    
-    total_units = query.count()
-    available_units = query.filter_by(status='available').count()
-    sold_units = query.filter_by(status='sold').count()
-    reserved_units = query.filter_by(status='reserved').count()
-    
-    # Units by building
-    units_by_building = db.session.query(
-        Unit.building,
-        func.count(Unit.id).label('count'),
-        func.sum(Unit.price).label('total_value')
-    ).filter(Unit.project_id == project.id).group_by(Unit.building).all()
-    
-    # Units by type
-    units_by_type = db.session.query(
-        Unit.unit_type,
-        func.count(Unit.id).label('count'),
-        func.avg(Unit.price).label('avg_price')
-    ).filter(Unit.project_id == project.id).group_by(Unit.unit_type).all()
-    
-    # Total values
-    total_value = query.with_entities(func.sum(Unit.price)).scalar() or 0
-    total_area = query.with_entities(func.sum(Unit.area)).scalar() or 0
-    
-    return render_template('units/report.html',
-                         total_units=total_units,
-                         available_units=available_units,
-                         sold_units=sold_units,
-                         reserved_units=reserved_units,
-                         units_by_building=units_by_building,
-                         units_by_type=units_by_type,
-                         total_value=total_value,
-                         total_area=total_area,
-                         format_currency=format_currency)
-
-
-# Partner Management Routes
 @bp.route('/<unit_id>/partners')
 def partners(unit_id):
     unit = Unit.query.get_or_404(unit_id)
@@ -583,7 +302,6 @@ def partners(unit_id):
                          partners=partners,
                          total_percentage=total_percentage,
                          available_partners=available_partners)
-
 
 # Helper function
 def generate_excel_html(units):

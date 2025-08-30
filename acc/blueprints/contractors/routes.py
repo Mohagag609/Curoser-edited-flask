@@ -1,15 +1,10 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify, Response, send_file
+from flask import render_template, request, redirect, url_for, flash, jsonify
 from acc.blueprints.contractors import bp
 from acc.extensions import db
 from acc.models import Contractor
 from acc.services.utils import generate_uid, log_action, Pagination
 from acc.services.code_generator import generate_contractor_code
 from sqlalchemy import or_, func
-import json
-import csv
-import io
-from datetime import datetime
-
 
 @bp.route('/')
 def index():
@@ -56,7 +51,6 @@ def index():
                          total_contractors=total_contractors,
                          active_contractors=active_contractors,
                          inactive_contractors=inactive_contractors)
-
 
 @bp.route('/search')
 def search():
@@ -105,7 +99,6 @@ def search():
                          pagination=pagination,
                          q=q,
                          status=status)
-
 
 @bp.route('/add', methods=['GET', 'POST'])
 def add():
@@ -185,7 +178,6 @@ def add():
     
     return render_template('contractors/add.html')
 
-
 @bp.route('/<string:id>')
 def detail(id):
     contractor = Contractor.query.get_or_404(id)
@@ -198,7 +190,6 @@ def detail(id):
                          contractor=contractor,
                          active_projects=active_projects,
                          completed_projects=completed_projects)
-
 
 @bp.route('/<string:id>/edit', methods=['GET', 'POST'])
 def edit(id):
@@ -267,7 +258,6 @@ def edit(id):
     
     return render_template('contractors/edit.html', contractor=contractor)
 
-
 @bp.route('/<string:id>/delete', methods=['POST'])
 def delete(id):
     try:
@@ -311,159 +301,6 @@ def delete(id):
         
         flash(f'❌ {error_msg}', 'error')
         return redirect(url_for('contractors.index'))
-
-
-@bp.route('/import', methods=['GET', 'POST'])
-def import_data():
-    """Import contractors from file"""
-    if request.method == 'POST':
-        if 'file' not in request.files:
-            flash('❌ الرجاء اختيار ملف', 'error')
-            return redirect(url_for('contractors.import_data'))
-        
-        file = request.files['file']
-        if file.filename == '':
-            flash('❌ الرجاء اختيار ملف', 'error')
-            return redirect(url_for('contractors.import_data'))
-        
-        try:
-            # تم تعطيل الاستيراد مؤقتاً - يحتاج لتحديث للنظام الجديد
-            flash('❌ نظام الاستيراد قيد التحديث', 'error')
-            return redirect(url_for('contractors.index'))
-            
-            # handler = ImportHandler()
-            # data, error = handler.read_file(file)
-            
-            if False:  # error:
-                flash(f'❌ خطأ في قراءة الملف: {error}', 'error')
-                return redirect(url_for('contractors.import_data'))
-            
-            # Process data
-            success_count = 0
-            error_count = 0
-            errors = []
-            
-            for row in data:
-                try:
-                    # Check required fields
-                    if not row.get('name'):
-                        error_count += 1
-                        errors.append(f"السطر {data.index(row) + 1}: اسم المقاول مطلوب")
-                        continue
-                    
-                    # Check for duplicates
-                    existing = Contractor.query.filter_by(name=row['name']).first()
-                    if existing:
-                        error_count += 1
-                        errors.append(f"السطر {data.index(row) + 1}: المقاول '{row['name']}' موجود بالفعل")
-                        continue
-                    
-                    # Create contractor
-                    contractor = Contractor(
-                        id=generate_uid('CON'),
-                        code=row.get('code') or generate_contractor_code(),
-                        name=row['name'],
-                        phone=row.get('phone'),
-                        email=row.get('email'),
-                        address=row.get('address'),
-                        specialization=row.get('specialization'),
-                        status=row.get('status', 'نشط'),
-                        notes=row.get('notes')
-                    )
-                    
-                    db.session.add(contractor)
-                    success_count += 1
-                    
-                except Exception as e:
-                    error_count += 1
-                    errors.append(f"السطر {data.index(row) + 1}: {str(e)}")
-            
-            if success_count > 0:
-                db.session.commit()
-                log_action('استيراد مقاولين', {'count': success_count})
-            
-            return render_template('contractors/import_result.html',
-                                 success_count=success_count,
-                                 error_count=error_count,
-                                 errors=errors)
-            
-        except Exception as e:
-            flash(f'❌ خطأ في معالجة الملف: {str(e)}', 'error')
-            return redirect(url_for('contractors.import_data'))
-    
-    return render_template('contractors/import.html')
-
-
-@bp.route('/export')
-def export():
-    """Export contractors"""
-    format = request.args.get('format', 'excel')
-    
-    contractors = Contractor.query.order_by(Contractor.name).all()
-    
-    if format == 'json':
-        # JSON export
-        data = []
-        for contractor in contractors:
-            data.append({
-                'code': contractor.code,
-                'name': contractor.name,
-                'phone': contractor.phone or '',
-                'email': contractor.email or '',
-                'address': contractor.address or '',
-                'specialization': contractor.specialization or '',
-                'status': contractor.status,
-                'notes': contractor.notes or ''
-            })
-        
-        output = io.StringIO()
-        json.dump(data, output, ensure_ascii=False, indent=2)
-        output.seek(0)
-        
-        return Response(
-            output.getvalue(),
-            mimetype='application/json',
-            headers={
-                'Content-Disposition': f'attachment;filename=contractors_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
-            }
-        )
-    
-    elif format == 'csv':
-        # CSV export
-        output = io.StringIO()
-        writer = csv.writer(output)
-        
-        # Header
-        writer.writerow(['الكود', 'الاسم', 'الهاتف', 'البريد الإلكتروني', 'العنوان', 'التخصص', 'الحالة', 'ملاحظات'])
-        
-        # Data
-        for contractor in contractors:
-            writer.writerow([
-                contractor.code,
-                contractor.name,
-                contractor.phone or '',
-                contractor.email or '',
-                contractor.address or '',
-                contractor.specialization or '',
-                contractor.status,
-                contractor.notes or ''
-            ])
-        
-        output.seek(0)
-        output_bytes = io.BytesIO(output.getvalue().encode('utf-8-sig'))
-        
-        return Response(
-            output_bytes.getvalue(),
-            mimetype='text/csv',
-            headers={
-                'Content-Disposition': f'attachment;filename=contractors_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
-            }
-        )
-    
-    else:
-        # Excel export (HTML table)
-        return render_template('contractors/export_excel.html', contractors=contractors)
-
 
 @bp.route('/report')
 def report():
