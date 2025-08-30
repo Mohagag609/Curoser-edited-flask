@@ -1,0 +1,215 @@
+/* Smooth Page Transitions */
+
+/* Loading overlay */
+.page-loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+}
+
+.page-loading-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Loading spinner */
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #f3f4f6;
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Page content fade in */
+.page-content {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+}
+
+.page-content.loaded {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Hide elements during load */
+body:not(.page-loaded) .hide-during-load {
+    opacity: 0 !important;
+    visibility: hidden !important;
+}
+
+/* Smooth element transitions */
+.smooth-transition {
+    transition: all 0.3s ease-out;
+}
+
+/* Navigation transitions */
+.nav-transition {
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+
+/* Card animations */
+.card-transition {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+
+.card-transition.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Stagger animations for lists */
+.stagger-item {
+    opacity: 0;
+    transform: translateX(-20px);
+    transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+}
+
+.stagger-item.visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Prevent FOUC (Flash of Unstyled Content) */
+.no-fouc {
+    visibility: hidden;
+}
+
+body.page-loaded .no-fouc {
+    visibility: visible;
+}
+
+/* Quick switcher transitions */
+#quick-switcher {
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+
+/* Sidebar transitions */
+.sidebar {
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+/* Modal transitions */
+.modal {
+    transition: opacity 0.3s ease-out;
+}
+
+.modal-content {
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+/* Button hover transitions */
+.btn, .modern-btn {
+    transition: all 0.2s ease-out;
+}
+
+/* Table row transitions */
+tr {
+    transition: background-color 0.2s ease-out;
+}
+
+/* Form element transitions */
+input, select, textarea {
+    transition: border-color 0.2s ease-out, box-shadow 0.2s ease-out;
+}
+
+/* Toast transitions */
+.toast {
+    transition: all 0.3s ease-out;
+}
+
+/* Dropdown transitions */
+.dropdown-menu {
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+
+/* Tab transitions */
+.tab-content {
+    transition: opacity 0.3s ease-out;
+}
+
+/* Progress bar transitions */
+.progress-bar {
+    transition: width 0.5s ease-out;
+}
+
+/* Fade utilities */
+.fade-in {
+    animation: fadeIn 0.5s ease-out;
+}
+
+.fade-out {
+    animation: fadeOut 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+}
+
+/* Slide animations */
+.slide-in-right {
+    animation: slideInRight 0.4s ease-out;
+}
+
+.slide-in-left {
+    animation: slideInLeft 0.4s ease-out;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}

@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ config.SITE_NAME }}{% endblock %}</title>
     
+    <!-- Preload CSS (Critical) -->
+    <link rel="preload" href="{{ url_for('static', filename='css/preload.css') }}" as="style">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/preload.css') }}">
+    
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -38,6 +42,9 @@
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Page Transitions CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/transitions.css') }}">
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -264,13 +271,13 @@
     
     {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-gray-50" x-data="{ sidebarOpen: true }">
+<body class="bg-gray-50 no-fouc" x-data="{ sidebarOpen: true }">
     <!-- Wrapper -->
     <div class="flex h-screen overflow-hidden">
         
         <!-- Sidebar -->
         {% if current_project %}
-        <aside class="flex flex-col w-64 bg-white border-l border-gray-200 transition-all duration-300"
+        <aside class="flex flex-col w-64 bg-white border-l border-gray-200 transition-all duration-300 smooth-transition"
                :class="{ 'w-64': sidebarOpen, 'w-20': !sidebarOpen }">
             
             <!-- Sidebar Header -->
@@ -634,5 +641,7 @@
     {% endwith %}
     
     {% block extra_scripts %}{% endblock %}
+    <!-- Page Transitions -->
+    <script src="{{ url_for('static', filename='js/page-transitions.js') }}"></script>
 </body>
 </html>

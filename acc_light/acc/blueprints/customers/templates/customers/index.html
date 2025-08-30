@@ -4,7 +4,7 @@
 {% block page_title %}العملاء{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-6 page-content">
     <!-- Header with Back Button -->
     <div class="flex items-center gap-4 mb-4">
         <a href="{{ url_for('dashboard.index') }}" class="modern-btn modern-btn-back modern-btn-sm">
@@ -69,8 +69,8 @@
     
     <!-- Results Container -->
     <div id="results-container">
-        <!-- Customers Table -->
-        <div class="card overflow-hidden">
+            <!-- Customers Table -->
+    <div class="card overflow-hidden card-transition">
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gradient-to-l from-gray-50 to-gray-100">

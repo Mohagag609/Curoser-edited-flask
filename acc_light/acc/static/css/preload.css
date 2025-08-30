@@ -1,0 +1,127 @@
+/* Preload styles to prevent FOUC */
+
+/* Hide body until loaded */
+body:not(.page-loaded) {
+    opacity: 0;
+}
+
+body {
+    transition: opacity 0.3s ease-out;
+}
+
+body.page-loaded {
+    opacity: 1;
+}
+
+/* Hide specific elements during initial load */
+body:not(.page-loaded) .sidebar,
+body:not(.page-loaded) .navbar,
+body:not(.page-loaded) #quick-switcher,
+body:not(.page-loaded) .modal,
+body:not(.page-loaded) .dropdown-menu {
+    opacity: 0;
+    visibility: hidden;
+}
+
+/* Prevent layout shift */
+.sidebar {
+    will-change: transform;
+}
+
+.page-content {
+    will-change: opacity, transform;
+}
+
+/* Smooth font loading */
+.font-tajawal {
+    font-display: swap;
+}
+
+/* Prevent icon flashing */
+.fas, .far, .fab {
+    display: inline-block;
+    font-style: normal;
+    font-variant: normal;
+    text-rendering: auto;
+    line-height: 1;
+}
+
+/* Smooth image loading */
+img {
+    transition: opacity 0.3s ease-out;
+}
+
+img:not([src]) {
+    opacity: 0;
+}
+
+/* Prevent table jumping */
+table {
+    table-layout: fixed;
+}
+
+/* Smooth form elements */
+input, select, textarea {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+/* Prevent button flash */
+.btn, .modern-btn {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Hide tooltips during load */
+body:not(.page-loaded) [data-tooltip] {
+    pointer-events: none;
+}
+
+/* Smooth modal transitions */
+.modal-backdrop {
+    transition: opacity 0.3s ease-out;
+}
+
+/* Prevent content reflow */
+.container {
+    min-height: 100vh;
+}
+
+/* Skeleton loading for dynamic content */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Prevent flash of unstyled SVG */
+svg {
+    overflow: hidden;
+}
+
+/* Smooth scroll behavior */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Prevent layout shift from scrollbar */
+body {
+    overflow-y: scroll;
+}
+
+/* Hide print-only elements */
+@media screen {
+    .print-only {
+        display: none !important;
+    }
+}
