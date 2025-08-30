@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify, Response, send_file
+from flask import render_template, request, redirect, url_for, flash, jsonify, Response, send_file, session
 from acc.blueprints.projects import bp
 from acc.models import Project, ProjectStage, Unit
 from acc.models.contractor import Contractor
@@ -15,6 +15,10 @@ import json
 
 @bp.route('/')
 def index():
+    # التحقق من تسجيل الدخول
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
     page = request.args.get('page', 1, type=int)
     q = request.args.get('q', '')
     status = request.args.get('status', '')

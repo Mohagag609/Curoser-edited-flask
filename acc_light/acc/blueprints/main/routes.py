@@ -8,15 +8,21 @@ from acc.extensions import db
 
 @bp.route('/')
 def index():
-    """الصفحة الرئيسية - تحويل مباشر لاختيار المشروع"""
-    # دائماً نعرض صفحة اختيار المشروع أولاً
-    return redirect(url_for('main.select_project'))
+    """الصفحة الرئيسية - التحقق من تسجيل الدخول أولاً"""
+    # التحقق من تسجيل الدخول
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    # إذا كان مسجل دخول، نحوله لصفحة الترحيب
+    return redirect(url_for('auth.welcome'))
 
 
 @bp.route('/select-project')
-# @login_required  # مؤقتاً معطل للاختبار
 def select_project():
     """صفحة اختيار المشروع"""
+    # التحقق من تسجيل الدخول
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
     # الحصول على جميع المشاريع النشطة
     projects = Project.query.filter_by(status='نشط').order_by(Project.name).all()
     current_project = get_current_project()
