@@ -31,6 +31,20 @@ def format_currency(amount):
     return f"{amount:,.2f} ج.م"
 
 
+def format_date(date_obj):
+    """Format date object for display"""
+    if date_obj is None:
+        return "-"
+    
+    if isinstance(date_obj, str):
+        return date_obj
+    
+    try:
+        return date_obj.strftime('%Y-%m-%d')
+    except:
+        return str(date_obj)
+
+
 def parse_number(value):
     """Parse a number from string, handling Arabic/English formats"""
     if not value:
