@@ -600,18 +600,35 @@
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             <script>
+                // Check if messages were already shown in this session
                 document.addEventListener('DOMContentLoaded', function() {
+                    const shownMessages = sessionStorage.getItem('shownFlashMessages') || '[]';
+                    const shownList = JSON.parse(shownMessages);
+                    const currentMessages = [];
+                    
                     {% for category, message in messages %}
-                        {% if category == 'error' %}
-                            toast.error('{{ message|e }}');
-                        {% elif category == 'success' %}
-                            toast.success('{{ message|e }}');
-                        {% elif category == 'warning' %}
-                            toast.warning('{{ message|e }}');
-                        {% else %}
-                            toast.info('{{ message|e }}');
-                        {% endif %}
+                        const msgHash = btoa('{{ category }}' + '{{ message|e }}').substring(0, 10);
+                        if (!shownList.includes(msgHash)) {
+                            currentMessages.push(msgHash);
+                            {% if category == 'error' %}
+                                toast.error('{{ message|e }}');
+                            {% elif category == 'success' %}
+                                toast.success('{{ message|e }}');
+                            {% elif category == 'warning' %}
+                                toast.warning('{{ message|e }}');
+                            {% else %}
+                                toast.info('{{ message|e }}');
+                            {% endif %}
+                        }
                     {% endfor %}
+                    
+                    // Update shown messages list
+                    if (currentMessages.length > 0) {
+                        shownList.push(...currentMessages);
+                        // Keep only last 20 messages to prevent storage bloat
+                        const recentMessages = shownList.slice(-20);
+                        sessionStorage.setItem('shownFlashMessages', JSON.stringify(recentMessages));
+                    }
                 });
             </script>
         {% endif %}
