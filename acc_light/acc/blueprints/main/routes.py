@@ -12,8 +12,8 @@ def index():
     # التحقق من تسجيل الدخول
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
-    # إذا كان مسجل دخول، نحوله لصفحة اختيار المشروع
-    return redirect(url_for('main.select_project'))
+    # إذا كان مسجل دخول، نحوله لصفحة الترحيب
+    return redirect(url_for('auth.welcome'))
 
 
 @bp.route('/select-project')

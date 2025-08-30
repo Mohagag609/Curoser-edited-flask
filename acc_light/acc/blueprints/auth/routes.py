@@ -41,11 +41,11 @@ def login():
             
             flash('تم تسجيل الدخول بنجاح', 'success')
             
-            # توجيه لصفحة اختيار المشروع
+            # توجيه لصفحة الترحيب
             next_page = request.args.get('next')
             if next_page:
                 return redirect(next_page)
-            return redirect(url_for('main.select_project'))
+            return redirect(url_for('auth.welcome'))
         else:
             flash('اسم المستخدم أو كلمة المرور غير صحيحة', 'error')
     
