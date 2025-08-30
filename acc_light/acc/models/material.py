@@ -6,9 +6,8 @@ class Material(db.Model):
     __tablename__ = 'materials'
     
     id = Column(String(20), primary_key=True)
-    code = Column(String(20), unique=True, nullable=False)
+    code = Column(String(50), unique=True, nullable=False)
     name = Column(String(200), nullable=False)
-    code = Column(String(50), unique=True)
     unit = Column(String(50))  # متر، كيلو، قطعة
     unit_cost = Column(Numeric(15, 2), default=0)  # سعر الوحدة الافتراضي
     category = Column(String(100))

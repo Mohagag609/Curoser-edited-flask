@@ -151,6 +151,12 @@ def generate_safe_code():
     from acc.models.treasury import Safe
     return get_next_code(Safe, 'SAF', 3)
 
+
+def generate_material_code():
+    """Generate next material code (MAT001, MAT002, etc.)"""
+    from acc.models import Material
+    return get_next_code(Material, 'MAT', 3)
+
 def generate_voucher_code(voucher_type):
     """
     Generate voucher code based on type
