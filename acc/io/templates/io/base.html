@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+    .upload-area {
+        border: 2px dashed #e5e7eb;
+        border-radius: 0.75rem;
+        padding: 3rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        background-color: #f9fafb;
+    }
+    
+    .upload-area:hover {
+        border-color: #3b82f6;
+        background-color: #eff6ff;
+    }
+    
+    .upload-area.dragover {
+        border-color: #3b82f6;
+        background-color: #dbeafe;
+        transform: scale(1.02);
+    }
+    
+    .file-info {
+        background-color: #f0f9ff;
+        border: 1px solid #bae6fd;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .progress-bar {
+        height: 4px;
+        background-color: #3b82f6;
+        border-radius: 2px;
+        transition: width 0.3s ease;
+    }
+    
+    .error-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .error-item {
+        background-color: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 0.375rem;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .success-summary {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .tab-button {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem 0.5rem 0 0;
+        background-color: #e5e7eb;
+        color: #6b7280;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .tab-button.active {
+        background-color: white;
+        color: #3b82f6;
+        box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    .template-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        transition: all 0.2s ease;
+    }
+    
+    .template-card:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<!-- SweetAlert2 للتنبيهات الجميلة -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+// مكتبة التنبيهات
+const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 5000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+        toast.addEventListener('mouseenter', Swal.stopTimer)
+        toast.addEventListener('mouseleave', Swal.resumeTimer)
+    }
+});
+
+// دالة عرض الأخطاء
+function showErrors(errors) {
+    if (errors.length === 0) return;
+    
+    let errorHtml = '<div class="error-list text-right">';
+    errors.forEach(error => {
+        errorHtml += `<div class="error-item">
+            <strong>صف ${error.row}:</strong> ${error.error}
+        </div>`;
+    });
+    errorHtml += '</div>';
+    
+    Swal.fire({
+        title: 'تفاصيل الأخطاء',
+        html: errorHtml,
+        icon: 'error',
+        confirmButtonText: 'حسناً',
+        confirmButtonColor: '#ef4444',
+        width: '600px'
+    });
+}
+
+// دالة معالجة نتيجة الاستيراد
+function handleImportResult(result) {
+    const report = result.report;
+    
+    if (result.ok && report.errors.length === 0) {
+        // نجاح كامل
+        Toast.fire({
+            icon: 'success',
+            title: result.message
+        });
+    } else if (result.ok && report.errors.length > 0) {
+        // نجاح جزئي
+        Swal.fire({
+            title: 'تم الاستيراد مع بعض الأخطاء',
+            html: `
+                <div class="text-right">
+                    <p class="mb-2">${result.message}</p>
+                    <button class="btn btn-sm btn-danger" onclick="showErrors(${JSON.stringify(report.errors)})">
+                        عرض الأخطاء (${report.errors.length})
+                    </button>
+                </div>
+            `,
+            icon: 'warning',
+            confirmButtonText: 'حسناً',
+            confirmButtonColor: '#f59e0b'
+        });
+    } else {
+        // فشل
+        Toast.fire({
+            icon: 'error',
+            title: result.message
+        });
+        
+        if (report.errors.length > 0) {
+            setTimeout(() => showErrors(report.errors), 500);
+        }
+    }
+}
+</script>
+{% endblock %}

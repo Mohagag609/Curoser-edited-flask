@@ -110,12 +110,17 @@
  <span>إضافة مفصلة</span>
  </a>
  
- <button @click="$dispatch('open-bulk-add')" class="modern-btn modern-btn-secondary">
- <i class="fas fa-paste"></i>
- <span>لصق قائمة</span>
- </button>
+             <button @click="$dispatch('open-bulk-add')" class="modern-btn modern-btn-secondary">
+                <i class="fas fa-paste"></i>
+                <span>لصق قائمة</span>
+            </button>
+            
+            <a href="{{ url_for('io.resource_page', resource='customers') }}" class="modern-btn modern-btn-secondary">
+                <i class="fas fa-file-import"></i>
+                <span>استيراد/تصدير</span>
+            </a>
 
- </div>
+        </div>
  
  <!-- Enhanced Search Bar -->
  {% set search_url = url_for('customers.search') %}

@@ -1,0 +1,357 @@
+{% extends "io/base.html" %}
+
+{% block title %}استيراد/تصدير {{ schema.plural_name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6 page-content" x-data="importExportApp()">
+    <!-- Header -->
+    <div class="flex items-center gap-4 mb-4">
+        <a href="{{ url_for('dashboard.index') }}" class="modern-btn modern-btn-back modern-btn-sm">
+            <i class="fas fa-arrow-right"></i>
+            <span>الرئيسية</span>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">استيراد وتصدير {{ schema.plural_name }}</h1>
+            <p class="text-sm text-gray-600">استيراد البيانات من ملفات CSV أو Excel وتصديرها</p>
+        </div>
+    </div>
+    
+    {% if current_project %}
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <p class="text-sm text-blue-800">
+            <i class="fas fa-info-circle ml-2"></i>
+            المشروع الحالي: <strong>{{ current_project.name }}</strong>
+            {% if resource in ['units', 'contracts'] %}
+            - البيانات المستوردة ستكون خاصة بهذا المشروع
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+    
+    <!-- Tabs -->
+    <div class="bg-white rounded-lg shadow-sm">
+        <div class="border-b border-gray-200 flex">
+            <button @click="activeTab = 'import'" 
+                    :class="{'active': activeTab === 'import'}"
+                    class="tab-button">
+                <i class="fas fa-upload ml-2"></i>
+                استيراد
+            </button>
+            <button @click="activeTab = 'export'" 
+                    :class="{'active': activeTab === 'export'}"
+                    class="tab-button">
+                <i class="fas fa-download ml-2"></i>
+                تصدير
+            </button>
+            <button @click="activeTab = 'template'" 
+                    :class="{'active': activeTab === 'template'}"
+                    class="tab-button">
+                <i class="fas fa-file-alt ml-2"></i>
+                قوالب
+            </button>
+        </div>
+        
+        <div class="p-6">
+            <!-- Import Tab -->
+            <div x-show="activeTab === 'import'" x-transition>
+                <form @submit.prevent="handleImport" enctype="multipart/form-data">
+                    <!-- Upload Area -->
+                    <div class="upload-area"
+                         @dragover.prevent="dragover = true"
+                         @dragleave.prevent="dragover = false"
+                         @drop.prevent="handleDrop"
+                         :class="{'dragover': dragover}">
+                        
+                        <i class="fas fa-cloud-upload-alt text-5xl text-gray-400 mb-4"></i>
+                        
+                        <p class="text-lg font-medium text-gray-700 mb-2">
+                            اسحب الملف هنا أو انقر للاختيار
+                        </p>
+                        
+                        <p class="text-sm text-gray-500 mb-4">
+                            ملفات CSV أو Excel (حتى 5MB)
+                        </p>
+                        
+                        <input type="file" 
+                               id="fileInput"
+                               @change="handleFileSelect"
+                               accept=".csv,.xlsx,.xls"
+                               class="hidden">
+                        
+                        <label for="fileInput" class="modern-btn modern-btn-primary cursor-pointer">
+                            <i class="fas fa-folder-open"></i>
+                            <span>اختر ملف</span>
+                        </label>
+                    </div>
+                    
+                    <!-- File Info -->
+                    <div x-show="selectedFile" x-transition class="file-info mt-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-medium text-gray-900" x-text="selectedFile?.name"></p>
+                                <p class="text-sm text-gray-500" x-text="formatFileSize(selectedFile?.size)"></p>
+                            </div>
+                            <button type="button" 
+                                    @click="clearFile"
+                                    class="text-red-600 hover:text-red-800">
+                                <i class="fas fa-times-circle"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Import Mode -->
+                    <div class="mt-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            وضع الاستيراد
+                        </label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="radio" 
+                                       name="mode" 
+                                       value="insert"
+                                       x-model="importMode"
+                                       class="ml-2">
+                                <div>
+                                    <span class="font-medium">إدراج فقط</span>
+                                    <span class="text-sm text-gray-500 block">تخطي السجلات المكررة</span>
+                                </div>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" 
+                                       name="mode" 
+                                       value="upsert"
+                                       x-model="importMode"
+                                       class="ml-2">
+                                <div>
+                                    <span class="font-medium">إدراج أو تحديث</span>
+                                    <span class="text-sm text-gray-500 block">تحديث السجلات الموجودة</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Column Info -->
+                    <div class="mt-6 bg-gray-50 rounded-lg p-4">
+                        <h3 class="font-medium text-gray-900 mb-3">الأعمدة المطلوبة</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {% for col in schema.columns %}
+                            <div class="flex items-start">
+                                <i class="fas fa-{{ 'check-circle text-green-500' if col.required else 'circle text-gray-400' }} mt-1 ml-2"></i>
+                                <div>
+                                    <span class="font-medium">{{ col.label }}</span>
+                                    {% if col.note %}
+                                    <span class="text-xs text-gray-500 block">{{ col.note }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <div class="mt-6 flex justify-end">
+                        <button type="submit" 
+                                :disabled="!selectedFile || importing"
+                                class="modern-btn modern-btn-primary">
+                            <i class="fas fa-upload" x-show="!importing"></i>
+                            <i class="fas fa-spinner fa-spin" x-show="importing"></i>
+                            <span x-text="importing ? 'جاري الاستيراد...' : 'بدء الاستيراد'"></span>
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Progress -->
+                <div x-show="importing" x-transition class="mt-4">
+                    <div class="bg-gray-200 rounded-full h-1">
+                        <div class="progress-bar" :style="`width: ${progress}%`"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Export Tab -->
+            <div x-show="activeTab === 'export'" x-transition>
+                <div class="space-y-4">
+                    <p class="text-gray-600 mb-6">
+                        قم بتصدير بيانات {{ schema.plural_name }} الحالية إلى ملف
+                    </p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <a href="{{ url_for('io.export_data', resource=resource, format='csv') }}"
+                           class="template-card flex items-center justify-between hover:no-underline">
+                            <div>
+                                <h4 class="font-medium text-gray-900">تصدير CSV</h4>
+                                <p class="text-sm text-gray-500">ملف CSV متوافق مع Excel</p>
+                            </div>
+                            <i class="fas fa-file-csv text-3xl text-green-600"></i>
+                        </a>
+                        
+                        <a href="{{ url_for('io.export_data', resource=resource, format='xlsx') }}"
+                           class="template-card flex items-center justify-between hover:no-underline">
+                            <div>
+                                <h4 class="font-medium text-gray-900">تصدير Excel</h4>
+                                <p class="text-sm text-gray-500">ملف Excel مع تنسيق</p>
+                            </div>
+                            <i class="fas fa-file-excel text-3xl text-green-700"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Template Tab -->
+            <div x-show="activeTab === 'template'" x-transition>
+                <div class="space-y-4">
+                    <p class="text-gray-600 mb-6">
+                        قم بتحميل قالب جاهز للاستيراد مع أمثلة توضيحية
+                    </p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <a href="{{ url_for('io.download_template', resource=resource, format='csv') }}"
+                           class="template-card flex items-center justify-between hover:no-underline">
+                            <div>
+                                <h4 class="font-medium text-gray-900">قالب CSV</h4>
+                                <p class="text-sm text-gray-500">قالب بسيط للبدء السريع</p>
+                            </div>
+                            <i class="fas fa-file-csv text-3xl text-blue-600"></i>
+                        </a>
+                        
+                        <a href="{{ url_for('io.download_template', resource=resource, format='xlsx') }}"
+                           class="template-card flex items-center justify-between hover:no-underline">
+                            <div>
+                                <h4 class="font-medium text-gray-900">قالب Excel</h4>
+                                <p class="text-sm text-gray-500">قالب متقدم مع تعليمات</p>
+                            </div>
+                            <i class="fas fa-file-excel text-3xl text-blue-700"></i>
+                        </a>
+                    </div>
+                    
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-6">
+                        <h4 class="font-medium text-amber-900 mb-2">
+                            <i class="fas fa-lightbulb ml-2"></i>
+                            نصائح للاستيراد الناجح
+                        </h4>
+                        <ul class="text-sm text-amber-800 space-y-1 list-disc list-inside">
+                            <li>تأكد من وجود جميع الأعمدة المطلوبة</li>
+                            <li>استخدم نفس أسماء الأعمدة الموجودة في القالب</li>
+                            <li>تأكد من صحة البيانات المرجعية (أسماء المشاريع، الموردين، إلخ)</li>
+                            <li>أرقام الهواتف المصرية يجب أن تبدأ بـ 01</li>
+                            <li>البريد الإلكتروني يجب أن يكون بصيغة صحيحة</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function importExportApp() {
+    return {
+        activeTab: 'import',
+        selectedFile: null,
+        importing: false,
+        progress: 0,
+        dragover: false,
+        importMode: 'insert',
+        
+        handleFileSelect(event) {
+            const file = event.target.files[0];
+            this.setFile(file);
+        },
+        
+        handleDrop(event) {
+            this.dragover = false;
+            const file = event.dataTransfer.files[0];
+            this.setFile(file);
+        },
+        
+        setFile(file) {
+            if (!file) return;
+            
+            const allowedTypes = ['.csv', '.xlsx', '.xls'];
+            const fileExt = file.name.toLowerCase().substr(file.name.lastIndexOf('.'));
+            
+            if (!allowedTypes.includes(fileExt)) {
+                Toast.fire({
+                    icon: 'error',
+                    title: 'صيغة الملف غير مدعومة'
+                });
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) {
+                Toast.fire({
+                    icon: 'error',
+                    title: 'حجم الملف كبير جداً (الحد الأقصى 5MB)'
+                });
+                return;
+            }
+            
+            this.selectedFile = file;
+        },
+        
+        clearFile() {
+            this.selectedFile = null;
+            document.getElementById('fileInput').value = '';
+        },
+        
+        formatFileSize(bytes) {
+            if (!bytes) return '';
+            const sizes = ['Bytes', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+        },
+        
+        async handleImport() {
+            if (!this.selectedFile) return;
+            
+            this.importing = true;
+            this.progress = 0;
+            
+            const formData = new FormData();
+            formData.append('file', this.selectedFile);
+            formData.append('mode', this.importMode);
+            
+            // محاكاة التقدم
+            const progressInterval = setInterval(() => {
+                if (this.progress < 90) {
+                    this.progress += 10;
+                }
+            }, 200);
+            
+            try {
+                const response = await fetch(`/io/{{ resource }}/import`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                clearInterval(progressInterval);
+                this.progress = 100;
+                
+                setTimeout(() => {
+                    this.importing = false;
+                    this.progress = 0;
+                    
+                    if (result.ok) {
+                        this.clearFile();
+                    }
+                    
+                    handleImportResult(result);
+                }, 500);
+                
+            } catch (error) {
+                clearInterval(progressInterval);
+                this.importing = false;
+                this.progress = 0;
+                
+                Toast.fire({
+                    icon: 'error',
+                    title: 'حدث خطأ في الاتصال'
+                });
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -109,7 +109,9 @@ def create_app(config_class=Config):
     from acc.blueprints.transfers import bp as transfers_bp
     app.register_blueprint(transfers_bp, url_prefix='/transfers')
     
-
+    # Register IO (Import/Export) system
+    from acc.io import bp as io_bp
+    app.register_blueprint(io_bp)
     
     # Register context processors
     from acc.context_processors import inject_global_vars
