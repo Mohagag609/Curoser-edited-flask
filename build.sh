@@ -27,4 +27,16 @@ with app.app_context():
     print('Database tables ready!')
 "
 
+# Run database optimizations
+echo "Running database optimizations..."
+if [ -f "database_optimizations.py" ]; then
+    python3 database_optimizations.py || echo "Optimizations failed, continuing..."
+fi
+
+# Run performance boost
+echo "Applying performance enhancements..."
+if [ -f "performance_boost.py" ]; then
+    python3 performance_boost.py indexes || echo "Performance boost failed, continuing..."
+fi
+
 echo "=== Build completed successfully ==="
