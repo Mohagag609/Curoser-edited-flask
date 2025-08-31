@@ -6,6 +6,8 @@
 {% block content %}
 <div class="space-y-6 page-content" x-data="{ 
  showQuickAdd: false,
+ showEditModal: false,
+ editingCustomer: null,
  init() {
  // Keyboard shortcut: Alt+N for new customer
  document.addEventListener('keydown', (e) => {
@@ -17,10 +19,27 @@
  });
  }
  // ESC to close
- if (e.key === 'Escape' && this.showQuickAdd) {
- this.showQuickAdd = false;
+ if (e.key === 'Escape') {
+  if (this.showQuickAdd) this.showQuickAdd = false;
+  if (this.showEditModal) this.showEditModal = false;
  }
  });
+ },
+ openEditModal(id) {
+  htmx.ajax('GET', `/customers/${id}/edit-modal`, {
+   target: '#edit-modal-content',
+   swap: 'innerHTML'
+  }).then(() => {
+   this.showEditModal = true;
+  });
+ },
+ deleteCustomer(id, name) {
+  if (confirm(`هل أنت متأكد من حذف العميل "${name}"؟`)) {
+   htmx.ajax('DELETE', `/customers/${id}/delete-ajax`, {
+    target: `#customer-row-${id}`,
+    swap: 'outerHTML swap:0.3s'
+   });
+  }
  }
 }">
  <!-- Header with Back Button -->
@@ -38,11 +57,10 @@
  <!-- Quick Add Form -->
  <div x-show="showQuickAdd" x-transition class="mb-6">
  <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
- <form method="post" action="{{ url_for('customers.add') }}" 
- data-ajax="true"
- data-no-loading="true"
- data-success-message="تم إضافة العميل بنجاح!"
- data-reset-on-success="true"
+ <form hx-post="{{ url_for('customers.add_ajax') }}" 
+ hx-target="#customers-table-body"
+ hx-swap="afterbegin"
+ @htmx:after-request="if(event.detail.successful) { showQuickAdd = false; $el.reset(); }"
  class="flex gap-3 items-end">
  
  <div class="flex-1">
@@ -140,7 +158,7 @@
                  </thead>
                 <tbody class="bg-white divide-y divide-gray-200" id="customers-table-body">
                     {% for customer in customers %}
- <tr class="hover:bg-gray-50 transition-colors duration-200">
+ <tr id="customer-row-{{ customer.id }}" class="hover:bg-gray-50 transition-colors duration-200">
  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
  <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded-md">{{ customer.code }}</span>
  </td>
@@ -173,19 +191,16 @@
  <i class="fas fa-eye"></i>
  <span>عرض</span>
  </a>
- <a href="{{ url_for('customers.edit', id=customer.id) }}" 
+ <button @click="openEditModal('{{ customer.id }}')" 
  class="modern-btn modern-btn-edit modern-btn-sm">
  <i class="fas fa-edit"></i>
  <span>تعديل</span>
- </a>
-                         <form method="POST" action="{{ url_for('customers.delete', id=customer.id) }}" 
-                              style="display: inline;"
-                              onsubmit="return confirm('هل أنت متأكد من حذف العميل {{ customer.name }}؟');">
-                            <button type="submit" class="modern-btn modern-btn-delete modern-btn-sm">
-                                <i class="fas fa-trash"></i>
-                                <span>حذف</span>
-                            </button>
-                        </form>
+ </button>
+                                                 <button @click="deleteCustomer('{{ customer.id }}', '{{ customer.name }}')" 
+                                class="modern-btn modern-btn-delete modern-btn-sm">
+                            <i class="fas fa-trash"></i>
+                            <span>حذف</span>
+                        </button>
  </div>
  </td>
  </tr>
@@ -354,6 +369,24 @@
  </div>
  </div>
  </div>
+</div>
+
+<!-- Edit Modal -->
+<div x-show="showEditModal" 
+     x-cloak
+     @keydown.escape="showEditModal = false"
+     class="fixed inset-0 z-50 overflow-y-auto">
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-black bg-opacity-50" @click="showEditModal = false"></div>
+    
+    <!-- Modal -->
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6" 
+             @click.away="showEditModal = false"
+             id="edit-modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
 </div>
 
 {% endblock %}
