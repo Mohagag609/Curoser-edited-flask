@@ -28,7 +28,7 @@ def index():
     query = query.order_by(Customer.code.asc())
     pagination = Pagination(query, page)
     
-    return render_template('customers/index.html',
+    return render_template('customers/index_clean.html',
                          customers=pagination.items,
                          pagination=pagination,
                          q=q)
@@ -280,7 +280,7 @@ def search():
                              customers=pagination.items)
     
     # Otherwise return full page
-    return render_template('customers/index.html',
+    return render_template('customers/index_clean.html',
                          customers=pagination.items,
                          pagination=pagination,
                          q=q,
@@ -319,7 +319,7 @@ def add_ajax():
         log_action('إضافة عميل جديد', {'id': customer.id, 'name': customer.name})
         
         # Return the new row HTML
-        return render_template('customers/_single_row.html', customer=customer), 200, {
+        return render_template('customers/_clean_row.html', customer=customer), 200, {
             'X-Notify': f'success:تم إضافة العميل "{name}" بنجاح'
         }
         
@@ -355,7 +355,7 @@ def update_ajax(id):
         log_action('تعديل بيانات عميل', {'id': customer.id, 'name': customer.name})
         
         # Return updated row
-        return render_template('customers/_single_row.html', customer=customer), 200, {
+        return render_template('customers/_clean_row.html', customer=customer), 200, {
             'X-Notify': 'success:تم تحديث بيانات العميل بنجاح'
         }
         
