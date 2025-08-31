@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify
+from flask import render_template, request, redirect, url_for, flash, jsonify, current_app as app
 from acc.blueprints.partners import bp
 from acc.extensions import db
 from acc.models import Partner, PartnerGroup, PartnerGroupMember
@@ -449,6 +449,9 @@ def add_group_member(id):
         partner_id = request.form.get('partner_id')
         percentage = float(request.form.get('percentage', 0))
         
+        # Debug: Log received data
+        app.logger.info(f"Adding member - Partner ID: {partner_id}, Percentage: {percentage}")
+        
         if not partner_id:
             flash('❌ الرجاء اختيار شريك', 'error')
             return redirect(url_for('partners.group_detail', id=id))
@@ -479,11 +482,18 @@ def add_group_member(id):
         db.session.add(member)
         db.session.commit()
         
+        # Debug: Log successful addition
         partner = Partner.query.get(partner_id)
+        app.logger.info(f"Successfully added partner {partner.name} to group {group.name}")
+        
+        # Refresh the group to ensure members are updated
+        db.session.refresh(group)
+        
         flash(f'✅ تم إضافة الشريك "{partner.name}" للمجموعة', 'success')
         
     except Exception as e:
         db.session.rollback()
+        app.logger.error(f"Error adding partner to group: {str(e)}")
         flash(f'❌ خطأ في إضافة الشريك: {str(e)}', 'error')
     
     return redirect(url_for('partners.group_detail', id=id))

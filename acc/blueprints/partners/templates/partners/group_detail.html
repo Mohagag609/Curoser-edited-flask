@@ -137,10 +137,24 @@
     
     <!-- Members Table -->
     <div class="card">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">
-            <i class="fas fa-users text-purple-500 ml-2"></i>
-            أعضاء المجموعة
-        </h3>
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">
+                <i class="fas fa-users text-purple-500 ml-2"></i>
+                أعضاء المجموعة ({{ members|length }} عضو)
+            </h3>
+            <div class="flex items-center gap-3">
+                {% if members %}
+                <span class="text-sm text-gray-500">
+                    النسبة الإجمالية: {{ total_percentage }}%
+                </span>
+                {% endif %}
+                <button onclick="window.location.reload()" 
+                        class="text-gray-500 hover:text-gray-700 transition-colors"
+                        title="تحديث الصفحة">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
         
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
@@ -208,6 +222,29 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+// Auto-refresh after form submission to update available partners
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if there's a success message
+    const successMessages = document.querySelectorAll('.alert-success, .flash-success');
+    if (successMessages.length > 0) {
+        // Check if the message contains "تم إضافة الشريك"
+        const messageText = successMessages[0].textContent || '';
+        if (messageText.includes('تم إضافة الشريك')) {
+            // Force page refresh after a short delay to ensure data is updated
+            setTimeout(function() {
+                window.location.reload();
+            }, 100);
+        }
+    }
+    
+    // Debug: Log current members
+    console.log('Current members: {{ members|length }}');
+    console.log('Available partners: {{ available_count }}');
+    console.log('Total percentage: {{ total_percentage }}%');
+});
+</script>
 
 <style>
 /* Ensure buttons are visible */
