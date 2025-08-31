@@ -6,8 +6,13 @@
     <td>{{ contract.unit.building if contract.unit else '-' }}</td>
     <td>{{ contract.unit.unit_type if contract.unit else '-' }}</td>
     <td>
-        {% if contract.unit and contract.unit.partners %}
-            {{ contract.unit.partners|length }} شريك
+        {% if contract.unit %}
+            {% set partner_count = contract.unit.partners.count() %}
+            {% if partner_count > 0 %}
+                {{ partner_count }} شريك
+            {% else %}
+                -
+            {% endif %}
         {% else %}
             -
         {% endif %}
