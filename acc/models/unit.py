@@ -55,7 +55,14 @@ class Unit(db.Model):
     
     def calculate_remaining(self):
         """Calculate remaining amount to be paid for this unit"""
-        contract = self.contracts.first() if self.contracts.count() > 0 else None
+        # Handle both query and list cases
+        if hasattr(self.contracts, 'first'):
+            # It's a query
+            contract = self.contracts.first()
+        else:
+            # It's a list
+            contract = self.contracts[0] if len(self.contracts) > 0 else None
+            
         if not contract:
             return 0
         
@@ -63,7 +70,12 @@ class Unit(db.Model):
         
         # Get all vouchers related to this unit
         from acc.models.voucher import Voucher
-        installment_ids = [i.id for i in self.installments.all()]
+        
+        # Handle installments as list or query
+        if hasattr(self.installments, 'all'):
+            installment_ids = [i.id for i in self.installments.all()]
+        else:
+            installment_ids = [i.id for i in self.installments]
         
         # Build query for vouchers
         voucher_query = db.session.query(func.sum(Voucher.amount)).filter(

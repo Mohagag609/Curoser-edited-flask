@@ -42,8 +42,7 @@ def index():
                 partners.append(f"{partner.name} ({up.percentage}%)")
         units_data.append({
             'unit': unit,
-            'partners': ', '.join(partners) if partners else 'لا يوجد شركاء',
-            'remaining': unit.calculate_remaining()
+            'partners': ', '.join(partners) if partners else 'لا يوجد شركاء'
         })
     
     return render_template('units/index_simple.html',
