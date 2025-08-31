@@ -28,7 +28,7 @@ def index():
     query = query.order_by(Customer.code.asc())
     pagination = Pagination(query, page)
     
-    return render_template('customers/index.html', 
+    return render_template('customers/index_live.html',
                          customers=pagination.items,
                          pagination=pagination,
                          q=q)
@@ -273,18 +273,123 @@ def search():
     # Pagination
     pagination = Pagination(query, page, per_page=20)
     
-    # Check if AJAX request
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        # Return only the table part
-        return render_template('customers/_results.html',
-                             customers=pagination.items,
-                             pagination=pagination,
-                             q=q,
-                             status=status)
+    # Check if AJAX/HTMX request
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('HX-Request'):
+        # Return only the table rows
+        return render_template('customers/_table_rows.html',
+                             customers=pagination.items)
     
-    # Otherwise return full page
-    return render_template('customers/index.html',
+    # Otherwise return full page (new live version)
+    return render_template('customers/index_live.html',
                          customers=pagination.items,
                          pagination=pagination,
                          q=q,
                          status=status)
+
+# AJAX Routes for Live Interface
+
+@bp.route('/add-ajax', methods=['POST'])
+def add_ajax():
+    """إضافة عميل عبر AJAX"""
+    try:
+        name = request.form.get('name', '').strip()
+        if not name:
+            return jsonify({'error': 'الرجاء إدخال اسم العميل'}), 400
+        
+        # Check duplicate
+        existing = Customer.query.filter_by(name=name).first()
+        if existing:
+            return jsonify({'error': f'العميل "{name}" مسجل بالفعل'}), 400
+        
+        # Create customer
+        customer = Customer(
+            id=generate_uid('C'),
+            code=generate_customer_code(),
+            name=name,
+            phone=request.form.get('phone', '').strip() or None,
+            national_id=request.form.get('national_id', '').strip() or None,
+            address=request.form.get('address', '').strip() or None,
+            notes=request.form.get('notes', '').strip() or None,
+            status='نشط'
+        )
+        
+        db.session.add(customer)
+        db.session.commit()
+        
+        log_action('إضافة عميل جديد', {'id': customer.id, 'name': customer.name})
+        
+        # Return the new row HTML
+        return render_template('customers/_table_rows.html', customers=[customer]), 200, {
+            'X-Notify': f'success:تم إضافة العميل "{name}" بنجاح'
+        }
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/<string:id>/edit-modal')
+def edit_modal(id):
+    """عرض نموذج التعديل في Modal"""
+    customer = Customer.query.get_or_404(id)
+    return render_template('customers/_edit_modal.html', customer=customer)
+
+@bp.route('/<string:id>/update-ajax', methods=['PUT'])
+def update_ajax(id):
+    """تحديث بيانات العميل عبر AJAX"""
+    try:
+        customer = Customer.query.get_or_404(id)
+        
+        name = request.form.get('name', '').strip()
+        if not name:
+            return jsonify({'error': 'الرجاء إدخال اسم العميل'}), 400
+        
+        customer.name = name
+        customer.phone = request.form.get('phone', '').strip() or None
+        customer.national_id = request.form.get('national_id', '').strip() or None
+        customer.address = request.form.get('address', '').strip() or None
+        customer.status = request.form.get('status', 'نشط')
+        customer.notes = request.form.get('notes', '').strip() or None
+        
+        db.session.commit()
+        
+        log_action('تعديل بيانات عميل', {'id': customer.id, 'name': customer.name})
+        
+        # Return updated row
+        return render_template('customers/_table_rows.html', customers=[customer]), 200, {
+            'X-Notify': 'success:تم تحديث بيانات العميل بنجاح'
+        }
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/<string:id>/delete-ajax', methods=['DELETE'])
+def delete_ajax(id):
+    """حذف عميل عبر AJAX"""
+    try:
+        customer = Customer.query.get_or_404(id)
+        
+        # Check constraints
+        if len(customer.contracts) > 0:
+            return '', 200, {'X-Notify': f'error:لا يمكن حذف العميل لوجود {len(customer.contracts)} عقد مرتبط'}
+        
+        installments_count = sum(len(c.installments) for c in customer.contracts)
+        if installments_count > 0:
+            return '', 200, {'X-Notify': f'error:لا يمكن حذف العميل لوجود {installments_count} قسط مرتبط'}
+        
+        vouchers_count = Voucher.query.filter_by(entity_id=customer.id, entity_type='customer').count()
+        if vouchers_count > 0:
+            return '', 200, {'X-Notify': f'error:لا يمكن حذف العميل لوجود {vouchers_count} سند مرتبط'}
+        
+        customer_name = customer.name
+        db.session.delete(customer)
+        db.session.commit()
+        
+        log_action('حذف عميل', {'id': id, 'name': customer_name})
+        
+        # Return empty to remove the row
+        return '', 200, {'X-Notify': f'success:تم حذف العميل "{customer_name}" بنجاح'}
+        
+    except Exception as e:
+        db.session.rollback()
+        return '', 500, {'X-Notify': 'error:حدث خطأ في حذف العميل'}

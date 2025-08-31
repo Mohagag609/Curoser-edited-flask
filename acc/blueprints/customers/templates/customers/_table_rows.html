@@ -1,0 +1,45 @@
+{% for customer in customers %}
+<tr id="customer-{{ customer.id }}" class="hover:bg-gray-50">
+    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+        {{ customer.code }}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-sm font-medium text-gray-900">{{ customer.name }}</div>
+        {% if customer.national_id %}
+        <div class="text-xs text-gray-500">{{ customer.national_id }}</div>
+        {% endif %}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" dir="ltr">
+        {{ customer.phone or '-' }}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap">
+        {% if customer.status == 'نشط' %}
+            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                نشط
+            </span>
+        {% else %}
+            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                معلق
+            </span>
+        {% endif %}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        <div class="flex gap-2">
+            <button @click="editCustomer('{{ customer.id }}')" 
+                    class="text-blue-600 hover:text-blue-900">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button @click="deleteCustomer('{{ customer.id }}', '{{ customer.name }}')" 
+                    class="text-red-600 hover:text-red-900">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    </td>
+</tr>
+{% else %}
+<tr>
+    <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+        لا يوجد عملاء
+    </td>
+</tr>
+{% endfor %}
