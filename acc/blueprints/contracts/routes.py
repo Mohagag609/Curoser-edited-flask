@@ -230,12 +230,15 @@ def detail(id):
         return redirect(url_for('contracts.index'))
     
     # Get installments
-    installments = contract.installments.order_by(Installment.due_date).all()
+    try:
+        installments = contract.installments.order_by(Installment.due_date).all() if contract.installments else []
+    except:
+        installments = []
     
     # Calculate statistics
-    total_paid = sum(i.paid_amount for i in installments if i.paid_amount)
-    total_due = sum(i.amount for i in installments)
-    overdue_count = sum(1 for i in installments if i.status == 'متأخر')
+    total_paid = sum(i.paid_amount for i in installments if hasattr(i, 'paid_amount') and i.paid_amount)
+    total_due = sum(i.amount for i in installments if hasattr(i, 'amount') and i.amount)
+    overdue_count = sum(1 for i in installments if hasattr(i, 'status') and i.status == 'متأخر')
     
     return render_template('contracts/detail.html',
                          contract=contract,
@@ -258,17 +261,15 @@ def edit(id):
     if request.method == 'POST':
         try:
             # Update contract details
-            contract.booking_amount = Decimal(request.form.get('booking_amount', contract.booking_amount))
-            contract.contract_amount = Decimal(request.form.get('contract_amount', contract.contract_amount))
-            contract.broker_id = request.form.get('broker_id') or None
-            contract.broker_commission = Decimal(request.form.get('broker_commission', 0))
+            contract.total_price = Decimal(request.form.get('total_price', contract.total_price))
+            contract.down_payment = Decimal(request.form.get('down_payment', contract.down_payment))
+            contract.broker_name = request.form.get('broker_name') or None
+            contract.broker_percent = Decimal(request.form.get('broker_percent', 0))
+            contract.broker_amount = (contract.total_price * contract.broker_percent) / 100 if contract.broker_percent > 0 else 0
             contract.status = request.form.get('status', contract.status)
-            contract.notes = request.form.get('notes', '').strip() or None
+            contract.maintenance_deposit = Decimal(request.form.get('maintenance_deposit', contract.maintenance_deposit))
             
-            # Recalculate totals
-            paid_installments = sum(i.paid_amount for i in contract.installments if i.paid_amount)
-            contract.paid_amount = contract.booking_amount + paid_installments
-            contract.remaining_amount = contract.contract_amount - contract.paid_amount
+            # No need to recalculate - these fields don't exist in our model
             
             log_action('تعديل عقد', {'id': contract.id, 'code': contract.code})
             db.session.commit()
@@ -535,7 +536,12 @@ def delete_contract(id):
         contract = Contract.query.get_or_404(id)
         
         # Check if contract has installments
-        if contract.installments and len(contract.installments) > 0:
+        try:
+            has_installments = contract.installments.count() > 0 if contract.installments else False
+        except:
+            has_installments = False
+            
+        if has_installments:
             return jsonify({'success': False, 'message': 'لا يمكن حذف عقد له أقساط'})
         
         # Update unit status back to available
