@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify, make_response
+from flask import render_template, request, redirect, url_for, flash, jsonify, make_response, current_app
 from acc.blueprints.customers import bp
 from acc.extensions import db
 from acc.models import Customer, Contract, Voucher, Installment
@@ -180,9 +180,11 @@ def edit(id):
     
     return render_template('customers/edit.html', customer=customer)
 
-@bp.route('/<string:id>/delete', methods=['POST'])
+@bp.route('/<string:id>/delete', methods=['POST', 'DELETE'])
 def delete(id):
     try:
+        current_app.logger.info(f"Delete request for customer: {id}")
+        
         customer = Customer.query.get_or_404(id)
         
         # Check if customer has contracts
@@ -246,7 +248,8 @@ def delete(id):
         
     except Exception as e:
         db.session.rollback()
-        error_msg = f'خطأ في حذف العميل: {str(e)}'
+        current_app.logger.error(f"Error deleting customer {id}: {str(e)}", exc_info=True)
+        error_msg = f'حدث خطأ في حذف العميل'
         
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('HX-Request'):
             response = make_response('', 500)
