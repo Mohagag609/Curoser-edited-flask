@@ -32,7 +32,7 @@ def index():
         vouchers_query = vouchers_query.filter(Voucher.date <= to_date)
     
     # Calculate KPIs
-    total_sales = db.session.query(func.sum(Contract.total_price)).scalar() or 0
+    total_sales = contracts_query.with_entities(func.sum(Contract.total_price)).scalar() or 0
     
     total_receipts = vouchers_query.filter(Voucher.type == 'receipt')\
         .with_entities(func.sum(Voucher.amount)).scalar() or 0
@@ -42,8 +42,14 @@ def index():
     
     # Calculate total debt
     total_debt = 0
-    for unit in Unit.query.all():
-        total_debt += unit.calculate_remaining()
+    units_with_contracts = filter_by_project(Unit.query, Unit).all()
+    for unit in units_with_contracts:
+        try:
+            remaining = unit.calculate_remaining()
+            total_debt += remaining
+        except Exception as e:
+            # Skip units that cause errors
+            continue
     
     # Unit counts
     # Unit stats - filter by current project
@@ -57,7 +63,7 @@ def index():
     
     # Upcoming installments
     today = datetime.now().date()
-    upcoming_installments = Installment.query\
+    upcoming_installments = installments_query\
         .filter(Installment.status != 'مدفوع')\
         .filter(Installment.due_date >= today)\
         .order_by(Installment.due_date)\
