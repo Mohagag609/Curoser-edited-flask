@@ -44,8 +44,8 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
-    <!-- Smooth Transitions CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/smooth-transitions.css') }}">
+    <!-- Smooth Transitions CSS - معطل مؤقتاً -->
+    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/smooth-transitions.css') }}"> -->
     
 
     
@@ -60,6 +60,19 @@
     
     <!-- Custom Styles -->
     <style>
+        /* إصلاح مشاكل التحميل والخلفيات */
+        html, body {
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+        
+        /* إزالة أي تأثيرات تحميل */
+        .smooth-transition,
+        .page-transition,
+        .loading-transition {
+            transition: none !important;
+            animation: none !important;
+        }
         body {
             font-family: 'Tajawal', sans-serif;
             direction: rtl;
@@ -767,8 +780,8 @@
     
     {% block extra_scripts %}{% endblock %}
     
-    <!-- Smooth Transitions -->
-    <script src="{{ url_for('static', filename='js/smooth-transitions.js') }}"></script>
+    <!-- Smooth Transitions - معطل مؤقتاً -->
+    <!-- <script src="{{ url_for('static', filename='js/smooth-transitions.js') }}"></script> -->
     
     <!-- Zoom Reset -->
     <script src="{{ url_for('static', filename='js/zoom-reset.js') }}"></script>
