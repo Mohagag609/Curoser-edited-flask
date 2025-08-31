@@ -238,7 +238,7 @@ def view(id):
     total_due = sum(i.amount for i in installments if i.amount)
     overdue_count = sum(1 for i in installments if i.status == 'متأخر')
     
-    return render_template('contracts/detail.html',
+    return render_template('contracts/view.html',
                          contract=contract,
                          installments=installments,
                          total_paid=total_paid,
