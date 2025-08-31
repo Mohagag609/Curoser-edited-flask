@@ -820,7 +820,7 @@ async function generateInstallments(contractId, formData) {
 }
 
 function editContract(contractId) {
-    window.location.href = `{{ url_for("contracts.edit", id="") }}${contractId}`;
+    window.location.href = `/contracts/${contractId}/edit`;
 }
 
 async function deleteContract(contractId) {
@@ -829,11 +829,13 @@ async function deleteContract(contractId) {
     }
     
     try {
-        const response = await fetch(`{{ url_for("contracts.delete", id="") }}${contractId}`, {
+        const response = await fetch(`/contracts/${contractId}/delete`, {
             method: 'POST',
             headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})
         });
         
         const result = await response.json();
