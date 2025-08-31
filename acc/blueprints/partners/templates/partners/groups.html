@@ -135,7 +135,39 @@
 </div>
 
 <!-- Floating Action Button -->
-<a href="{{ url_for('partners.add_group') }}" class="modern-fab">
- <i class="fas fa-plus text-xl"></i>
+<a href="{{ url_for('partners.add_group') }}" class="modern-fab" title="إضافة مجموعة جديدة">
+    <i class="fas fa-plus text-xl"></i>
 </a>
+
+<style>
+/* Ensure FAB is visible */
+.modern-fab {
+    position: fixed !important;
+    bottom: 2rem !important;
+    left: 2rem !important;
+    width: 3.5rem !important;
+    height: 3.5rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%) !important;
+    color: white !important;
+    border-radius: 50% !important;
+    box-shadow: 0 8px 24px rgba(147, 51, 234, 0.4) !important;
+    transition: all 0.3s ease !important;
+    z-index: 1000 !important;
+    text-decoration: none !important;
+}
+
+.modern-fab:hover {
+    transform: scale(1.1) rotate(90deg) !important;
+    box-shadow: 0 12px 32px rgba(147, 51, 234, 0.5) !important;
+}
+
+/* RTL Support */
+[dir="rtl"] .modern-fab {
+    left: auto !important;
+    right: 2rem !important;
+}
+</style>
 {% endblock %}
