@@ -43,7 +43,7 @@ class PartnerGroup(db.Model):
     members = db.relationship('PartnerGroupMember', backref='group', lazy='dynamic', cascade='all, delete-orphan')
     
     def get_total_percentage(self):
-        return sum(member.percentage for member in self.members)
+        return float(sum(member.percentage for member in self.members))
 
 
 class PartnerGroupMember(db.Model):

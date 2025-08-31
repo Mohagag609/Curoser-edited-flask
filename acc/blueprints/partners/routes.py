@@ -467,7 +467,7 @@ def add_group_member(id):
             return redirect(url_for('partners.group_detail', id=id))
         
         # Check total percentage
-        current_total = group.get_total_percentage()
+        current_total = float(group.get_total_percentage())
         if current_total + percentage > 100:
             flash(f'❌ المجموع سيتجاوز 100% (الحالي: {current_total}%)', 'error')
             return redirect(url_for('partners.group_detail', id=id))

@@ -184,7 +184,7 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
                                 <div class="flex-1 bg-gray-200 rounded-full h-2 ml-2 max-w-xs">
-                                    <div class="bg-green-500 rounded-full h-2" style="width: {{ member.percentage }}%"></div>
+                                    <div class="bg-green-500 rounded-full h-2" style="width: {{ member.percentage|float }}%"></div>
                                 </div>
                                 <span class="text-sm font-medium text-gray-900">{{ member.percentage }}%</span>
                             </div>
