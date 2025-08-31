@@ -234,22 +234,7 @@ document.getElementById('select-all')?.addEventListener('change', function() {
  checkboxes.forEach(cb => cb.checked = this.checked);
 });
 
-// Load safes
-fetch('{{ url_for("treasury.api_safes") }}')
- .then(response => response.json())
- .then(safes => {
- const select = document.querySelector('select[name="safe_id"]');
- if (select) {
- safes.forEach(safe => {
- const option = document.createElement('option');
- option.value = safe.id;
- option.textContent = safe.name + ' (' + safe.balance.toLocaleString('ar-EG', {minimumFractionDigits: 2}) + ' ج.م)';
- if (safe.is_default) {
- option.selected = true;
- }
- select.appendChild(option);
- });
- }
- });
+// Load safes - Removed API call since endpoint doesn't exist
+// Safes should be loaded server-side instead
 </script>
 {% endblock %}
