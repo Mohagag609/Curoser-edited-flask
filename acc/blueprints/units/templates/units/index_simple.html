@@ -1,0 +1,1043 @@
+{% extends "base.html" %}
+
+{% block title %}الوحدات{% endblock %}
+{% block page_title %}الوحدات{% endblock %}
+
+{% block extra_head %}
+<style>
+/* Form Section Styles */
+.form-section {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.form-section-hidden {
+    display: none;
+}
+
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.form-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+/* Action Buttons */
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-add {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+}
+
+.btn-list {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.btn-save {
+    background: #4f46e5;
+    color: white;
+}
+
+.btn-cancel {
+    background: #6b7280;
+    color: white;
+}
+
+/* Form Styles */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.form-input {
+    padding: 10px 14px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    transition: all 0.2s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* List Add Styles */
+.list-textarea {
+    width: 100%;
+    min-height: 200px;
+    padding: 14px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: monospace;
+}
+
+.list-help {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Notification Styles */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: white;
+    border-radius: 8px;
+    padding: 16px 20px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 300px;
+    max-width: 500px;
+    z-index: 1000;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.notification.success {
+    border-right: 4px solid #10b981;
+}
+
+.notification.error {
+    border-right: 4px solid #ef4444;
+}
+
+.notification-icon {
+    font-size: 20px;
+}
+
+.notification-icon.success {
+    color: #10b981;
+}
+
+.notification-icon.error {
+    color: #ef4444;
+}
+
+.notification-message {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    color: #1f2937;
+}
+
+/* Enhanced Table Styles */
+.table-container {
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 16px;
+    overflow-x: auto;
+    overflow-y: visible;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+}
+
+/* Custom Scrollbar */
+.table-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table thead {
+    background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.data-table th {
+    padding: 16px 20px;
+    text-align: right;
+    font-size: 13px;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.data-table tbody tr {
+    border-bottom: 1px solid #f1f5f9;
+    transition: all 0.2s ease;
+}
+
+.data-table tbody tr:hover {
+    background-color: #f8fafc;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.data-table tbody tr:nth-child(even) {
+    background-color: #fafbfc;
+}
+
+.data-table td {
+    padding: 14px 20px;
+    font-size: 14px;
+    color: #1e293b;
+}
+
+.code-badge {
+    display: inline-block;
+    background: #dbeafe;
+    color: #1e40af;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-badge.available {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-badge.sold {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.status-badge.reserved {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.btn-sm {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 8px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.btn-sm:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-view {
+    background: #e0f2fe;
+    color: #0369a1;
+    border-color: #bae6fd;
+}
+
+.btn-view:hover {
+    background: #bae6fd;
+}
+
+.btn-edit {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fde68a;
+}
+
+.btn-edit:hover {
+    background: #fde68a;
+}
+
+.btn-delete {
+    background: #fee2e2;
+    color: #991b1b;
+    border-color: #fecaca;
+}
+
+.btn-delete:hover {
+    background: #fecaca;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .btn-sm span {
+        display: none;
+    }
+    
+    .btn-sm {
+        padding: 8px 12px;
+    }
+    
+    .data-table {
+        font-size: 12px;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: 10px 12px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6 page-content">
+    <!-- Header with Back Button -->
+    <div class="flex items-center gap-4 mb-4">
+        <a href="{{ url_for('dashboard.index') }}" class="modern-btn modern-btn-back modern-btn-sm">
+            <i class="fas fa-arrow-right"></i>
+            <span>الرئيسية</span>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">الوحدات</h1>
+            <p class="text-sm text-gray-600">إدارة بيانات الوحدات العقارية</p>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100 text-sm">إجمالي الوحدات</p>
+                    <p class="text-3xl font-bold" id="total-units">{{ units_data|length }}</p>
+                </div>
+                <i class="fas fa-home text-4xl text-blue-200"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100 text-sm">متاح</p>
+                    <p class="text-3xl font-bold" id="available-units">{{ units_data|selectattr('unit.status', 'equalto', 'متاحة')|list|length }}</p>
+                </div>
+                <i class="fas fa-check-circle text-4xl text-green-200"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-red-100 text-sm">مباع</p>
+                    <p class="text-3xl font-bold" id="sold-units">{{ units_data|selectattr('unit.status', 'equalto', 'مباعة')|list|length }}</p>
+                </div>
+                <i class="fas fa-ban text-4xl text-red-200"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-yellow-100 text-sm">محجوز</p>
+                    <p class="text-3xl font-bold" id="reserved-units">{{ units_data|selectattr('unit.status', 'equalto', 'محجوزة')|list|length }}</p>
+                </div>
+                <i class="fas fa-clock text-4xl text-yellow-200"></i>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Add Section -->
+    <div class="form-section mb-6">
+        <div class="flex items-center gap-4 mb-3">
+            <i class="fas fa-bolt text-yellow-500 text-2xl"></i>
+            <h3 class="text-lg font-bold text-gray-800">إضافة سريعة</h3>
+        </div>
+        <form id="quick-add-form" onsubmit="return quickAddUnit(event)" class="flex gap-3">
+            <input type="text" 
+                   name="name" 
+                   placeholder="اسم الوحدة"
+                   class="form-input"
+                   style="width: 200px"
+                   required>
+            <input type="text" 
+                   name="building" 
+                   placeholder="المبنى"
+                   class="form-input"
+                   style="width: 150px"
+                   required>
+            <input type="text" 
+                   name="floor" 
+                   placeholder="الدور"
+                   class="form-input"
+                   style="width: 100px"
+                   required>
+            <input type="number" 
+                   name="price" 
+                   placeholder="السعر"
+                   class="form-input"
+                   style="width: 150px"
+                   required>
+            <button type="submit" class="action-btn btn-add">
+                <i class="fas fa-plus"></i>
+                <span>إضافة سريعة</span>
+            </button>
+        </form>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="flex gap-3 mb-6">
+        <button onclick="toggleForm('single')" class="action-btn btn-add">
+            <i class="fas fa-home"></i>
+            <span>إضافة وحدة كاملة</span>
+        </button>
+        
+        <button onclick="toggleForm('list')" class="action-btn btn-list">
+            <i class="fas fa-list"></i>
+            <span>إضافة قائمة وحدات</span>
+        </button>
+    </div>
+    
+    <!-- Single Unit Form -->
+    <div id="single-form" class="form-section form-section-hidden">
+        <div class="form-header">
+            <h3 class="form-title">
+                <i class="fas fa-home text-blue-600 ml-2"></i>
+                إضافة وحدة جديدة
+            </h3>
+            <button onclick="toggleForm(null)" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form id="add-unit-form" onsubmit="return addUnit(event)">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">اسم الوحدة <span class="text-red-500">*</span></label>
+                    <input type="text" name="name" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">المبنى <span class="text-red-500">*</span></label>
+                    <input type="text" name="building" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">الدور <span class="text-red-500">*</span></label>
+                    <input type="text" name="floor" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">المساحة (م²)</label>
+                    <input type="number" name="area" class="form-input" step="0.01">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">نوع الوحدة</label>
+                    <select name="unit_type" class="form-input">
+                        <option value="سكني">سكني</option>
+                        <option value="تجاري">تجاري</option>
+                        <option value="إداري">إداري</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">السعر الإجمالي <span class="text-red-500">*</span></label>
+                    <input type="number" name="total_price" class="form-input" required>
+                </div>
+            </div>
+            
+            <div class="form-group mt-4">
+                <label class="form-label">ملاحظات</label>
+                <textarea name="notes" class="form-input form-textarea"></textarea>
+            </div>
+            
+            <div class="flex gap-3 mt-6">
+                <button type="submit" class="action-btn btn-save">
+                    <i class="fas fa-save"></i>
+                    <span>حفظ الوحدة</span>
+                </button>
+                <button type="button" onclick="toggleForm(null)" class="action-btn btn-cancel">
+                    <i class="fas fa-times"></i>
+                    <span>إلغاء</span>
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Edit Unit Form -->
+    <div id="edit-form" class="form-section form-section-hidden">
+        <div class="form-header">
+            <h3 class="form-title">
+                <i class="fas fa-edit text-orange-600 ml-2"></i>
+                تعديل بيانات الوحدة
+            </h3>
+            <button onclick="toggleForm(null)" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form id="edit-unit-form" onsubmit="return updateUnit(event)">
+            <input type="hidden" id="edit-unit-id" name="id">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">اسم الوحدة <span class="text-red-500">*</span></label>
+                    <input type="text" id="edit-name" name="name" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">المبنى <span class="text-red-500">*</span></label>
+                    <input type="text" id="edit-building" name="building" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">الدور <span class="text-red-500">*</span></label>
+                    <input type="text" id="edit-floor" name="floor" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">المساحة (م²)</label>
+                    <input type="number" id="edit-area" name="area" class="form-input" step="0.01">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">نوع الوحدة</label>
+                    <select id="edit-unit_type" name="unit_type" class="form-input">
+                        <option value="سكني">سكني</option>
+                        <option value="تجاري">تجاري</option>
+                        <option value="إداري">إداري</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">السعر الإجمالي <span class="text-red-500">*</span></label>
+                    <input type="number" id="edit-total_price" name="total_price" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">الحالة</label>
+                    <select id="edit-status" name="status" class="form-input">
+                        <option value="available">متاح</option>
+                        <option value="sold">مباع</option>
+                        <option value="reserved">محجوز</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group mt-4">
+                <label class="form-label">ملاحظات</label>
+                <textarea id="edit-notes" name="notes" class="form-input form-textarea"></textarea>
+            </div>
+            
+            <div class="flex gap-3 mt-6">
+                <button type="submit" class="action-btn btn-save">
+                    <i class="fas fa-save"></i>
+                    <span>حفظ التعديلات</span>
+                </button>
+                <button type="button" onclick="toggleForm(null)" class="action-btn btn-cancel">
+                    <i class="fas fa-times"></i>
+                    <span>إلغاء</span>
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- List Add Form -->
+    <div id="list-form" class="form-section form-section-hidden">
+        <div class="form-header">
+            <h3 class="form-title">
+                <i class="fas fa-list text-green-600 ml-2"></i>
+                إضافة قائمة وحدات
+            </h3>
+            <button onclick="toggleForm(null)" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form id="add-list-form" onsubmit="return addUnitList(event)">
+            <div class="form-group">
+                <label class="form-label">قائمة الوحدات</label>
+                <textarea name="units" class="list-textarea" 
+                          placeholder="اكتب بيانات كل وحدة في سطر بالشكل التالي:&#10;اسم الوحدة, المبنى, الدور, السعر&#10;&#10;مثال:&#10;شقة 101, A, 1, 500000&#10;شقة 102, A, 1, 550000&#10;شقة 201, A, 2, 600000" 
+                          required></textarea>
+                <p class="list-help">
+                    <i class="fas fa-info-circle"></i>
+                    اكتب بيانات كل وحدة في سطر منفصل
+                </p>
+            </div>
+            
+            <div class="flex gap-3 mt-6">
+                <button type="submit" class="action-btn btn-save">
+                    <i class="fas fa-building"></i>
+                    <span>إضافة جميع الوحدات</span>
+                </button>
+                <button type="button" onclick="toggleForm(null)" class="action-btn btn-cancel">
+                    <i class="fas fa-times"></i>
+                    <span>إلغاء</span>
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Search Bar -->
+    {% set search_url = url_for('units.search') %}
+    {% set search_placeholder = 'البحث بالاسم، المبنى، الدور...' %}
+    {% set filter_options = [
+        {'value': '', 'label': 'جميع الحالات'},
+        {'value': 'available', 'label': 'متاح'},
+        {'value': 'sold', 'label': 'مباع'},
+        {'value': 'reserved', 'label': 'محجوز'}
+    ] %}
+    {% set filter_name = 'status' %}
+    {% set filter_label = 'الحالة' %}
+    {% include 'shared/search_bar.html' %}
+    
+    <!-- Results Container -->
+    <div id="results-container">
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>الكود</th>
+                        <th>الوحدة</th>
+                        <th>المبنى</th>
+                        <th>الدور</th>
+                        <th>المساحة</th>
+                        <th>السعر</th>
+                        <th>الحالة</th>
+                        <th>الشركاء</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="units-table">
+                    {% for item in units_data %}
+                    {% set unit = item.unit %}
+                    <tr id="row-{{ unit.id }}">
+                        <td><span class="code-badge">{{ unit.code }}</span></td>
+                        <td class="font-medium">{{ unit.name }}</td>
+                        <td class="text-sm text-gray-600">{{ unit.building }}</td>
+                        <td class="text-sm text-gray-600">{{ unit.floor }}</td>
+                        <td class="text-sm text-gray-600">{{ unit.area|default('-', true) }} م²</td>
+                        <td class="font-semibold text-green-600">{{ format_currency(unit.total_price) }}</td>
+                        <td>
+                                                    {% if unit.status == 'متاحة' %}
+                            <span class="status-badge available">
+                                <i class="fas fa-circle text-xs"></i>
+                                متاح
+                            </span>
+                        {% elif unit.status == 'مباعة' %}
+                            <span class="status-badge sold">
+                                <i class="fas fa-circle text-xs"></i>
+                                مباع
+                            </span>
+                        {% else %}
+                            <span class="status-badge reserved">
+                                <i class="fas fa-circle text-xs"></i>
+                                محجوز
+                            </span>
+                        {% endif %}
+                        </td>
+                        <td class="text-sm text-gray-600">{{ item.partners|truncate(30, true) }}</td>
+                        <td>
+                            <div class="flex gap-2">
+                                <a href="{{ url_for('units.detail', id=unit.id) }}" class="btn-sm btn-view">
+                                    <i class="fas fa-eye"></i>
+                                    <span>عرض</span>
+                                </a>
+                                <button onclick="loadUnitForEdit('{{ unit.id }}', '{{ unit.name }}', '{{ unit.building }}', '{{ unit.floor }}', '{{ unit.area or '' }}', '{{ unit.unit_type }}', '{{ unit.total_price }}', '{{ unit.status }}', '{{ unit.notes or '' }}')" 
+                                        class="btn-sm btn-edit">
+                                    <i class="fas fa-edit"></i>
+                                    <span>تعديل</span>
+                                </button>
+                                <button onclick="deleteUnit('{{ unit.id }}', '{{ unit.name }}')" 
+                                        class="btn-sm btn-delete">
+                                    <i class="fas fa-trash"></i>
+                                    <span>حذف</span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center py-12 text-gray-500">
+                            <i class="fas fa-home text-4xl mb-4"></i>
+                            <p class="text-lg">لا يوجد وحدات</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if pagination and pagination.pages > 1 %}
+        <div class="mt-6">
+            {% include 'shared/pagination.html' %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Toggle Forms
+function toggleForm(type) {
+    const singleForm = document.getElementById('single-form');
+    const listForm = document.getElementById('list-form');
+    const editForm = document.getElementById('edit-form');
+    
+    // Hide all forms first
+    singleForm.classList.add('form-section-hidden');
+    listForm.classList.add('form-section-hidden');
+    editForm.classList.add('form-section-hidden');
+    
+    // Show requested form
+    if (type === 'single') {
+        singleForm.classList.remove('form-section-hidden');
+    } else if (type === 'list') {
+        listForm.classList.remove('form-section-hidden');
+    } else if (type === 'edit') {
+        editForm.classList.remove('form-section-hidden');
+    }
+}
+
+// Show Notification
+function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-times-circle';
+    
+    notification.innerHTML = `
+        <i class="fas ${icon} notification-icon ${type}"></i>
+        <span class="notification-message">${message}</span>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Show animation
+    setTimeout(() => notification.classList.add('show'), 10);
+    
+    // Remove after 5 seconds
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, 5000);
+}
+
+// Quick Add Unit
+async function quickAddUnit(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch('{{ url_for("units.add_ajax") }}', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            const html = await response.text();
+            const tbody = document.getElementById('units-table');
+            const emptyRow = tbody.querySelector('tr:has(td[colspan])');
+            
+            if (emptyRow) {
+                emptyRow.remove();
+            }
+            
+            tbody.insertAdjacentHTML('afterbegin', html);
+            form.reset();
+            showNotification('تم إضافة الوحدة بنجاح', 'success');
+            updateStats();
+        } else {
+            const data = await response.json();
+            showNotification(data.error || 'حدث خطأ أثناء الإضافة', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('حدث خطأ في الاتصال', 'error');
+    }
+    
+    return false;
+}
+
+// Add Single Unit
+async function addUnit(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch('{{ url_for("units.add_ajax") }}', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            const html = await response.text();
+            const tbody = document.getElementById('units-table');
+            const emptyRow = tbody.querySelector('tr:has(td[colspan])');
+            
+            if (emptyRow) {
+                emptyRow.remove();
+            }
+            
+            tbody.insertAdjacentHTML('afterbegin', html);
+            form.reset();
+            toggleForm(null);
+            showNotification('تم إضافة الوحدة بنجاح', 'success');
+            updateStats();
+        } else {
+            const data = await response.json();
+            showNotification(data.error || 'حدث خطأ أثناء الإضافة', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('حدث خطأ في الاتصال', 'error');
+    }
+    
+    return false;
+}
+
+// Add Unit List
+async function addUnitList(event) {
+    event.preventDefault();
+    const form = event.target;
+    const lines = form.units.value.split('\n').filter(l => l.trim());
+    
+    if (lines.length === 0) {
+        showNotification('الرجاء إدخال بيانات الوحدات', 'error');
+        return false;
+    }
+    
+    let addedCount = 0;
+    let failedCount = 0;
+    
+    for (const line of lines) {
+        const parts = line.split(',').map(p => p.trim());
+        if (parts.length < 4) {
+            failedCount++;
+            continue;
+        }
+        
+        const formData = new FormData();
+        formData.append('name', parts[0]);
+        formData.append('building', parts[1]);
+        formData.append('floor', parts[2]);
+        formData.append('total_price', parts[3]);
+        
+        try {
+            const response = await fetch('{{ url_for("units.add_ajax") }}', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                const html = await response.text();
+                const tbody = document.getElementById('units-table');
+                const emptyRow = tbody.querySelector('tr:has(td[colspan])');
+                
+                if (emptyRow) {
+                    emptyRow.remove();
+                }
+                
+                tbody.insertAdjacentHTML('afterbegin', html);
+                addedCount++;
+            } else {
+                failedCount++;
+            }
+        } catch (error) {
+            failedCount++;
+        }
+    }
+    
+    form.reset();
+    toggleForm(null);
+    
+    if (addedCount > 0) {
+        showNotification(`تم إضافة ${addedCount} وحدة بنجاح`, 'success');
+        updateStats();
+    }
+    
+    if (failedCount > 0) {
+        setTimeout(() => {
+            showNotification(`فشل إضافة ${failedCount} وحدة`, 'error');
+        }, 1000);
+    }
+    
+    return false;
+}
+
+// Delete Unit
+function deleteUnit(id, name) {
+    if (!confirm(`هل أنت متأكد من حذف الوحدة "${name}"؟`)) {
+        return;
+    }
+    
+    const row = document.getElementById(`row-${id}`);
+    row.style.opacity = '0.5';
+    
+    fetch(`/units/${id}/delete-ajax`, {
+        method: 'DELETE',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            row.style.transition = 'all 0.3s ease';
+            row.style.transform = 'translateX(-100%)';
+            row.style.opacity = '0';
+            setTimeout(() => {
+                row.remove();
+                showNotification('تم حذف الوحدة بنجاح', 'success');
+                updateStats();
+            }, 300);
+        } else {
+            row.style.opacity = '1';
+            return response.json();
+        }
+    })
+    .then(data => {
+        if (data && data.error) {
+            showNotification(data.error, 'error');
+        }
+    })
+    .catch(error => {
+        row.style.opacity = '1';
+        showNotification('حدث خطأ أثناء الحذف', 'error');
+    });
+}
+
+// Load Unit for Edit
+function loadUnitForEdit(id, name, building, floor, area, unitType, price, status, notes) {
+    // Fill the form
+    document.getElementById('edit-unit-id').value = id;
+    document.getElementById('edit-name').value = name;
+    document.getElementById('edit-building').value = building;
+    document.getElementById('edit-floor').value = floor;
+    document.getElementById('edit-area').value = area;
+    document.getElementById('edit-unit_type').value = unitType;
+    document.getElementById('edit-total_price').value = price;
+    document.getElementById('edit-status').value = status;
+    document.getElementById('edit-notes').value = notes;
+    
+    // Show edit form
+    toggleForm('edit');
+    
+    // Scroll to form
+    document.getElementById('edit-form').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Update Unit
+async function updateUnit(event) {
+    event.preventDefault();
+    const form = event.target;
+    const unitId = document.getElementById('edit-unit-id').value;
+    const formData = new FormData(form);
+    
+    // Remove the id from formData as it's in the URL
+    formData.delete('id');
+    
+    try {
+        const response = await fetch(`/units/${unitId}/update-ajax`, {
+            method: 'PUT',
+            body: formData
+        });
+        
+        if (response.ok) {
+            const html = await response.text();
+            const oldRow = document.getElementById(`row-${unitId}`);
+            if (oldRow) {
+                oldRow.outerHTML = html;
+            }
+            
+            toggleForm(null);
+            showNotification('تم تحديث بيانات الوحدة بنجاح', 'success');
+        } else {
+            const data = await response.json();
+            showNotification(data.error || 'حدث خطأ أثناء التحديث', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('حدث خطأ في الاتصال', 'error');
+    }
+    
+    return false;
+}
+
+// Update Statistics
+function updateStats() {
+    // This would be enhanced to update stats dynamically
+    console.log('Stats updated');
+}
+</script>
+{% endblock %}

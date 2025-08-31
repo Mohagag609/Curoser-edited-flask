@@ -46,7 +46,7 @@ def index():
             'remaining': unit.calculate_remaining()
         })
     
-    return render_template('units/index.html',
+    return render_template('units/index_simple.html',
                          units_data=units_data,
                          pagination=pagination,
                          q=q,
@@ -409,3 +409,174 @@ def generate_excel_html(units):
     '''
     
     return html
+
+# AJAX Routes
+
+@bp.route('/add-ajax', methods=['POST'])
+def add_ajax():
+    """إضافة وحدة عبر AJAX"""
+    try:
+        # Get current project
+        project = get_current_project()
+        if not project:
+            return jsonify({'error': 'لم يتم اختيار مشروع'}), 400
+        
+        name = request.form.get('name', '').strip()
+        building = request.form.get('building', '').strip()
+        floor = request.form.get('floor', '').strip()
+        price = request.form.get('total_price', '').strip()
+        
+        if not all([name, building, floor, price]):
+            return jsonify({'error': 'الرجاء ملء جميع الحقول المطلوبة'}), 400
+        
+        # Create unit
+        unit = Unit(
+            id=generate_uid('U'),
+            project_id=project.id,
+            code=generate_unit_code(),
+            name=name,
+            building=building,
+            floor=floor,
+            area=request.form.get('area', type=float),
+            unit_type=request.form.get('unit_type', 'سكني'),
+            total_price=float(price),
+            status='available',
+            notes=request.form.get('notes', '').strip() or None
+        )
+        
+        db.session.add(unit)
+        db.session.commit()
+        
+        log_action('إضافة وحدة جديدة', {'id': unit.id, 'name': unit.name})
+        
+        # Return the new row HTML
+        partners = 'لا يوجد شركاء'
+        return render_template('units/_simple_row.html', 
+                             unit=unit, 
+                             partners=partners,
+                             format_currency=format_currency), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/<string:id>/update-ajax', methods=['PUT'])
+def update_ajax(id):
+    """تحديث وحدة عبر AJAX"""
+    try:
+        unit = Unit.query.get_or_404(id)
+        
+        # Update fields
+        unit.name = request.form.get('name', unit.name).strip()
+        unit.building = request.form.get('building', unit.building).strip()
+        unit.floor = request.form.get('floor', unit.floor).strip()
+        unit.area = request.form.get('area', type=float)
+        unit.unit_type = request.form.get('unit_type', unit.unit_type)
+        unit.total_price = float(request.form.get('total_price', unit.total_price))
+        unit.status = request.form.get('status', unit.status)
+        unit.notes = request.form.get('notes', '').strip() or None
+        
+        db.session.commit()
+        
+        log_action('تعديل بيانات وحدة', {'id': unit.id, 'name': unit.name})
+        
+        # Get partners
+        partners = []
+        for up in unit.partners:
+            partner = Partner.query.get(up.partner_id)
+            if partner:
+                partners.append(f"{partner.name} ({up.percentage}%)")
+        partners_str = ', '.join(partners) if partners else 'لا يوجد شركاء'
+        
+        # Return updated row
+        return render_template('units/_simple_row.html', 
+                             unit=unit, 
+                             partners=partners_str,
+                             format_currency=format_currency), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/<string:id>/delete-ajax', methods=['DELETE'])
+def delete_ajax(id):
+    """حذف وحدة عبر AJAX"""
+    try:
+        unit = Unit.query.get_or_404(id)
+        unit_name = unit.name
+        
+        # Check constraints
+        if unit.contracts.count() > 0:
+            return jsonify({'error': f'لا يمكن حذف الوحدة لوجود {unit.contracts.count()} عقد مرتبط'}), 400
+        
+        if unit.partners.count() > 0:
+            return jsonify({'error': f'لا يمكن حذف الوحدة لوجود {unit.partners.count()} شريك مرتبط'}), 400
+        
+        db.session.delete(unit)
+        db.session.commit()
+        
+        log_action('حذف وحدة', {'id': id, 'name': unit_name})
+        
+        # Return empty with success status
+        return '', 204
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'حدث خطأ في حذف الوحدة'}), 500
+
+@bp.route('/search')
+def search():
+    """البحث في الوحدات"""
+    page = request.args.get('page', 1, type=int)
+    q = request.args.get('q', '')
+    status = request.args.get('status', '')
+    
+    # Start with filtered query by project
+    query = filter_by_project(Unit.query, Unit)
+    
+    if q:
+        query = query.filter(
+            or_(
+                Unit.code.contains(q),
+                Unit.name.contains(q),
+                Unit.floor.contains(q),
+                Unit.building.contains(q)
+            )
+        )
+    
+    if status:
+        query = query.filter(Unit.status == status)
+    
+    query = query.order_by(Unit.code)
+    pagination = Pagination(query, page, per_page=20)
+    
+    # Get partner names for each unit
+    units_data = []
+    for unit in pagination.items:
+        partners = []
+        for up in unit.partners:
+            partner = Partner.query.get(up.partner_id)
+            if partner:
+                partners.append(f"{partner.name} ({up.percentage}%)")
+        units_data.append({
+            'unit': unit,
+            'partners': ', '.join(partners) if partners else 'لا يوجد شركاء'
+        })
+    
+    # Check if AJAX request
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        html = ''
+        for item in units_data:
+            html += render_template('units/_simple_row.html', 
+                                  unit=item['unit'], 
+                                  partners=item['partners'],
+                                  format_currency=format_currency)
+        return html
+    
+    # Otherwise return full page
+    return render_template('units/index_simple.html',
+                         units_data=units_data,
+                         pagination=pagination,
+                         q=q,
+                         status_filter=status,
+                         format_currency=format_currency)
