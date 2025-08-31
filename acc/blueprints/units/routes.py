@@ -433,7 +433,7 @@ def add_ajax():
         unit = Unit(
             id=generate_uid('U'),
             project_id=project.id,
-            code=generate_unit_code(),
+            code=generate_unit_code(building, floor, name),
             name=name,
             building=building,
             floor=floor,
