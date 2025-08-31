@@ -47,8 +47,7 @@
     <!-- Smooth Transitions CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/smooth-transitions.css') }}">
     
-    <!-- Loading Overlay CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/loading-overlay.css') }}">
+
     
     <!-- Zoom Fix CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/zoom-fix.css') }}">
@@ -746,11 +745,27 @@
         document.body.addEventListener('htmx:responseError', function(evt) {
             notify('حدث خطأ في الطلب. يرجى المحاولة مرة أخرى.', 'error');
         });
+        
+        // اختبار عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', function() {
+            // اختبار الإشعارات
+            setTimeout(() => {
+                if (window.location.pathname.includes('/customers')) {
+                    notify('مرحباً بك في صفحة العملاء', 'info');
+                }
+            }, 500);
+        });
+        
+        // دالة اختبار الإشعارات
+        window.testNotifications = function() {
+            notify('رسالة نجاح', 'success');
+            setTimeout(() => notify('رسالة خطأ', 'error'), 1000);
+            setTimeout(() => notify('رسالة تحذير', 'warning'), 2000);
+            setTimeout(() => notify('رسالة معلومات', 'info'), 3000);
+        };
     </script>
     
     {% block extra_scripts %}{% endblock %}
-    <!-- Page Loader (First) -->
-    <script src="{{ url_for('static', filename='js/page-loader.js') }}"></script>
     
     <!-- Smooth Transitions -->
     <script src="{{ url_for('static', filename='js/smooth-transitions.js') }}"></script>
