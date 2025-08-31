@@ -33,9 +33,9 @@ class Contract(db.Model):
     customer = db.relationship('Customer', foreign_keys=[customer_id], backref='contracts')
     unit = db.relationship('Unit', foreign_keys=[unit_id], backref='contracts')
     installments = db.relationship('Installment', 
-                                 primaryjoin="Contract.unit_id==Installment.unit_id",
-                                 foreign_keys=[unit_id],
-                                 viewonly=True)
+                                 backref='contract',
+                                 lazy=True,
+                                 cascade="all, delete-orphan")
     
     def __repr__(self):
         return f'<Contract {self.code}>'

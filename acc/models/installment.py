@@ -6,6 +6,7 @@ class Installment(db.Model):
     __tablename__ = 'installments'
     
     id = Column(String(20), primary_key=True)
+    contract_id = Column(String(20), ForeignKey('contracts.id'), nullable=False)
     unit_id = Column(String(20), ForeignKey('units.id'), nullable=False)
     installment_number = Column(db.Integer)
     
