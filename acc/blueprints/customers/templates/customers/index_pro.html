@@ -1,0 +1,587 @@
+{% extends "base.html" %}
+
+{% block title %}العملاء{% endblock %}
+{% block page_title %}إدارة العملاء{% endblock %}
+
+{% block extra_head %}
+<style>
+/* إزالة كل التأثيرات المزعجة */
+* {
+    -webkit-transition: none !important;
+    -moz-transition: none !important;
+    -o-transition: none !important;
+    transition: none !important;
+    animation: none !important;
+}
+
+/* إصلاح مشاكل التحميل */
+body {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* تصميم احترافي */
+.pro-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+/* بطاقة احترافية */
+.pro-card {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+/* أزرار احترافية */
+.pro-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.pro-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.pro-btn-primary {
+    background: #2563eb;
+    color: white;
+}
+
+.pro-btn-success {
+    background: #16a34a;
+    color: white;
+}
+
+.pro-btn-info {
+    background: #0891b2;
+    color: white;
+}
+
+.pro-btn-danger {
+    background: #dc2626;
+    color: white;
+}
+
+.pro-btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+/* جدول احترافي */
+.pro-table {
+    width: 100%;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.pro-table thead {
+    background: #f8fafc;
+}
+
+.pro-table th {
+    padding: 16px;
+    text-align: right;
+    font-size: 12px;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.pro-table td {
+    padding: 16px;
+    font-size: 14px;
+    color: #1e293b;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.pro-table tbody tr {
+    background: white;
+}
+
+.pro-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+/* نماذج احترافية */
+.pro-form {
+    display: grid;
+    gap: 16px;
+}
+
+.pro-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.pro-form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.pro-form-control {
+    padding: 10px 14px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+}
+
+.pro-form-control:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* شريط البحث الاحترافي */
+.pro-search {
+    position: relative;
+    width: 350px;
+}
+
+.pro-search input {
+    width: 100%;
+    padding: 10px 14px 10px 42px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+}
+
+.pro-search input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.pro-search-icon {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+}
+
+/* حالة العميل */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-active {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.status-inactive {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+/* أزرار الإجراءات */
+.action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+/* إشعارات احترافية */
+.pro-notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 16px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.pro-notification.success {
+    background: #10b981;
+    color: white;
+}
+
+.pro-notification.error {
+    background: #ef4444;
+    color: white;
+}
+
+.pro-notification.info {
+    background: #3b82f6;
+    color: white;
+}
+
+/* تحسينات الأداء */
+.fade-in {
+    opacity: 1 !important;
+}
+
+/* إزالة الخلفيات المزعجة */
+.bg-gradient-to-r,
+.bg-gradient-to-l {
+    background-image: none !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pro-container" x-data="{
+    activeForm: null,
+    quickName: '',
+    bulkNames: '',
+    toggleForm(form) {
+        this.activeForm = this.activeForm === form ? null : form;
+    }
+}">
+
+    <!-- شريط الأدوات العلوي -->
+    <div class="pro-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+            <!-- الأزرار الرئيسية -->
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <button @click="toggleForm('full')" class="pro-btn pro-btn-primary">
+                    <i class="fas fa-user-plus"></i>
+                    إضافة عميل
+                </button>
+                
+                <button @click="toggleForm('quick')" class="pro-btn pro-btn-success">
+                    <i class="fas fa-bolt"></i>
+                    إضافة سريعة
+                </button>
+                
+                <button @click="toggleForm('bulk')" class="pro-btn pro-btn-info">
+                    <i class="fas fa-layer-group"></i>
+                    إضافة متعددة
+                </button>
+            </div>
+            
+            <!-- البحث -->
+            <div class="pro-search">
+                <i class="fas fa-search pro-search-icon"></i>
+                <input type="text" 
+                       placeholder="ابحث عن عميل..."
+                       hx-get="{{ url_for('customers.search') }}"
+                       hx-trigger="keyup changed delay:300ms"
+                       hx-target="#customers-tbody"
+                       hx-swap="innerHTML"
+                       name="q">
+            </div>
+        </div>
+    </div>
+
+    <!-- نموذج إضافة عميل كامل -->
+    <div x-show="activeForm === 'full'" x-cloak class="pro-card">
+        <h3 style="margin: 0 0 20px 0; font-size: 18px; font-weight: 700; color: #1e293b;">
+            <i class="fas fa-user-plus" style="color: #3b82f6; margin-left: 8px;"></i>
+            إضافة عميل جديد
+        </h3>
+        
+        <form class="pro-form" 
+              hx-post="{{ url_for('customers.add_ajax') }}" 
+              hx-target="#customers-tbody" 
+              hx-swap="afterbegin"
+              hx-on::after-request="if(event.detail.successful) { 
+                  this.reset(); 
+                  Alpine.data().activeForm = null;
+                  showNotification('تم إضافة العميل بنجاح', 'success');
+              }">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="pro-form-group">
+                    <label>الاسم الكامل <span style="color: #ef4444;">*</span></label>
+                    <input type="text" name="name" class="pro-form-control" required>
+                </div>
+                
+                <div class="pro-form-group">
+                    <label>رقم الهاتف</label>
+                    <input type="tel" name="phone" class="pro-form-control" dir="ltr">
+                </div>
+                
+                <div class="pro-form-group">
+                    <label>الرقم القومي</label>
+                    <input type="text" name="national_id" class="pro-form-control">
+                </div>
+                
+                <div class="pro-form-group">
+                    <label>العنوان</label>
+                    <input type="text" name="address" class="pro-form-control">
+                </div>
+            </div>
+            
+            <div class="pro-form-group">
+                <label>ملاحظات</label>
+                <textarea name="notes" class="pro-form-control" rows="3"></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 12px; margin-top: 20px;">
+                <button type="submit" class="pro-btn pro-btn-primary">
+                    <i class="fas fa-save"></i>
+                    حفظ البيانات
+                </button>
+                <button type="button" @click="activeForm = null" class="pro-btn" style="background: #e2e8f0; color: #475569;">
+                    <i class="fas fa-times"></i>
+                    إلغاء
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- إضافة سريعة -->
+    <div x-show="activeForm === 'quick'" x-cloak class="pro-card">
+        <h3 style="margin: 0 0 20px 0; font-size: 18px; font-weight: 700; color: #1e293b;">
+            <i class="fas fa-bolt" style="color: #16a34a; margin-left: 8px;"></i>
+            إضافة سريعة
+        </h3>
+        
+        <form hx-post="{{ url_for('customers.add_ajax') }}" 
+              hx-target="#customers-tbody" 
+              hx-swap="afterbegin"
+              hx-on::after-request="if(event.detail.successful) { 
+                  quickName = ''; 
+                  showNotification('تم إضافة العميل بنجاح', 'success');
+              }">
+            <div style="display: flex; gap: 12px;">
+                <input type="text" 
+                       name="name" 
+                       x-model="quickName" 
+                       placeholder="اكتب اسم العميل ثم اضغط Enter"
+                       class="pro-form-control"
+                       style="flex: 1;"
+                       required>
+                <button type="submit" class="pro-btn pro-btn-success">
+                    <i class="fas fa-check"></i>
+                    إضافة
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- إضافة متعددة -->
+    <div x-show="activeForm === 'bulk'" x-cloak class="pro-card">
+        <h3 style="margin: 0 0 20px 0; font-size: 18px; font-weight: 700; color: #1e293b;">
+            <i class="fas fa-layer-group" style="color: #0891b2; margin-left: 8px;"></i>
+            إضافة عملاء متعددين
+        </h3>
+        
+        <form @submit.prevent="
+            const names = bulkNames.split('\n').filter(n => n.trim());
+            let successCount = 0;
+            names.forEach((name, index) => {
+                setTimeout(() => {
+                    htmx.ajax('POST', '{{ url_for('customers.add_ajax') }}', {
+                        values: { name: name.trim() }
+                    }).then(() => successCount++);
+                }, index * 100);
+            });
+            setTimeout(() => {
+                bulkNames = '';
+                activeForm = null;
+                showNotification(`تم إضافة ${successCount} عميل بنجاح`, 'success');
+            }, names.length * 100 + 500);
+        ">
+            <textarea x-model="bulkNames" 
+                      placeholder="اكتب أسماء العملاء (كل اسم في سطر منفصل)&#10;مثال:&#10;أحمد محمد&#10;فاطمة علي&#10;محمد حسن"
+                      class="pro-form-control"
+                      rows="6"
+                      style="width: 100%; margin-bottom: 16px;"></textarea>
+            
+            <div style="display: flex; gap: 12px;">
+                <button type="submit" class="pro-btn pro-btn-info">
+                    <i class="fas fa-upload"></i>
+                    إضافة الجميع
+                </button>
+                <button type="button" @click="activeForm = null; bulkNames = ''" 
+                        class="pro-btn" style="background: #e2e8f0; color: #475569;">
+                    <i class="fas fa-times"></i>
+                    إلغاء
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- جدول العملاء -->
+    <div class="pro-card" style="padding: 0; overflow: hidden;">
+        <table class="pro-table">
+            <thead>
+                <tr>
+                    <th style="width: 100px;">الكود</th>
+                    <th>الاسم</th>
+                    <th style="width: 150px;">الهاتف</th>
+                    <th>العنوان</th>
+                    <th style="width: 100px;">الحالة</th>
+                    <th style="width: 180px;">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody id="customers-tbody">
+                {% for customer in customers %}
+                <tr id="customer-{{ customer.id }}">
+                    <td>
+                        <span style="background: #dbeafe; color: #1e40af; padding: 4px 12px; border-radius: 6px; font-weight: 600; font-size: 12px;">
+                            {{ customer.code }}
+                        </span>
+                    </td>
+                    <td>
+                        <div style="font-weight: 600;">{{ customer.name }}</div>
+                        {% if customer.national_id %}
+                        <div style="font-size: 12px; color: #64748b; margin-top: 2px;">{{ customer.national_id }}</div>
+                        {% endif %}
+                    </td>
+                    <td dir="ltr" style="font-family: monospace;">{{ customer.phone or '-' }}</td>
+                    <td>{{ customer.address or '-' }}</td>
+                    <td>
+                        {% if customer.status == 'نشط' %}
+                            <span class="status-badge status-active">
+                                <i class="fas fa-check-circle"></i>
+                                نشط
+                            </span>
+                        {% else %}
+                            <span class="status-badge status-inactive">
+                                <i class="fas fa-pause-circle"></i>
+                                معلق
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="{{ url_for('customers.detail', id=customer.id) }}" 
+                               class="pro-btn pro-btn-sm" style="background: #e0e7ff; color: #3730a3;">
+                                <i class="fas fa-eye"></i>
+                                عرض
+                            </a>
+                            <a href="{{ url_for('customers.edit', id=customer.id) }}" 
+                               class="pro-btn pro-btn-sm" style="background: #d1fae5; color: #065f46;">
+                                <i class="fas fa-edit"></i>
+                                تعديل
+                            </a>
+                            <button onclick="deleteCustomer('{{ customer.id }}', '{{ customer.name }}')"
+                                    class="pro-btn pro-btn-sm pro-btn-danger">
+                                <i class="fas fa-trash"></i>
+                                حذف
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 60px;">
+                        <div style="color: #94a3b8;">
+                            <i class="fas fa-users" style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;"></i>
+                            <p style="font-size: 16px; margin: 0;">لا يوجد عملاء حتى الآن</p>
+                            <p style="font-size: 14px; margin-top: 8px;">ابدأ بإضافة عميل جديد</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ترقيم الصفحات -->
+    {% if pagination and pagination.pages > 1 %}
+    <div style="display: flex; justify-content: center; gap: 8px; margin-top: 24px;">
+        {% if pagination.has_prev %}
+        <a href="{{ url_for('customers.index', page=pagination.prev_num, q=q) }}" 
+           class="pro-btn pro-btn-sm" style="background: #f1f5f9; color: #475569;">
+            <i class="fas fa-chevron-right"></i>
+            السابق
+        </a>
+        {% endif %}
+        
+        <span style="display: flex; align-items: center; padding: 0 16px; font-size: 14px; color: #64748b;">
+            صفحة {{ pagination.page }} من {{ pagination.pages }}
+        </span>
+        
+        {% if pagination.has_next %}
+        <a href="{{ url_for('customers.index', page=pagination.next_num, q=q) }}" 
+           class="pro-btn pro-btn-sm" style="background: #f1f5f9; color: #475569;">
+            التالي
+            <i class="fas fa-chevron-left"></i>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+</div>
+
+<script>
+// نظام إشعارات احترافي
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `pro-notification ${type}`;
+    
+    const icon = {
+        success: 'fa-check-circle',
+        error: 'fa-times-circle',
+        info: 'fa-info-circle'
+    }[type] || 'fa-info-circle';
+    
+    notification.innerHTML = `
+        <i class="fas ${icon}"></i>
+        <span>${message}</span>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // إظهار الإشعار
+    setTimeout(() => notification.style.opacity = '1', 10);
+    
+    // إخفاء الإشعار
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// دالة حذف محسنة
+function deleteCustomer(id, name) {
+    if (confirm(`هل أنت متأكد من حذف العميل "${name}"؟`)) {
+        htmx.ajax('DELETE', `/customers/${id}/delete-ajax`, {
+            target: `#customer-${id}`,
+            swap: 'outerHTML'
+        }).then(() => {
+            showNotification('تم حذف العميل بنجاح', 'success');
+        }).catch(() => {
+            showNotification('حدث خطأ أثناء حذف العميل', 'error');
+        });
+    }
+}
+
+// تحسين الأداء عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    // إزالة أي عناصر تحميل
+    document.querySelectorAll('.loading, .page-loader').forEach(el => el.remove());
+    
+    // تأكيد أن الصفحة مرئية
+    document.body.style.opacity = '1';
+    document.body.style.visibility = 'visible';
+});
+</script>
+{% endblock %}
