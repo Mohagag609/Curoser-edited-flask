@@ -90,6 +90,11 @@
     font-size: 16px;
 }
 
+/* Alpine cloak */
+[x-cloak] {
+    display: none !important;
+}
+
 /* Notification Styles */
 .notification-container {
     position: fixed;
@@ -165,7 +170,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="space-y-6 page-content" x-data="customersApp()">
+<div class="space-y-6 page-content" x-data="customersApp()" x-init="init()">
     <!-- Header with Back Button -->
     <div class="flex items-center gap-4 mb-4">
         <a href="{{ url_for('dashboard.index') }}" class="modern-btn modern-btn-back modern-btn-sm">
@@ -258,8 +263,8 @@
     </div>
     
     <!-- Add Customer Modal -->
-    <div class="modal-backdrop" x-show="showAddModal" @click="showAddModal = false"></div>
-    <div class="modal" x-show="showAddModal">
+    <div class="modal-backdrop" x-show="showAddModal" x-cloak @click="showAddModal = false"></div>
+    <div class="modal" x-show="showAddModal" x-cloak>
         <div class="modal-header">
             <h3 class="text-xl font-bold">إضافة عميل جديد</h3>
             <button @click="showAddModal = false" class="text-gray-400 hover:text-gray-600">
@@ -322,8 +327,8 @@
     </div>
     
     <!-- Bulk Add Modal -->
-    <div class="modal-backdrop" x-show="showBulkModal" @click="showBulkModal = false"></div>
-    <div class="modal" x-show="showBulkModal">
+    <div class="modal-backdrop" x-show="showBulkModal" x-cloak @click="showBulkModal = false"></div>
+    <div class="modal" x-show="showBulkModal" x-cloak>
         <div class="modal-header">
             <h3 class="text-xl font-bold">إضافة قائمة عملاء</h3>
             <button @click="showBulkModal = false" class="text-gray-400 hover:text-gray-600">
@@ -382,17 +387,27 @@ function customersApp() {
             notes: ''
         },
         
+        init() {
+            console.log('Customers app initialized');
+        },
+        
         // Quick Add
         async quickAddCustomer() {
-            if (!this.quickName) return;
+            if (!this.quickName.trim()) {
+                this.showNotification('الرجاء إدخال اسم العميل', 'error');
+                return;
+            }
             
             const formData = new FormData();
-            formData.append('name', this.quickName);
+            formData.append('name', this.quickName.trim());
             
             try {
                 const response = await fetch('{{ url_for("customers.add_ajax") }}', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
                 });
                 
                 if (response.ok) {
@@ -400,28 +415,38 @@ function customersApp() {
                     this.addRowToTable(html);
                     this.quickName = '';
                     this.showNotification('تم إضافة العميل بنجاح', 'success');
-                    this.refreshSearch();
+                    this.updateStats();
                 } else {
-                    this.showNotification('حدث خطأ أثناء الإضافة', 'error');
+                    const data = await response.json();
+                    this.showNotification(data.error || 'حدث خطأ أثناء الإضافة', 'error');
                 }
             } catch (error) {
+                console.error('Error:', error);
                 this.showNotification('حدث خطأ في الاتصال', 'error');
             }
         },
         
         // Add Full Customer
         async addCustomer() {
+            if (!this.newCustomer.name.trim()) {
+                this.showNotification('الرجاء إدخال اسم العميل', 'error');
+                return;
+            }
+            
             const formData = new FormData();
             Object.keys(this.newCustomer).forEach(key => {
                 if (this.newCustomer[key]) {
-                    formData.append(key, this.newCustomer[key]);
+                    formData.append(key, this.newCustomer[key].trim());
                 }
             });
             
             try {
                 const response = await fetch('{{ url_for("customers.add_ajax") }}', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
                 });
                 
                 if (response.ok) {
@@ -430,11 +455,13 @@ function customersApp() {
                     this.showAddModal = false;
                     this.resetNewCustomer();
                     this.showNotification('تم إضافة العميل بنجاح', 'success');
-                    this.refreshSearch();
+                    this.updateStats();
                 } else {
-                    this.showNotification('حدث خطأ أثناء الإضافة', 'error');
+                    const data = await response.json();
+                    this.showNotification(data.error || 'حدث خطأ أثناء الإضافة', 'error');
                 }
             } catch (error) {
+                console.error('Error:', error);
                 this.showNotification('حدث خطأ في الاتصال', 'error');
             }
         },
@@ -442,9 +469,13 @@ function customersApp() {
         // Bulk Add
         async bulkAddCustomers() {
             const names = this.bulkNames.split('\n').filter(n => n.trim());
-            if (names.length === 0) return;
+            if (names.length === 0) {
+                this.showNotification('الرجاء إدخال أسماء العملاء', 'error');
+                return;
+            }
             
             let addedCount = 0;
+            let failedCount = 0;
             
             for (const name of names) {
                 const formData = new FormData();
@@ -453,23 +484,38 @@ function customersApp() {
                 try {
                     const response = await fetch('{{ url_for("customers.add_ajax") }}', {
                         method: 'POST',
-                        body: formData
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
                     });
                     
                     if (response.ok) {
                         const html = await response.text();
                         this.addRowToTable(html);
                         addedCount++;
+                    } else {
+                        failedCount++;
                     }
                 } catch (error) {
                     console.error('Error adding:', name);
+                    failedCount++;
                 }
             }
             
             this.showBulkModal = false;
             this.bulkNames = '';
-            this.showNotification(`تم إضافة ${addedCount} عميل بنجاح`, 'success');
-            this.refreshSearch();
+            
+            if (addedCount > 0) {
+                this.showNotification(`تم إضافة ${addedCount} عميل بنجاح`, 'success');
+                this.updateStats();
+            }
+            
+            if (failedCount > 0) {
+                setTimeout(() => {
+                    this.showNotification(`فشل إضافة ${failedCount} عميل`, 'error');
+                }, 1000);
+            }
         },
         
         // Helper Methods
@@ -521,6 +567,12 @@ function customersApp() {
             if (searchInput && searchInput.value) {
                 searchInput.dispatchEvent(new Event('input'));
             }
+        },
+        
+        updateStats() {
+            // Update statistics if needed
+            // This could be enhanced to update the stats cards dynamically
+            console.log('Stats updated');
         }
     }
 }
