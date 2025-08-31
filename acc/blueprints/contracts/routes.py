@@ -53,7 +53,7 @@ def index():
     except:
         safes = []
     
-    return render_template('contracts/index_modern.html',
+    return render_template('contracts/index_pro.html',
                          contracts=pagination.items,
                          pagination=pagination,
                          q=q,
@@ -221,7 +221,7 @@ def add():
                          format_currency=format_currency)
 
 @bp.route('/<string:id>')
-def detail(id):
+def view(id):
     contract = Contract.query.get_or_404(id)
     
     # Ensure contract belongs to current project
@@ -404,8 +404,8 @@ def report():
                          format_currency=format_currency)
 
 
-@bp.route('/add_ajax', methods=['POST'])
-def add_ajax():
+@bp.route('/create', methods=['POST'])
+def create():
     """Add contract via AJAX"""
     try:
         # Get form data
@@ -528,7 +528,7 @@ def generate_installments(id):
 
 
 @bp.route('/<string:id>/delete', methods=['POST'])
-def delete_contract(id):
+def delete(id):
     """Delete contract"""
     try:
         contract = Contract.query.get_or_404(id)
