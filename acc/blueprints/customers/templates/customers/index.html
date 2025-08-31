@@ -1,5 +1,45 @@
 {% extends "base.html" %}
 
+{% block extra_head %}
+<style>
+/* إزالة جميع التأثيرات والخلفيات */
+* {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* تحسين سرعة التحميل */
+.page-content {
+    opacity: 1 !important;
+    transform: none !important;
+}
+
+/* إزالة أي تأثيرات transition غير ضرورية */
+.card-transition,
+.transition-all,
+.transition-colors,
+.transition-opacity {
+    transition: none !important;
+}
+
+/* تحسين الأداء */
+.hover\:bg-gray-50:hover {
+    background-color: #f9fafb;
+    transition: background-color 0.15s ease !important;
+}
+
+/* إصلاح Modal */
+[x-cloak] { 
+    display: none !important; 
+}
+
+/* تحسين الجدول */
+#customers-table-body tr {
+    opacity: 1 !important;
+}
+</style>
+{% endblock %}
+
 {% block title %}العملاء{% endblock %}
 {% block page_title %}العملاء{% endblock %}
 
@@ -55,12 +95,12 @@
  </div>
  
  <!-- Quick Add Form -->
- <div x-show="showQuickAdd" x-transition class="mb-6">
+ <div x-show="showQuickAdd" class="mb-6">
  <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
  <form hx-post="{{ url_for('customers.add_ajax') }}" 
  hx-target="#customers-table-body"
  hx-swap="afterbegin"
- @htmx:after-request="if(event.detail.successful) { showQuickAdd = false; $el.reset(); }"
+ hx-on:htmx:after-request="if(event.detail.successful) { showQuickAdd = false; this.reset(); }"
  class="flex gap-3 items-end">
  
  <div class="flex-1">
@@ -143,7 +183,7 @@
  <!-- Results Container -->
  <div id="results-container">
  <!-- Customers Table -->
- <div class="card overflow-hidden card-transition">
+ <div class="card overflow-hidden">
  <div class="overflow-x-auto">
  <table class="min-w-full divide-y divide-gray-200">
  <thead class="bg-gradient-to-l from-gray-50 to-gray-100">
@@ -158,7 +198,7 @@
                  </thead>
                 <tbody class="bg-white divide-y divide-gray-200" id="customers-table-body">
                     {% for customer in customers %}
- <tr id="customer-row-{{ customer.id }}" class="hover:bg-gray-50 transition-colors duration-200">
+ <tr id="customer-row-{{ customer.id }}" class="hover:bg-gray-50">
  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
  <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded-md">{{ customer.code }}</span>
  </td>
@@ -389,4 +429,43 @@
     </div>
 </div>
 
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// تحسين الأداء وإصلاح الأخطاء
+document.addEventListener('DOMContentLoaded', function() {
+    // إزالة أي عناصر loading قديمة
+    const loadingElements = document.querySelectorAll('.loading, .loading-overlay, .page-loader');
+    loadingElements.forEach(el => el.remove());
+    
+    // التأكد من عمل HTMX بشكل صحيح
+    htmx.config.defaultSwapStyle = 'innerHTML';
+    htmx.config.defaultSwapDelay = 0;
+    htmx.config.defaultSettleDelay = 20;
+    
+    // إصلاح مشاكل Alpine.js
+    if (window.Alpine) {
+        Alpine.store('loading', false);
+    }
+});
+
+// معالج أخطاء HTMX
+document.body.addEventListener('htmx:responseError', function(evt) {
+    console.error('HTMX Error:', evt.detail);
+    notify('حدث خطأ في الطلب', 'error');
+});
+
+// معالج نجاح HTMX
+document.body.addEventListener('htmx:afterRequest', function(evt) {
+    if (evt.detail.successful && evt.detail.xhr.status === 200) {
+        // تحديث الجدول إذا لزم الأمر
+        const target = evt.detail.target;
+        if (target && target.id === 'customers-table-body') {
+            // إعادة تهيئة أي مكونات JavaScript
+            htmx.process(target);
+        }
+    }
+});
+</script>
 {% endblock %}

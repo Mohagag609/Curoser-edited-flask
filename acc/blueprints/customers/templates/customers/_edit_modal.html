@@ -8,13 +8,14 @@
 
 <!-- Form -->
 <form hx-put="{{ url_for('customers.update_ajax', id=customer.id) }}"
-      hx-target="#customer-{{ customer.id }}"
+      hx-target="#customer-row-{{ customer.id }}"
       hx-swap="outerHTML"
-      @htmx:after-request="if(event.detail.successful) { 
-        showEditModal = false;
-        // تحديث السطر في الجدول
-        document.getElementById('customer-row-' + '{{ customer.id }}').replaceWith(event.detail.xhr.response);
-      }">
+      hx-on:htmx:after-request="
+        if(event.detail.successful) { 
+          showEditModal = false;
+          notify('تم تحديث بيانات العميل بنجاح', 'success');
+        }
+      ">
     
     <div class="space-y-4">
         <div>
