@@ -35,7 +35,7 @@ def index():
         query = query.filter(Contract.status == status)
     
     # Order by
-    query = query.order_by(Contract.date.desc())
+    query = query.order_by(Contract.start_date.desc())
     
     # Pagination
     pagination = Pagination(query, page, per_page=20)
@@ -359,12 +359,12 @@ def report():
         query = query.filter(Contract.status == status)
     
     if date_from:
-        query = query.filter(Contract.date >= datetime.strptime(date_from, '%Y-%m-%d').date())
+        query = query.filter(Contract.start_date >= datetime.strptime(date_from, '%Y-%m-%d').date())
     
     if date_to:
-        query = query.filter(Contract.date <= datetime.strptime(date_to, '%Y-%m-%d').date())
+        query = query.filter(Contract.start_date <= datetime.strptime(date_to, '%Y-%m-%d').date())
     
-    contracts = query.order_by(Contract.date.desc()).all()
+    contracts = query.order_by(Contract.start_date.desc()).all()
     
     # Calculate statistics
     total_contracts = len(contracts)
