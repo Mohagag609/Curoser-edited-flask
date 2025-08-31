@@ -14,31 +14,36 @@ def get_next_code(model, prefix, digits=3):
         digits: Number of digits for the numeric part
     
     Returns:
-        str: The next code (e.g., 'C001')
+        str: The next code (e.g., 'C001') - never reuses deleted codes
     """
-    # Get the last code from database
-    last_record = db.session.query(model).order_by(model.id.desc()).first()
+    # Get all existing codes with this prefix
+    all_codes = db.session.query(model.code).filter(
+        model.code.like(f'{prefix}%')
+    ).all()
     
-    if not last_record or not last_record.code:
+    # Extract all used numbers
+    used_numbers = set()
+    for (code,) in all_codes:
+        if code and code.startswith(prefix):
+            try:
+                number_part = code[len(prefix):]
+                number = int(number_part)
+                used_numbers.add(number)
+            except (ValueError, AttributeError):
+                continue
+    
+    # Find the maximum number ever used
+    if used_numbers:
+        max_number = max(used_numbers)
+        next_number = max_number + 1
+    else:
         # First record
         next_number = 1
-    else:
-        # Extract number from last code
-        try:
-            # Remove prefix and get number
-            last_code = last_record.code
-            if last_code.startswith(prefix):
-                number_part = last_code[len(prefix):]
-                next_number = int(number_part) + 1
-            else:
-                next_number = 1
-        except (ValueError, AttributeError):
-            next_number = 1
     
     # Format code with leading zeros
     code = f"{prefix}{str(next_number).zfill(digits)}"
     
-    # Check if code already exists (in case of manual entries)
+    # Double check if code already exists (safety check)
     while db.session.query(model).filter_by(code=code).first():
         next_number += 1
         code = f"{prefix}{str(next_number).zfill(digits)}"

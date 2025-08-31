@@ -187,7 +187,33 @@ def delete(id):
         
         # Check if customer has contracts
         if len(customer.contracts) > 0:
-            error_msg = f'لا يمكن حذف العميل "{customer.name}" لوجود عقود مرتبطة به.'
+            error_msg = f'لا يمكن حذف العميل "{customer.name}" لوجود {len(customer.contracts)} عقد مرتبط به.'
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('HX-Request'):
+                response = make_response('', 400)
+                response.headers['X-Error-Message'] = error_msg
+                return response
+            
+            flash(f'❌ {error_msg}', 'error')
+            return redirect(url_for('customers.index'))
+        
+        # Check if customer has installments
+        installments_count = Installment.query.join(Contract).filter(Contract.customer_id == customer.id).count()
+        if installments_count > 0:
+            error_msg = f'لا يمكن حذف العميل "{customer.name}" لوجود {installments_count} قسط مرتبط به.'
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('HX-Request'):
+                response = make_response('', 400)
+                response.headers['X-Error-Message'] = error_msg
+                return response
+            
+            flash(f'❌ {error_msg}', 'error')
+            return redirect(url_for('customers.index'))
+        
+        # Check if customer has vouchers
+        vouchers_count = Voucher.query.filter_by(customer_id=customer.id).count()
+        if vouchers_count > 0:
+            error_msg = f'لا يمكن حذف العميل "{customer.name}" لوجود {vouchers_count} سند مرتبط به.'
             
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('HX-Request'):
                 response = make_response('', 400)
