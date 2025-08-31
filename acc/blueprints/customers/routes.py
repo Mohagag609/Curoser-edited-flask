@@ -194,14 +194,18 @@ def delete(id):
             return redirect(url_for('customers.index'))
         
         # Check if customer has installments
-        installments_count = Installment.query.join(Contract).filter(Contract.customer_id == customer.id).count()
+        # نستخدم العقود المرتبطة بالعميل للبحث عن الأقساط
+        installments_count = 0
+        for contract in customer.contracts:
+            installments_count += len(contract.installments)
+        
         if installments_count > 0:
             error_msg = f'لا يمكن حذف العميل "{customer.name}" لوجود {installments_count} قسط مرتبط به.'
             flash(f'❌ {error_msg}', 'error')
             return redirect(url_for('customers.index'))
         
         # Check if customer has vouchers
-        vouchers_count = Voucher.query.filter_by(customer_id=customer.id).count()
+        vouchers_count = Voucher.query.filter_by(entity_id=customer.id, entity_type='customer').count()
         if vouchers_count > 0:
             error_msg = f'لا يمكن حذف العميل "{customer.name}" لوجود {vouchers_count} سند مرتبط به.'
             flash(f'❌ {error_msg}', 'error')
