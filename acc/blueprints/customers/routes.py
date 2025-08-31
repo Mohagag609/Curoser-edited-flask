@@ -1,10 +1,11 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify, make_response, current_app
+from flask import render_template, request, redirect, url_for, jsonify, make_response, current_app
 from acc.blueprints.customers import bp
 from acc.extensions import db
 from acc.models import Customer, Contract, Voucher, Installment
 from acc.services.utils import generate_uid, log_action, Pagination, format_currency
 from sqlalchemy import or_, func
 from acc.services.code_generator import generate_customer_code
+from acc.services.notifications import notify_redirect
 
 @bp.route('/')
 def index():
@@ -45,8 +46,7 @@ def add():
             
             # Validation
             if not name:
-                flash('❌ الرجاء إدخال اسم العميل', 'error')
-                return redirect(url_for('customers.add'))
+                return notify_redirect(url_for('customers.add'), 'الرجاء إدخال اسم العميل', 'error')
             
             # Check if customer with same name exists
             existing = Customer.query.filter_by(name=name).first()
@@ -61,13 +61,11 @@ def add():
                         'redirect': url_for('customers.detail', id=existing.id)
                     }), 400
                 
-                flash(f'❌ {error_msg}', 'error')
-                return redirect(url_for('customers.detail', id=existing.id))
+                return notify_redirect(url_for('customers.detail', id=existing.id), error_msg, 'error')
             
             # Validate phone length if provided
             if phone and len(phone) > 20:
-                flash('⚠️ رقم الهاتف طويل جداً (الحد الأقصى 20 رقم)', 'warning')
-                return redirect(url_for('customers.add'))
+                return notify_redirect(url_for('customers.add'), 'رقم الهاتف طويل جداً (الحد الأقصى 20 رقم)', 'warning')
             
             # Create new customer with auto-generated code
             customer = Customer(
@@ -87,7 +85,7 @@ def add():
             # Log action after successful save
             log_action('إضافة عميل جديد', {'id': customer.id, 'name': customer.name})
             
-            flash(f'✅ تم إضافة العميل "{name}" بنجاح', 'success')
+            # flash(f'✅ تم إضافة العميل "{name}" بنجاح', 'success')
             
             # Check if it's an AJAX request
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -97,12 +95,12 @@ def add():
                     'redirect': url_for('customers.index')
                 })
             
-            return redirect(url_for('customers.index'))
+            return notify_redirect(url_for('customers.index'), f'تم إضافة العميل "{name}" بنجاح', 'success')
             
         except Exception as e:
             db.session.rollback()
             error_msg = f'❌ خطأ في إضافة العميل: {str(e)}'
-            flash(error_msg, 'error')
+            # flash(error_msg, 'error')
             
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({'success': False, 'message': error_msg}), 500
@@ -169,13 +167,13 @@ def edit(id):
         customer.notes = request.form.get('notes', '').strip()
         
         if not customer.name:
-            flash('الرجاء إدخال اسم العميل.', 'error')
+            # flash('الرجاء إدخال اسم العميل.', 'error')
             return redirect(url_for('customers.edit', id=id))
         
         log_action('تعديل بيانات عميل', {'id': customer.id, 'name': customer.name})
         db.session.commit()
         
-        flash('تم تحديث بيانات العميل بنجاح.', 'success')
+        # flash('تم تحديث بيانات العميل بنجاح.', 'success')
         return redirect(url_for('customers.detail', id=id))
     
     return render_template('customers/edit.html', customer=customer)
@@ -190,7 +188,7 @@ def delete(id):
         # Check if customer has contracts
         if len(customer.contracts) > 0:
             error_msg = f'لا يمكن حذف العميل "{customer.name}" لوجود {len(customer.contracts)} عقد مرتبط به.'
-            flash(f'❌ {error_msg}', 'error')
+            # flash(f'❌ {error_msg}', 'error')
             return redirect(url_for('customers.index'))
         
         # Check if customer has installments
@@ -201,14 +199,14 @@ def delete(id):
         
         if installments_count > 0:
             error_msg = f'لا يمكن حذف العميل "{customer.name}" لوجود {installments_count} قسط مرتبط به.'
-            flash(f'❌ {error_msg}', 'error')
+            # flash(f'❌ {error_msg}', 'error')
             return redirect(url_for('customers.index'))
         
         # Check if customer has vouchers
         vouchers_count = Voucher.query.filter_by(entity_id=customer.id, entity_type='customer').count()
         if vouchers_count > 0:
             error_msg = f'لا يمكن حذف العميل "{customer.name}" لوجود {vouchers_count} سند مرتبط به.'
-            flash(f'❌ {error_msg}', 'error')
+            # flash(f'❌ {error_msg}', 'error')
             return redirect(url_for('customers.index'))
         
         # Store customer info before deletion
@@ -224,7 +222,7 @@ def delete(id):
         
         success_msg = f'تم حذف العميل "{customer_name}" بنجاح.'
         
-        flash(f'✅ {success_msg}', 'success')
+        # flash(f'✅ {success_msg}', 'success')
         return redirect(url_for('customers.index'))
         
     except Exception as e:
@@ -239,14 +237,9 @@ def delete(id):
         else:
             error_msg = f'حدث خطأ في حذف العميل: {str(e)}'
             
-        flash(f'❌ {error_msg}', 'error')
+        # flash(f'❌ {error_msg}', 'error')
         return redirect(url_for('customers.index'))
 
-@bp.route('/test-delete')
-def test_delete():
-    """صفحة اختبار الحذف"""
-    customers = Customer.query.all()
-    return render_template('customers/test_delete.html', customers=customers)
 
 @bp.route('/search')
 def search():
