@@ -47,7 +47,7 @@
 
 .modal.show,
 .modal-backdrop.show {
-    display: block;
+    display: block !important;
 }
 
 /* Quick Add Styles */
@@ -234,12 +234,14 @@
     
     <!-- Action Buttons -->
     <div class="flex flex-wrap gap-3 mb-6">
-        <button @click="showAddModal = true" class="modern-btn modern-btn-primary action-btn-lg">
+        <button @click="showAddModal = true; console.log('Add modal clicked', showAddModal)" 
+                class="modern-btn modern-btn-primary action-btn-lg">
             <i class="fas fa-user-plus"></i>
             <span>إضافة عميل جديد</span>
         </button>
         
-        <button @click="showBulkModal = true" class="modern-btn modern-btn-success action-btn-lg">
+        <button @click="showBulkModal = true; console.log('Bulk modal clicked', showBulkModal)" 
+                class="modern-btn modern-btn-success action-btn-lg">
             <i class="fas fa-layer-group"></i>
             <span>إضافة قائمة سريعة</span>
         </button>
@@ -263,8 +265,23 @@
     </div>
     
     <!-- Add Customer Modal -->
-    <div class="modal-backdrop" x-show="showAddModal" x-cloak @click="showAddModal = false"></div>
-    <div class="modal" x-show="showAddModal" x-cloak>
+    <div class="modal-backdrop" 
+         x-show="showAddModal" 
+         @click="showAddModal = false"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"></div>
+    <div class="modal" 
+         x-show="showAddModal"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 transform scale-95"
+         x-transition:enter-end="opacity-100 transform scale-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 transform scale-100"
+         x-transition:leave-end="opacity-0 transform scale-95">
         <div class="modal-header">
             <h3 class="text-xl font-bold">إضافة عميل جديد</h3>
             <button @click="showAddModal = false" class="text-gray-400 hover:text-gray-600">
@@ -327,8 +344,23 @@
     </div>
     
     <!-- Bulk Add Modal -->
-    <div class="modal-backdrop" x-show="showBulkModal" x-cloak @click="showBulkModal = false"></div>
-    <div class="modal" x-show="showBulkModal" x-cloak>
+    <div class="modal-backdrop" 
+         x-show="showBulkModal" 
+         @click="showBulkModal = false"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"></div>
+    <div class="modal" 
+         x-show="showBulkModal"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 transform scale-95"
+         x-transition:enter-end="opacity-100 transform scale-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 transform scale-100"
+         x-transition:leave-end="opacity-0 transform scale-95">
         <div class="modal-header">
             <h3 class="text-xl font-bold">إضافة قائمة عملاء</h3>
             <button @click="showBulkModal = false" class="text-gray-400 hover:text-gray-600">
@@ -389,6 +421,11 @@ function customersApp() {
         
         init() {
             console.log('Customers app initialized');
+            console.log('Alpine version:', Alpine.version);
+            console.log('Initial state:', {
+                showAddModal: this.showAddModal,
+                showBulkModal: this.showBulkModal
+            });
         },
         
         // Quick Add
