@@ -300,8 +300,8 @@ def edit(id):
                          contract=contract,
                          brokers=brokers)
 
-@bp.route('/<string:id>/delete', methods=['POST'])
-def delete(id):
+@bp.route('/<string:id>/delete_old', methods=['POST'])
+def delete_old(id):
     try:
         contract = Contract.query.get_or_404(id)
         
