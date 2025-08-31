@@ -424,7 +424,7 @@ def add_ajax():
         name = request.form.get('name', '').strip()
         building = request.form.get('building', '').strip()
         floor = request.form.get('floor', '').strip()
-        price = request.form.get('total_price', '').strip()
+        price = request.form.get('price', request.form.get('total_price', '')).strip()
         
         if not all([name, building, floor, price]):
             return jsonify({'error': 'الرجاء ملء جميع الحقول المطلوبة'}), 400
@@ -440,7 +440,7 @@ def add_ajax():
             area=request.form.get('area', type=float),
             unit_type=request.form.get('unit_type', 'سكني'),
             total_price=float(price),
-            status='available',
+            status='متاحة',
             notes=request.form.get('notes', '').strip() or None
         )
         

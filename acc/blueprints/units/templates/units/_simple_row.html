@@ -1,17 +1,14 @@
 <tr id="row-{{ unit.id }}">
-    <td><span class="code-badge">{{ unit.code }}</span></td>
-    <td class="font-medium">{{ unit.name }}</td>
-    <td class="text-sm text-gray-600">{{ unit.building }}</td>
-    <td class="text-sm text-gray-600">{{ unit.floor }}</td>
+    <td class="font-medium">{{ unit.get_full_name() }}</td>
     <td class="text-sm text-gray-600">{{ unit.area|default('-', true) }} م²</td>
     <td class="font-semibold text-green-600">{{ format_currency(unit.total_price) }}</td>
     <td>
-        {% if unit.status == 'available' %}
+        {% if unit.status == 'متاحة' %}
             <span class="status-badge available">
                 <i class="fas fa-circle text-xs"></i>
                 متاح
             </span>
-        {% elif unit.status == 'sold' %}
+        {% elif unit.status == 'مباعة' %}
             <span class="status-badge sold">
                 <i class="fas fa-circle text-xs"></i>
                 مباع

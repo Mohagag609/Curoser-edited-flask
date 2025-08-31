@@ -38,6 +38,17 @@ class Unit(db.Model):
             parts.append(f"الدور {self.floor}")
         return ' - '.join(parts) if parts else self.code
     
+    def get_full_name(self):
+        """Returns full unit name for display in table"""
+        parts = []
+        if self.name:
+            parts.append(self.name)
+        if self.floor:
+            parts.append(f"الدور {self.floor}")
+        if self.building:
+            parts.append(f"عمارة {self.building}")
+        return ' '.join(parts) if parts else self.code
+    
     def get_total_partners_percentage(self):
         """Calculate total percentage of all partners"""
         return sum(up.percentage for up in self.partners)

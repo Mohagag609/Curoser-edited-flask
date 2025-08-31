@@ -586,9 +586,9 @@
                 <div class="form-group">
                     <label class="form-label">الحالة</label>
                     <select id="edit-status" name="status" class="form-input">
-                        <option value="available">متاح</option>
-                        <option value="sold">مباع</option>
-                        <option value="reserved">محجوز</option>
+                        <option value="متاحة">متاح</option>
+                        <option value="مباعة">مباع</option>
+                        <option value="محجوزة">محجوز</option>
                     </select>
                 </div>
             </div>
@@ -627,11 +627,11 @@
             <div class="form-group">
                 <label class="form-label">قائمة الوحدات</label>
                 <textarea name="units" class="list-textarea" 
-                          placeholder="اكتب بيانات كل وحدة في سطر بالشكل التالي:&#10;اسم الوحدة, المبنى, الدور, السعر&#10;&#10;مثال:&#10;شقة 101, A, 1, 500000&#10;شقة 102, A, 1, 550000&#10;شقة 201, A, 2, 600000" 
+                          placeholder="اكتب بيانات كل وحدة في سطر بالشكل التالي:&#10;اسم الوحدة, الدور, المبنى, السعر&#10;&#10;مثال:&#10;شقة 101, 1, A, 500000&#10;شقة 102, 1, A, 550000&#10;شقة 201, 2, A, 600000" 
                           required></textarea>
                 <p class="list-help">
                     <i class="fas fa-info-circle"></i>
-                    اكتب بيانات كل وحدة في سطر منفصل
+                    اكتب بيانات كل وحدة في سطر منفصل (اسم الوحدة، الدور، المبنى، السعر)
                 </p>
             </div>
             
@@ -653,9 +653,9 @@
     {% set search_placeholder = 'البحث بالاسم، المبنى، الدور...' %}
     {% set filter_options = [
         {'value': '', 'label': 'جميع الحالات'},
-        {'value': 'available', 'label': 'متاح'},
-        {'value': 'sold', 'label': 'مباع'},
-        {'value': 'reserved', 'label': 'محجوز'}
+        {'value': 'متاحة', 'label': 'متاح'},
+        {'value': 'مباعة', 'label': 'مباع'},
+        {'value': 'محجوزة', 'label': 'محجوز'}
     ] %}
     {% set filter_name = 'status' %}
     {% set filter_label = 'الحالة' %}
@@ -667,10 +667,7 @@
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>الكود</th>
                         <th>الوحدة</th>
-                        <th>المبنى</th>
-                        <th>الدور</th>
                         <th>المساحة</th>
                         <th>السعر</th>
                         <th>الحالة</th>
@@ -682,10 +679,7 @@
                     {% for item in units_data %}
                     {% set unit = item.unit %}
                     <tr id="row-{{ unit.id }}">
-                        <td><span class="code-badge">{{ unit.code }}</span></td>
-                        <td class="font-medium">{{ unit.name }}</td>
-                        <td class="text-sm text-gray-600">{{ unit.building }}</td>
-                        <td class="text-sm text-gray-600">{{ unit.floor }}</td>
+                        <td class="font-medium">{{ unit.get_full_name() }}</td>
                         <td class="text-sm text-gray-600">{{ unit.area|default('-', true) }} م²</td>
                         <td class="font-semibold text-green-600">{{ format_currency(unit.total_price) }}</td>
                         <td>
@@ -890,8 +884,8 @@ async function addUnitList(event) {
         
         const formData = new FormData();
         formData.append('name', parts[0]);
-        formData.append('building', parts[1]);
-        formData.append('floor', parts[2]);
+        formData.append('floor', parts[1]);
+        formData.append('building', parts[2]);
         formData.append('total_price', parts[3]);
         
         try {
