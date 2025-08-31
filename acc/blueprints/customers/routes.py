@@ -28,7 +28,7 @@ def index():
     query = query.order_by(Customer.code.asc())
     pagination = Pagination(query, page)
     
-    return render_template('customers/index_ultimate.html',
+    return render_template('customers/index_final.html',
                          customers=pagination.items,
                          pagination=pagination,
                          q=q)
@@ -276,11 +276,11 @@ def search():
     # Check if AJAX/HTMX request
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('HX-Request'):
         # Return only the table rows
-        return render_template('customers/_table_rows.html',
+        return render_template('customers/_search_results.html',
                              customers=pagination.items)
     
     # Otherwise return full page
-    return render_template('customers/index_ultimate.html',
+    return render_template('customers/index_final.html',
                          customers=pagination.items,
                          pagination=pagination,
                          q=q,
@@ -319,7 +319,7 @@ def add_ajax():
         log_action('إضافة عميل جديد', {'id': customer.id, 'name': customer.name})
         
         # Return the new row HTML
-        return render_template('customers/_ultimate_row.html', customer=customer), 200
+        return render_template('customers/_final_row.html', customer=customer), 200
         
     except Exception as e:
         db.session.rollback()
@@ -353,7 +353,7 @@ def update_ajax(id):
         log_action('تعديل بيانات عميل', {'id': customer.id, 'name': customer.name})
         
         # Return updated row
-        return render_template('customers/_ultimate_row.html', customer=customer), 200
+        return render_template('customers/_final_row.html', customer=customer), 200
         
     except Exception as e:
         db.session.rollback()
