@@ -73,8 +73,8 @@
                             onchange="updateUnitPrice()">
                         <option value="">اختر الوحدة</option>
                         {% for unit in units %}
-                        <option value="{{ unit.id }}" data-price="{{ unit.price }}">
-                            {{ unit.code }} - {{ unit.name }} - {{ format_currency(unit.price) }}
+                        <option value="{{ unit.id }}" data-price="{{ unit.total_price }}">
+                            {{ unit.code }} - {{ unit.name }} - {{ format_currency(unit.total_price) }}
                         </option>
                         {% endfor %}
                     </select>
