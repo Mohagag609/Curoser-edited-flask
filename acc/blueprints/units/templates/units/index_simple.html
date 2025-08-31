@@ -679,7 +679,11 @@
                     {% for item in units_data %}
                     {% set unit = item.unit %}
                     <tr id="row-{{ unit.id }}">
-                        <td class="font-medium">{{ unit.get_full_name() }}</td>
+                        <td class="font-medium">
+                            {% if unit.name %}{{ unit.name }}{% endif %}
+                            {% if unit.floor %} الدور {{ unit.floor }}{% endif %}
+                            {% if unit.building %} عمارة {{ unit.building }}{% endif %}
+                        </td>
                         <td class="text-sm text-gray-600">{{ unit.area|default('-', true) }} م²</td>
                         <td class="font-semibold text-green-600">{{ format_currency(unit.total_price) }}</td>
                         <td>
