@@ -327,6 +327,11 @@ def add_ajax():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+@bp.route('/add-modal')
+def add_modal():
+    """عرض نموذج الإضافة في Modal"""
+    return render_template('customers/_add_modal.html')
+
 @bp.route('/<string:id>/edit-modal')
 def edit_modal(id):
     """عرض نموذج التعديل في Modal"""
