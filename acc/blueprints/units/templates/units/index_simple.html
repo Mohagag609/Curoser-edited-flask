@@ -514,6 +514,13 @@
                     <label class="form-label">السعر الإجمالي <span class="text-red-500">*</span></label>
                     <input type="number" name="total_price" class="form-input" required>
                 </div>
+                
+                <div class="form-group">
+                    <label class="form-label">مجموعة الشركاء</label>
+                    <select name="partner_group_id" class="form-input" id="partner-group-select">
+                        <option value="">-- اختر مجموعة شركاء --</option>
+                    </select>
+                </div>
             </div>
             
             <div class="form-group mt-4">
@@ -745,6 +752,30 @@
 </div>
 
 <script>
+// Load Partner Groups
+async function loadPartnerGroups() {
+    try {
+        const response = await fetch('/api/partner-groups');
+        if (response.ok) {
+            const groups = await response.json();
+            const select = document.getElementById('partner-group-select');
+            
+            // Clear existing options except first
+            select.innerHTML = '<option value="">-- اختر مجموعة شركاء --</option>';
+            
+            // Add groups
+            groups.forEach(group => {
+                const option = document.createElement('option');
+                option.value = group.id;
+                option.textContent = `${group.name} (${group.total_percentage}%)`;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading partner groups:', error);
+    }
+}
+
 // Toggle Forms
 function toggleForm(type) {
     const singleForm = document.getElementById('single-form');
@@ -759,6 +790,7 @@ function toggleForm(type) {
     // Show requested form
     if (type === 'single') {
         singleForm.classList.remove('form-section-hidden');
+        loadPartnerGroups(); // Load groups when showing form
     } else if (type === 'list') {
         listForm.classList.remove('form-section-hidden');
     } else if (type === 'edit') {

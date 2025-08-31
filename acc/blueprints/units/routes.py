@@ -444,15 +444,38 @@ def add_ajax():
         )
         
         db.session.add(unit)
+        db.session.flush()  # To get the unit ID
+        
+        # Add partner group members if specified
+        partner_group_id = request.form.get('partner_group_id')
+        if partner_group_id:
+            partner_group = PartnerGroup.query.get(partner_group_id)
+            if partner_group:
+                for member in partner_group.members:
+                    unit_partner = UnitPartner(
+                        id=generate_uid('UP'),
+                        unit_id=unit.id,
+                        partner_id=member.partner_id,
+                        percentage=member.percentage
+                    )
+                    db.session.add(unit_partner)
+        
         db.session.commit()
         
         log_action('إضافة وحدة جديدة', {'id': unit.id, 'name': unit.name})
         
+        # Get partners for display
+        partners = []
+        for up in unit.partners:
+            partner = Partner.query.get(up.partner_id)
+            if partner:
+                partners.append(f"{partner.name} ({up.percentage}%)")
+        partners_str = ', '.join(partners) if partners else 'لا يوجد شركاء'
+        
         # Return the new row HTML
-        partners = 'لا يوجد شركاء'
         return render_template('units/_simple_row.html', 
                              unit=unit, 
-                             partners=partners,
+                             partners=partners_str,
                              format_currency=format_currency), 200
         
     except Exception as e:

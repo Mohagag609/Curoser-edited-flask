@@ -109,6 +109,9 @@ def create_app(config_class=Config):
     from acc.blueprints.transfers import bp as transfers_bp
     app.register_blueprint(transfers_bp, url_prefix='/transfers')
     
+    from acc.api import api
+    app.register_blueprint(api)
+    
     # Register context processors
     from acc.context_processors import inject_global_vars
     app.context_processor(inject_global_vars)
