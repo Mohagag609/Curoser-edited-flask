@@ -62,12 +62,12 @@
  
  <!-- Action Buttons -->
  <div class="flex flex-wrap gap-2 mb-6">
- <a href="{{ url_for('contracts.add') }}" class="modern-btn modern-btn-primary">
+ <a href="{{ url_for('contracts.add') }}" class="modern-btn modern-btn-primary" style="display: inline-flex !important; align-items: center !important; gap: 0.5rem !important; padding: 0.5rem 1rem !important; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important; color: white !important; border-radius: 0.375rem !important; text-decoration: none !important; font-weight: 500 !important;">
  <i class="fas fa-plus-circle"></i>
  <span>إضافة عقد جديد</span>
  </a>
 
- <a href="{{ url_for('installments.index') }}" class="modern-btn modern-btn-secondary">
+ <a href="{{ url_for('installments.index') }}" class="modern-btn modern-btn-secondary" style="display: inline-flex !important; align-items: center !important; gap: 0.5rem !important; padding: 0.5rem 1rem !important; background: white !important; color: #4b5563 !important; border: 1px solid #e5e7eb !important; border-radius: 0.375rem !important; text-decoration: none !important; font-weight: 500 !important;">
  <i class="fas fa-money-bill-wave"></i>
  <span>الأقساط</span>
  </a>
@@ -93,7 +93,7 @@
 </div>
 
 <!-- Floating Action Button -->
-<a href="{{ url_for('contracts.add') }}" class="modern-fab">
+<a href="{{ url_for('contracts.add') }}" class="modern-fab" style="position: fixed !important; bottom: 2rem !important; left: 2rem !important; width: 3.5rem !important; height: 3.5rem !important; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important; color: white !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important; text-decoration: none !important; z-index: 50 !important;">
  <i class="fas fa-plus text-xl"></i>
 </a>
 {% endblock %}
