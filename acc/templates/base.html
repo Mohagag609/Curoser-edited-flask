@@ -41,6 +41,10 @@
     <!-- Alpine.js -->
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
+    <!-- Notyf for notifications -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+    
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
@@ -86,6 +90,37 @@
         
         ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
+        }
+        
+        /* HTMX animations */
+        .htmx-swapping {
+            opacity: 0;
+            transition: opacity 0.3s ease-out;
+        }
+        
+        .htmx-settling {
+            opacity: 1;
+            transition: opacity 0.3s ease-in;
+        }
+        
+        /* Delete animation */
+        tr.htmx-swapping {
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: all 0.3s ease-out;
+        }
+        
+        /* Loading spinner */
+        .htmx-indicator {
+            display: none;
+        }
+        
+        .htmx-request .htmx-indicator {
+            display: inline-block;
+        }
+        
+        .htmx-request.htmx-indicator {
+            display: inline-block;
         }
         
         /* Form Styles */
@@ -599,6 +634,113 @@
     
     <!-- Advanced Search JS -->
     <script src="{{ url_for('static', filename='js/advanced-search.js') }}"></script>
+    
+    <!-- Notification System -->
+    <script>
+        // Initialize Notyf
+        const notyf = new Notyf({
+            duration: 3000,
+            position: {
+                x: 'left',
+                y: 'top',
+            },
+            types: [
+                {
+                    type: 'success',
+                    background: '#10b981',
+                    icon: {
+                        className: 'fas fa-check-circle',
+                        tagName: 'i',
+                        color: '#fff'
+                    }
+                },
+                {
+                    type: 'error',
+                    background: '#ef4444',
+                    icon: {
+                        className: 'fas fa-times-circle',
+                        tagName: 'i',
+                        color: '#fff'
+                    }
+                },
+                {
+                    type: 'info',
+                    background: '#3b82f6',
+                    icon: {
+                        className: 'fas fa-info-circle',
+                        tagName: 'i',
+                        color: '#fff'
+                    }
+                },
+                {
+                    type: 'warning',
+                    background: '#f59e0b',
+                    icon: {
+                        className: 'fas fa-exclamation-triangle',
+                        tagName: 'i',
+                        color: '#fff'
+                    }
+                }
+            ]
+        });
+        
+        // Helper functions for notifications
+        window.showSuccess = function(message) {
+            notyf.success(message);
+        };
+        
+        window.showError = function(message) {
+            notyf.error(message);
+        };
+        
+        window.showInfo = function(message) {
+            notyf.open({
+                type: 'info',
+                message: message
+            });
+        };
+        
+        window.showWarning = function(message) {
+            notyf.open({
+                type: 'warning',
+                message: message
+            });
+        };
+        
+        // Listen for HTMX events
+        document.body.addEventListener('htmx:afterRequest', function(event) {
+            // Check for success header
+            const successMessage = event.detail.xhr.getResponseHeader('X-Success-Message');
+            if (successMessage) {
+                showSuccess(successMessage);
+            }
+            
+            // Check for error header
+            const errorMessage = event.detail.xhr.getResponseHeader('X-Error-Message');
+            if (errorMessage) {
+                showError(errorMessage);
+            }
+        });
+        
+        // Show flash messages
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                document.addEventListener('DOMContentLoaded', function() {
+                    {% for category, message in messages %}
+                        {% if category == 'error' %}
+                            showError('{{ message|e }}');
+                        {% elif category == 'success' %}
+                            showSuccess('{{ message|e }}');
+                        {% elif category == 'warning' %}
+                            showWarning('{{ message|e }}');
+                        {% else %}
+                            showInfo('{{ message|e }}');
+                        {% endif %}
+                    {% endfor %}
+                });
+            {% endif %}
+        {% endwith %}
+    </script>
     
     <!-- Convert Flask messages to toasts -->
     {# Toast notifications disabled as per user request

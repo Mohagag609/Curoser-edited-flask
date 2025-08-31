@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify
+from flask import render_template, request, redirect, url_for, flash, jsonify, make_response
 from acc.blueprints.customers import bp
 from acc.extensions import db
 from acc.models import Customer, Contract, Voucher, Installment
@@ -23,7 +23,8 @@ def index():
             )
         )
     
-    query = query.order_by(Customer.name)
+    # ترتيب من الأقدم للأحدث (الكود الأصغر أولاً)
+    query = query.order_by(Customer.code.asc())
     pagination = Pagination(query, page)
     
     return render_template('customers/index.html', 
@@ -207,11 +208,10 @@ def delete(id):
         
         success_msg = f'تم حذف العميل "{customer_name}" بنجاح.'
         
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({
-                'success': True, 
-                'message': f'✅ {success_msg}'
-            })
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('HX-Request'):
+            response = make_response('', 200)
+            response.headers['X-Success-Message'] = success_msg
+            return response
         
         flash(f'✅ {success_msg}', 'success')
         return redirect(url_for('customers.index'))
@@ -252,8 +252,8 @@ def search():
     if status:
         query = query.filter(Customer.status == status)
     
-    # Order by
-    query = query.order_by(Customer.created_at.desc())
+    # Order by - من الأقدم للأحدث
+    query = query.order_by(Customer.code.asc())
     
     # Pagination
     pagination = Pagination(query, page, per_page=20)

@@ -114,11 +114,6 @@
                 <i class="fas fa-paste"></i>
                 <span>لصق قائمة</span>
             </button>
-            
-            <a href="{{ url_for('io.resource_page', resource='customers') }}" class="modern-btn modern-btn-secondary">
-                <i class="fas fa-file-import"></i>
-                <span>استيراد/تصدير</span>
-            </a>
 
         </div>
  
@@ -142,9 +137,9 @@
  <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الحالة</th>
  <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الإجراءات</th>
  </tr>
- </thead>
- <tbody class="bg-white divide-y divide-gray-200">
- {% for customer in customers %}
+                 </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="customers-table-body">
+                    {% for customer in customers %}
  <tr class="hover:bg-gray-50 transition-colors duration-200">
  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
  <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded-md">{{ customer.code }}</span>
@@ -183,15 +178,16 @@
  <i class="fas fa-edit"></i>
  <span>تعديل</span>
  </a>
- <button type="button"
- data-confirm-delete="true"
- data-delete-url="{{ url_for('customers.delete', id=customer.id) }}"
- data-confirm-message="هل أنت متأكد من حذف العميل '{{ customer.name }}'؟"
- data-remove-element="tr"
- class="modern-btn modern-btn-delete modern-btn-sm">
- <i class="fas fa-trash"></i>
- <span>حذف</span>
- </button>
+                         <button type="button"
+                                hx-delete="{{ url_for('customers.delete', id=customer.id) }}"
+                                hx-confirm="هل أنت متأكد من حذف العميل '{{ customer.name }}'؟"
+                                hx-target="closest tr"
+                                hx-swap="outerHTML swap:0.5s"
+                                class="modern-btn modern-btn-delete modern-btn-sm">
+                            <i class="fas fa-trash htmx-indicator"></i>
+                            <i class="fas fa-spinner fa-spin htmx-indicator" style="display:none;"></i>
+                            <span>حذف</span>
+                        </button>
  </div>
  </td>
  </tr>
