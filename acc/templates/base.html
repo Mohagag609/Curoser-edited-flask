@@ -73,6 +73,120 @@
             transition: none !important;
             animation: none !important;
         }
+        
+        /* Modern Button Styles */
+        .modern-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 0.5rem;
+            transition: all 0.15s ease;
+            cursor: pointer;
+            text-decoration: none;
+            border: 1px solid transparent;
+        }
+        
+        .modern-btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.8125rem;
+        }
+        
+        .modern-btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.15);
+        }
+        
+        .modern-btn-primary:hover {
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2);
+            transform: translateY(-1px);
+        }
+        
+        .modern-btn-secondary {
+            background: white;
+            color: #4b5563;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .modern-btn-secondary:hover {
+            background: #f9fafb;
+        }
+        
+        .modern-btn-view {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .modern-btn-view:hover {
+            background: #bfdbfe;
+        }
+        
+        .modern-btn-edit {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .modern-btn-edit:hover {
+            background: #fde68a;
+        }
+        
+        .modern-btn-delete {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .modern-btn-delete:hover {
+            background: #fecaca;
+        }
+        
+        .modern-btn-back {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        
+        .modern-btn-back:hover {
+            background: #e5e7eb;
+        }
+        
+        .modern-btn-group {
+            display: flex;
+            gap: 0.375rem;
+        }
+        
+        /* Modern FAB */
+        .modern-fab {
+            position: fixed;
+            bottom: 2rem;
+            left: 2rem;
+            width: 3.5rem;
+            height: 3.5rem;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.15s ease;
+            text-decoration: none;
+        }
+        
+        .modern-fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Card Transition */
+        .card-transition {
+            transition: all 0.2s ease;
+        }
+        
+        .card-transition:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
         body {
             font-family: 'Tajawal', sans-serif;
             direction: rtl;

@@ -28,7 +28,7 @@ def index():
     query = query.order_by(Customer.code.asc())
     pagination = Pagination(query, page)
     
-    return render_template('customers/index_final.html',
+    return render_template('customers/index_modern.html',
                          customers=pagination.items,
                          pagination=pagination,
                          q=q)
@@ -276,11 +276,12 @@ def search():
     # Check if AJAX/HTMX request
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('HX-Request'):
         # Return only the table rows
-        return render_template('customers/_search_results.html',
-                             customers=pagination.items)
+        return render_template('customers/_results.html',
+                             customers=pagination.items,
+                             pagination=pagination)
     
     # Otherwise return full page
-    return render_template('customers/index_final.html',
+    return render_template('customers/index_modern.html',
                          customers=pagination.items,
                          pagination=pagination,
                          q=q,
