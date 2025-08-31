@@ -643,7 +643,7 @@
                                 <i class="fas fa-edit"></i>
                                 تعديل
                             </button>
-                            <button onclick="deleteContract('{{ contract.id }}', {{ contract.installments|length > 0 }})" 
+                            <button onclick="deleteContract('{{ contract.id }}', {% if contract.installments %}{{ contract.installments.count() > 0 }}{% else %}false{% endif %})" 
                                     class="btn-action btn-delete">
                                 <i class="fas fa-trash"></i>
                                 حذف

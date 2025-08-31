@@ -14,12 +14,15 @@ def index():
     q = request.args.get('q', '')
     status = request.args.get('status', '')
     
-    query = Contract.query.filter_by(project_id=g.project.id)
+    # Always join with customer and unit for display
+    query = Contract.query.filter_by(project_id=g.project.id)\
+                          .outerjoin(Customer)\
+                          .outerjoin(Unit)
     
     # Text search
     if q:
         search_term = f'%{q}%'
-        query = query.outerjoin(Customer).outerjoin(Unit).filter(
+        query = query.filter(
             or_(
                 Contract.code.ilike(search_term),
                 Customer.name.ilike(search_term),
