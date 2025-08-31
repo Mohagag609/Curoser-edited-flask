@@ -1,0 +1,759 @@
+{% extends "base.html" %}
+
+{% block title %}العملاء{% endblock %}
+{% block page_title %}إدارة العملاء{% endblock %}
+
+{% block extra_head %}
+<style>
+/* إزالة كل التأثيرات */
+* {
+    transition: background-color 0.2s ease !important;
+    animation: none !important;
+}
+
+/* الحاوية الرئيسية */
+.main-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* البطاقات */
+.card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.card-body {
+    padding: 24px;
+}
+
+/* الأزرار الاحترافية */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+}
+
+.btn-info {
+    background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+    color: white;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+    color: white;
+}
+
+.btn-light {
+    background: #f8f9fa;
+    color: #495057;
+    border: 1px solid #dee2e6;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+/* الجدول المحسن */
+.table-container {
+    overflow: hidden;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+}
+
+.modern-table {
+    width: 100%;
+    background: white;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.modern-table thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.modern-table thead th {
+    padding: 18px;
+    text-align: right;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none;
+}
+
+.modern-table tbody tr {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.modern-table tbody tr:nth-child(even) {
+    background-color: #fafbfc;
+}
+
+.modern-table tbody tr:hover {
+    background-color: #f0f7ff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.modern-table td {
+    padding: 16px 18px;
+    font-size: 14px;
+    color: #2c3e50;
+    vertical-align: middle;
+}
+
+/* كود العميل */
+.customer-code {
+    display: inline-block;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+}
+
+/* معلومات العميل */
+.customer-info {
+    line-height: 1.5;
+}
+
+.customer-name {
+    font-weight: 700;
+    color: #2c3e50;
+    font-size: 15px;
+}
+
+.customer-id {
+    font-size: 12px;
+    color: #7f8c8d;
+    margin-top: 2px;
+}
+
+/* رقم الهاتف */
+.phone-number {
+    font-family: 'Courier New', monospace;
+    background: #f8f9fa;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #495057;
+}
+
+/* الحالة */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-active {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-inactive {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* أزرار الإجراءات */
+.action-buttons {
+    display: flex;
+    gap: 6px;
+}
+
+/* الفلاتر المحسنة */
+.filters-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.filter-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.filter-input {
+    padding: 10px 14px;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    font-size: 14px;
+    outline: none;
+}
+
+.filter-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* شريط البحث المحسن */
+.search-box {
+    position: relative;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px 16px 12px 45px;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    font-size: 14px;
+    outline: none;
+}
+
+.search-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.search-icon {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #adb5bd;
+}
+
+/* النماذج المحسنة */
+.form-section {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.form-control {
+    padding: 10px 14px;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    font-size: 14px;
+    outline: none;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* الإشعارات المحسنة */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 16px 24px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 300px;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.notification.success {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+}
+
+.notification.error {
+    background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+    color: white;
+}
+
+/* حالة فارغة */
+.empty-state {
+    text-align: center;
+    padding: 80px 20px;
+}
+
+.empty-icon {
+    font-size: 64px;
+    color: #dee2e6;
+    margin-bottom: 20px;
+}
+
+.empty-title {
+    font-size: 20px;
+    color: #495057;
+    margin-bottom: 8px;
+}
+
+.empty-text {
+    color: #6c757d;
+    margin-bottom: 24px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-container" x-data="{
+    activeForm: null,
+    filters: {
+        status: '',
+        search: ''
+    },
+    quickName: '',
+    bulkNames: '',
+    toggleForm(form) {
+        this.activeForm = this.activeForm === form ? null : form;
+    }
+}">
+
+    <!-- شريط الأدوات -->
+    <div class="card">
+        <div class="card-body">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                <!-- الأزرار -->
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <button @click="toggleForm('full')" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i>
+                        إضافة عميل
+                    </button>
+                    
+                    <button @click="toggleForm('quick')" class="btn btn-success">
+                        <i class="fas fa-bolt"></i>
+                        إضافة سريعة
+                    </button>
+                    
+                    <button @click="toggleForm('bulk')" class="btn btn-info">
+                        <i class="fas fa-layer-group"></i>
+                        إضافة متعددة
+                    </button>
+                </div>
+                
+                <!-- إحصائيات سريعة -->
+                <div style="display: flex; gap: 20px;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 24px; font-weight: 700; color: #667eea;">{{ customers|length }}</div>
+                        <div style="font-size: 12px; color: #6c757d;">إجمالي العملاء</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 24px; font-weight: 700; color: #38ef7d;">
+                            {{ customers|selectattr('status', 'equalto', 'نشط')|list|length }}
+                        </div>
+                        <div style="font-size: 12px; color: #6c757d;">عملاء نشطون</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- الفلاتر -->
+    <div class="card">
+        <div class="card-body">
+            <h4 style="margin: 0 0 20px 0; font-size: 16px; font-weight: 700; color: #2c3e50;">
+                <i class="fas fa-filter" style="color: #667eea; margin-left: 8px;"></i>
+                البحث والفلاتر
+            </h4>
+            
+            <div class="filters-section">
+                <!-- البحث -->
+                <div class="filter-group" style="grid-column: span 2;">
+                    <label class="filter-label">البحث</label>
+                    <div class="search-box">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" 
+                               class="search-input"
+                               placeholder="ابحث بالاسم، الهاتف، الرقم القومي..."
+                               hx-get="{{ url_for('customers.search') }}"
+                               hx-trigger="keyup changed delay:300ms"
+                               hx-target="#customers-tbody"
+                               hx-swap="innerHTML"
+                               name="q"
+                               x-model="filters.search">
+                    </div>
+                </div>
+                
+                <!-- فلتر الحالة -->
+                <div class="filter-group">
+                    <label class="filter-label">الحالة</label>
+                    <select class="filter-input"
+                            hx-get="{{ url_for('customers.search') }}"
+                            hx-trigger="change"
+                            hx-target="#customers-tbody"
+                            hx-include="[name='q']"
+                            name="status"
+                            x-model="filters.status">
+                        <option value="">جميع الحالات</option>
+                        <option value="نشط">نشط فقط</option>
+                        <option value="معلق">معلق فقط</option>
+                    </select>
+                </div>
+                
+                <!-- زر إعادة تعيين -->
+                <div class="filter-group" style="align-self: flex-end;">
+                    <button @click="filters = {status: '', search: ''}; htmx.trigger('#customers-tbody', 'refresh')" 
+                            class="btn btn-light">
+                        <i class="fas fa-redo"></i>
+                        إعادة تعيين
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- نموذج إضافة كامل -->
+    <div x-show="activeForm === 'full'" x-cloak class="form-section">
+        <h3 style="margin: 0 0 20px 0; font-size: 18px; font-weight: 700; color: #2c3e50;">
+            <i class="fas fa-user-plus" style="color: #667eea; margin-left: 8px;"></i>
+            إضافة عميل جديد
+        </h3>
+        
+        <form hx-post="{{ url_for('customers.add_ajax') }}" 
+              hx-target="#customers-tbody" 
+              hx-swap="afterbegin"
+              hx-on::after-request="if(event.detail.successful) { 
+                  this.reset(); 
+                  Alpine.data().activeForm = null;
+                  showNotification('تم إضافة العميل بنجاح', 'success');
+              }">
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">الاسم الكامل <span style="color: #eb3349;">*</span></label>
+                    <input type="text" name="name" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">رقم الهاتف</label>
+                    <input type="tel" name="phone" class="form-control" dir="ltr">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">الرقم القومي</label>
+                    <input type="text" name="national_id" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">العنوان</label>
+                    <input type="text" name="address" class="form-control">
+                </div>
+            </div>
+            
+            <div class="form-group" style="margin-top: 16px;">
+                <label class="form-label">ملاحظات</label>
+                <textarea name="notes" class="form-control" rows="3"></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    حفظ البيانات
+                </button>
+                <button type="button" @click="activeForm = null" class="btn btn-light">
+                    <i class="fas fa-times"></i>
+                    إلغاء
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- إضافة سريعة -->
+    <div x-show="activeForm === 'quick'" x-cloak class="form-section">
+        <h3 style="margin: 0 0 20px 0; font-size: 18px; font-weight: 700; color: #2c3e50;">
+            <i class="fas fa-bolt" style="color: #38ef7d; margin-left: 8px;"></i>
+            إضافة سريعة
+        </h3>
+        
+        <form hx-post="{{ url_for('customers.add_ajax') }}" 
+              hx-target="#customers-tbody" 
+              hx-swap="afterbegin"
+              hx-on::after-request="if(event.detail.successful) { 
+                  quickName = ''; 
+                  showNotification('تم إضافة العميل بنجاح', 'success');
+              }">
+            <div style="display: flex; gap: 12px;">
+                <input type="text" 
+                       name="name" 
+                       x-model="quickName" 
+                       placeholder="اكتب اسم العميل ثم اضغط Enter"
+                       class="form-control"
+                       style="flex: 1;"
+                       required
+                       autofocus>
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-check"></i>
+                    إضافة
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- الجدول المحسن -->
+    <div class="table-container">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th style="width: 100px;">الكود</th>
+                    <th>معلومات العميل</th>
+                    <th style="width: 150px;">الهاتف</th>
+                    <th>العنوان</th>
+                    <th style="width: 100px;">الحالة</th>
+                    <th style="width: 200px;">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody id="customers-tbody">
+                {% for customer in customers %}
+                <tr id="customer-row-{{ customer.id }}">
+                    <td>
+                        <span class="customer-code">{{ customer.code }}</span>
+                    </td>
+                    <td>
+                        <div class="customer-info">
+                            <div class="customer-name">{{ customer.name }}</div>
+                            {% if customer.national_id %}
+                            <div class="customer-id">الرقم القومي: {{ customer.national_id }}</div>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        {% if customer.phone %}
+                        <span class="phone-number" dir="ltr">{{ customer.phone }}</span>
+                        {% else %}
+                        <span style="color: #adb5bd;">-</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ customer.address or '-' }}</td>
+                    <td>
+                        {% if customer.status == 'نشط' %}
+                            <span class="status-badge status-active">
+                                <i class="fas fa-check-circle"></i>
+                                نشط
+                            </span>
+                        {% else %}
+                            <span class="status-badge status-inactive">
+                                <i class="fas fa-pause-circle"></i>
+                                معلق
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="{{ url_for('customers.detail', id=customer.id) }}" 
+                               class="btn btn-sm btn-light">
+                                <i class="fas fa-eye"></i>
+                                عرض
+                            </a>
+                            <a href="{{ url_for('customers.edit', id=customer.id) }}" 
+                               class="btn btn-sm btn-light">
+                                <i class="fas fa-edit"></i>
+                                تعديل
+                            </a>
+                            <button onclick="confirmDelete('{{ customer.id }}', '{{ customer.name }}')"
+                                    class="btn btn-sm btn-danger">
+                                <i class="fas fa-trash"></i>
+                                حذف
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h3 class="empty-title">لا يوجد عملاء حتى الآن</h3>
+                        <p class="empty-text">ابدأ بإضافة عميلك الأول</p>
+                        <button @click="activeForm = 'full'" class="btn btn-primary">
+                            <i class="fas fa-user-plus"></i>
+                            إضافة أول عميل
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ترقيم الصفحات -->
+    {% if pagination and pagination.pages > 1 %}
+    <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 24px;">
+        {% if pagination.has_prev %}
+        <a href="{{ url_for('customers.index', page=1, q=request.args.get('q')) }}" 
+           class="btn btn-sm btn-light">
+            <i class="fas fa-angle-double-right"></i>
+        </a>
+        <a href="{{ url_for('customers.index', page=pagination.prev_num, q=request.args.get('q')) }}" 
+           class="btn btn-sm btn-light">
+            <i class="fas fa-angle-right"></i>
+        </a>
+        {% endif %}
+        
+        <span style="padding: 0 20px; font-size: 14px; color: #495057;">
+            صفحة <strong>{{ pagination.page }}</strong> من <strong>{{ pagination.pages }}</strong>
+        </span>
+        
+        {% if pagination.has_next %}
+        <a href="{{ url_for('customers.index', page=pagination.next_num, q=request.args.get('q')) }}" 
+           class="btn btn-sm btn-light">
+            <i class="fas fa-angle-left"></i>
+        </a>
+        <a href="{{ url_for('customers.index', page=pagination.pages, q=request.args.get('q')) }}" 
+           class="btn btn-sm btn-light">
+            <i class="fas fa-angle-double-left"></i>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+</div>
+
+<script>
+// نظام إشعارات محسن
+function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-times-circle';
+    
+    notification.innerHTML = `
+        <i class="fas ${icon}"></i>
+        <span>${message}</span>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease-in';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// دالة حذف محسنة
+function confirmDelete(id, name) {
+    if (confirm(`هل أنت متأكد من حذف العميل "${name}"؟`)) {
+        // إظهار رسالة انتظار
+        const row = document.getElementById(`customer-row-${id}`);
+        row.style.opacity = '0.5';
+        
+        fetch(`/customers/${id}/delete-ajax`, {
+            method: 'DELETE',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                // حذف الصف بحركة ناعمة
+                row.style.transition = 'all 0.3s ease';
+                row.style.transform = 'translateX(-100%)';
+                row.style.opacity = '0';
+                setTimeout(() => {
+                    row.remove();
+                    showNotification('تم حذف العميل بنجاح', 'success');
+                    
+                    // تحديث العدد
+                    updateCounts();
+                }, 300);
+            } else {
+                row.style.opacity = '1';
+                showNotification('لا يمكن حذف العميل - قد يكون مرتبط ببيانات أخرى', 'error');
+            }
+        })
+        .catch(error => {
+            row.style.opacity = '1';
+            showNotification('حدث خطأ أثناء الحذف', 'error');
+        });
+    }
+}
+
+// تحديث الإحصائيات
+function updateCounts() {
+    const totalRows = document.querySelectorAll('#customers-tbody tr').length;
+    const activeRows = document.querySelectorAll('#customers-tbody .status-active').length;
+    
+    // تحديث العرض إذا وجد
+}
+
+// تحسين الأداء
+document.addEventListener('DOMContentLoaded', function() {
+    // إزالة أي عناصر تحميل
+    document.body.style.opacity = '1';
+    document.body.style.visibility = 'visible';
+});
+</script>
+
+<style>
+@keyframes slideOut {
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+</style>
+{% endblock %}

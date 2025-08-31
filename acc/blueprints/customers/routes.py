@@ -28,7 +28,7 @@ def index():
     query = query.order_by(Customer.code.asc())
     pagination = Pagination(query, page)
     
-    return render_template('customers/index_pro.html',
+    return render_template('customers/index_ultimate.html',
                          customers=pagination.items,
                          pagination=pagination,
                          q=q)
@@ -280,7 +280,7 @@ def search():
                              customers=pagination.items)
     
     # Otherwise return full page
-    return render_template('customers/index_pro.html',
+    return render_template('customers/index_ultimate.html',
                          customers=pagination.items,
                          pagination=pagination,
                          q=q,
@@ -319,9 +319,7 @@ def add_ajax():
         log_action('إضافة عميل جديد', {'id': customer.id, 'name': customer.name})
         
         # Return the new row HTML
-        return render_template('customers/_pro_row.html', customer=customer), 200, {
-            'HX-Trigger': 'customerAdded'
-        }
+        return render_template('customers/_ultimate_row.html', customer=customer), 200
         
     except Exception as e:
         db.session.rollback()
@@ -355,9 +353,7 @@ def update_ajax(id):
         log_action('تعديل بيانات عميل', {'id': customer.id, 'name': customer.name})
         
         # Return updated row
-        return render_template('customers/_pro_row.html', customer=customer), 200, {
-            'HX-Trigger': 'customerUpdated'
-        }
+        return render_template('customers/_ultimate_row.html', customer=customer), 200
         
     except Exception as e:
         db.session.rollback()
@@ -371,15 +367,15 @@ def delete_ajax(id):
         
         # Check constraints
         if len(customer.contracts) > 0:
-            return '', 200, {'X-Notify': f'error:لا يمكن حذف العميل لوجود {len(customer.contracts)} عقد مرتبط'}
+            return jsonify({'error': f'لا يمكن حذف العميل لوجود {len(customer.contracts)} عقد مرتبط'}), 400
         
         installments_count = sum(len(c.installments) for c in customer.contracts)
         if installments_count > 0:
-            return '', 200, {'X-Notify': f'error:لا يمكن حذف العميل لوجود {installments_count} قسط مرتبط'}
+            return jsonify({'error': f'لا يمكن حذف العميل لوجود {installments_count} قسط مرتبط'}), 400
         
         vouchers_count = Voucher.query.filter_by(entity_id=customer.id, entity_type='customer').count()
         if vouchers_count > 0:
-            return '', 200, {'X-Notify': f'error:لا يمكن حذف العميل لوجود {vouchers_count} سند مرتبط'}
+            return jsonify({'error': f'لا يمكن حذف العميل لوجود {vouchers_count} سند مرتبط'}), 400
         
         customer_name = customer.name
         db.session.delete(customer)
@@ -387,9 +383,9 @@ def delete_ajax(id):
         
         log_action('حذف عميل', {'id': id, 'name': customer_name})
         
-        # Return empty to remove the row
-        return '', 200, {'X-Notify': f'success:تم حذف العميل "{customer_name}" بنجاح'}
+        # Return empty with success status
+        return '', 204  # No Content status for successful deletion
         
     except Exception as e:
         db.session.rollback()
-        return '', 500, {'X-Notify': 'error:حدث خطأ في حذف العميل'}
+        return jsonify({'error': 'حدث خطأ في حذف العميل'}), 500
