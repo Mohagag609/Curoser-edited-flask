@@ -188,10 +188,10 @@
 /* Enhanced Table Styles */
 .table-container {
     background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
+    border: 2px solid #e5e7eb;
+    border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
 }
 
 .data-table {
@@ -200,31 +200,38 @@
 }
 
 .data-table thead {
-    background: #f9fafb;
+    background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+    border-bottom: 2px solid #e2e8f0;
 }
 
 .data-table th {
-    padding: 12px 16px;
+    padding: 16px 20px;
     text-align: right;
-    font-size: 12px;
-    font-weight: 600;
-    color: #6b7280;
+    font-size: 13px;
+    font-weight: 700;
+    color: #475569;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    border-bottom: 1px solid #e5e7eb;
 }
 
 .data-table tbody tr {
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid #f1f5f9;
+    transition: all 0.2s ease;
 }
 
 .data-table tbody tr:hover {
-    background-color: #f9fafb;
+    background-color: #f8fafc;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.data-table tbody tr:nth-child(even) {
+    background-color: #fafbfc;
 }
 
 .data-table td {
-    padding: 12px 16px;
+    padding: 14px 20px;
     font-size: 14px;
+    color: #1e293b;
 }
 
 .code-badge {
@@ -258,28 +265,71 @@
 }
 
 .btn-sm {
-    padding: 6px 12px;
-    font-size: 13px;
-    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 8px;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.btn-sm:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .btn-view {
-    background: #dbeafe;
-    color: #1e40af;
+    background: #e0f2fe;
+    color: #0369a1;
+    border-color: #bae6fd;
+}
+
+.btn-view:hover {
+    background: #bae6fd;
 }
 
 .btn-edit {
     background: #fef3c7;
     color: #92400e;
+    border-color: #fde68a;
+}
+
+.btn-edit:hover {
+    background: #fde68a;
 }
 
 .btn-delete {
     background: #fee2e2;
     color: #991b1b;
+    border-color: #fecaca;
+}
+
+.btn-delete:hover {
+    background: #fecaca;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .btn-sm span {
+        display: none;
+    }
+    
+    .btn-sm {
+        padding: 8px 12px;
+    }
+    
+    .data-table {
+        font-size: 12px;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: 10px 12px;
+    }
 }
 </style>
 {% endblock %}
@@ -331,11 +381,30 @@
         </div>
     </div>
     
+    <!-- Quick Add Section -->
+    <div class="form-section mb-6">
+        <div class="flex items-center gap-4 mb-3">
+            <i class="fas fa-bolt text-yellow-500 text-2xl"></i>
+            <h3 class="text-lg font-bold text-gray-800">إضافة سريعة</h3>
+        </div>
+        <form id="quick-add-form" onsubmit="return quickAddCustomer(event)" class="flex gap-3">
+            <input type="text" 
+                   name="name" 
+                   placeholder="اكتب اسم العميل واضغط Enter أو زر الإضافة"
+                   class="form-input flex-1"
+                   required>
+            <button type="submit" class="action-btn btn-add">
+                <i class="fas fa-plus"></i>
+                <span>إضافة سريعة</span>
+            </button>
+        </form>
+    </div>
+    
     <!-- Action Buttons -->
     <div class="flex gap-3 mb-6">
         <button onclick="toggleForm('single')" class="action-btn btn-add">
             <i class="fas fa-user-plus"></i>
-            <span>إضافة عميل واحد</span>
+            <span>إضافة عميل كامل</span>
         </button>
         
         <button onclick="toggleForm('list')" class="action-btn btn-list">
@@ -560,6 +629,43 @@ function showNotification(message, type = 'success') {
         notification.classList.remove('show');
         setTimeout(() => notification.remove(), 300);
     }, 5000);
+}
+
+// Quick Add Customer
+async function quickAddCustomer(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch('{{ url_for("customers.add_ajax") }}', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            const html = await response.text();
+            const tbody = document.getElementById('customers-table');
+            const emptyRow = tbody.querySelector('tr:has(td[colspan])');
+            
+            if (emptyRow) {
+                emptyRow.remove();
+            }
+            
+            tbody.insertAdjacentHTML('afterbegin', html);
+            form.reset();
+            showNotification('تم إضافة العميل بنجاح', 'success');
+            updateStats();
+        } else {
+            const data = await response.json();
+            showNotification(data.error || 'حدث خطأ أثناء الإضافة', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('حدث خطأ في الاتصال', 'error');
+    }
+    
+    return false;
 }
 
 // Add Single Customer
