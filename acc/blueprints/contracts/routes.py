@@ -422,6 +422,10 @@ def add_ajax():
             return jsonify({'success': False, 'message': 'الوحدة غير متاحة'})
         
         # Create contract
+        safe_id = request.form.get('safe_id')
+        if safe_id == '':
+            safe_id = None
+            
         contract = Contract(
             id=generate_uid('CNT'),
             code=generate_contract_code(),
@@ -430,11 +434,11 @@ def add_ajax():
             unit_id=unit_id,
             total_price=total_price,
             down_payment=down_payment,
-            broker_name=request.form.get('broker_name'),
+            broker_name=request.form.get('broker_name') or None,
             broker_percent=float(request.form.get('broker_percent', 0)),
             payment_type=request.form.get('payment_type', 'cash'),
             start_date=datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date(),
-            commission_safe_id=request.form.get('safe_id'),
+            commission_safe_id=safe_id,
             maintenance_deposit=float(request.form.get('maintenance_deposit', 0)),
             status='نشط'
         )
