@@ -189,8 +189,10 @@ def delete(id):
         if len(customer.contracts) > 0:
             error_msg = f'لا يمكن حذف العميل "{customer.name}" لوجود عقود مرتبطة به.'
             
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'success': False, 'message': f'❌ {error_msg}'}), 400
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('HX-Request'):
+                response = make_response('', 400)
+                response.headers['X-Error-Message'] = error_msg
+                return response
             
             flash(f'❌ {error_msg}', 'error')
             return redirect(url_for('customers.index'))
@@ -220,8 +222,10 @@ def delete(id):
         db.session.rollback()
         error_msg = f'خطأ في حذف العميل: {str(e)}'
         
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'success': False, 'message': f'❌ {error_msg}'}), 500
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('HX-Request'):
+            response = make_response('', 500)
+            response.headers['X-Error-Message'] = error_msg
+            return response
             
         flash(f'❌ {error_msg}', 'error')
         return redirect(url_for('customers.index'))
