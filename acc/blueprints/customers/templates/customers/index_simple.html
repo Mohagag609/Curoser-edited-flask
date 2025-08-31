@@ -190,8 +190,28 @@
     background: white;
     border: 2px solid #e5e7eb;
     border-radius: 16px;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: visible;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+}
+
+/* Custom Scrollbar */
+.table-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
 
 .data-table {
@@ -466,6 +486,68 @@
         </form>
     </div>
     
+    <!-- Edit Customer Form -->
+    <div id="edit-form" class="form-section form-section-hidden">
+        <div class="form-header">
+            <h3 class="form-title">
+                <i class="fas fa-edit text-orange-600 ml-2"></i>
+                تعديل بيانات العميل
+            </h3>
+            <button onclick="toggleForm(null)" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form id="edit-customer-form" onsubmit="return updateCustomer(event)">
+            <input type="hidden" id="edit-customer-id" name="id">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">الاسم الكامل <span class="text-red-500">*</span></label>
+                    <input type="text" id="edit-name" name="name" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">رقم الهاتف</label>
+                    <input type="tel" id="edit-phone" name="phone" class="form-input" dir="ltr">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">الرقم القومي</label>
+                    <input type="text" id="edit-national_id" name="national_id" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">العنوان</label>
+                    <input type="text" id="edit-address" name="address" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">الحالة</label>
+                    <select id="edit-status" name="status" class="form-input">
+                        <option value="نشط">نشط</option>
+                        <option value="معلق">معلق</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group mt-4">
+                <label class="form-label">ملاحظات</label>
+                <textarea id="edit-notes" name="notes" class="form-input form-textarea"></textarea>
+            </div>
+            
+            <div class="flex gap-3 mt-6">
+                <button type="submit" class="action-btn btn-save">
+                    <i class="fas fa-save"></i>
+                    <span>حفظ التعديلات</span>
+                </button>
+                <button type="button" onclick="toggleForm(null)" class="action-btn btn-cancel">
+                    <i class="fas fa-times"></i>
+                    <span>إلغاء</span>
+                </button>
+            </div>
+        </form>
+    </div>
+    
     <!-- List Add Form -->
     <div id="list-form" class="form-section form-section-hidden">
         <div class="form-header">
@@ -557,10 +639,11 @@
                                     <i class="fas fa-eye"></i>
                                     عرض
                                 </a>
-                                <a href="{{ url_for('customers.edit', id=customer.id) }}" class="btn-sm btn-edit">
+                                <button onclick="loadCustomerForEdit('{{ customer.id }}', '{{ customer.name }}', '{{ customer.phone or '' }}', '{{ customer.national_id or '' }}', '{{ customer.address or '' }}', '{{ customer.status }}', '{{ customer.notes or '' }}')" 
+                                        class="btn-sm btn-edit">
                                     <i class="fas fa-edit"></i>
                                     تعديل
-                                </a>
+                                </button>
                                 <button onclick="deleteCustomer('{{ customer.id }}', '{{ customer.name }}')" 
                                         class="btn-sm btn-delete">
                                     <i class="fas fa-trash"></i>
@@ -594,16 +677,20 @@
 function toggleForm(type) {
     const singleForm = document.getElementById('single-form');
     const listForm = document.getElementById('list-form');
+    const editForm = document.getElementById('edit-form');
     
+    // Hide all forms first
+    singleForm.classList.add('form-section-hidden');
+    listForm.classList.add('form-section-hidden');
+    editForm.classList.add('form-section-hidden');
+    
+    // Show requested form
     if (type === 'single') {
         singleForm.classList.remove('form-section-hidden');
-        listForm.classList.add('form-section-hidden');
     } else if (type === 'list') {
-        singleForm.classList.add('form-section-hidden');
         listForm.classList.remove('form-section-hidden');
-    } else {
-        singleForm.classList.add('form-section-hidden');
-        listForm.classList.add('form-section-hidden');
+    } else if (type === 'edit') {
+        editForm.classList.remove('form-section-hidden');
     }
 }
 
@@ -811,6 +898,61 @@ function deleteCustomer(id, name) {
 function updateStats() {
     // This would be enhanced to update stats dynamically
     console.log('Stats updated');
+}
+
+// Load Customer for Edit
+function loadCustomerForEdit(id, name, phone, nationalId, address, status, notes) {
+    // Fill the form
+    document.getElementById('edit-customer-id').value = id;
+    document.getElementById('edit-name').value = name;
+    document.getElementById('edit-phone').value = phone;
+    document.getElementById('edit-national_id').value = nationalId;
+    document.getElementById('edit-address').value = address;
+    document.getElementById('edit-status').value = status;
+    document.getElementById('edit-notes').value = notes;
+    
+    // Show edit form
+    toggleForm('edit');
+    
+    // Scroll to form
+    document.getElementById('edit-form').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Update Customer
+async function updateCustomer(event) {
+    event.preventDefault();
+    const form = event.target;
+    const customerId = document.getElementById('edit-customer-id').value;
+    const formData = new FormData(form);
+    
+    // Remove the id from formData as it's in the URL
+    formData.delete('id');
+    
+    try {
+        const response = await fetch(`/customers/${customerId}/update-ajax`, {
+            method: 'PUT',
+            body: formData
+        });
+        
+        if (response.ok) {
+            const html = await response.text();
+            const oldRow = document.getElementById(`row-${customerId}`);
+            if (oldRow) {
+                oldRow.outerHTML = html;
+            }
+            
+            toggleForm(null);
+            showNotification('تم تحديث بيانات العميل بنجاح', 'success');
+        } else {
+            const data = await response.json();
+            showNotification(data.error || 'حدث خطأ أثناء التحديث', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('حدث خطأ في الاتصال', 'error');
+    }
+    
+    return false;
 }
 </script>
 {% endblock %}
