@@ -27,7 +27,7 @@
     </div>
     
     <!-- Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
             <div class="flex items-center justify-between">
                 <div>
@@ -57,6 +57,17 @@
                 <i class="fas fa-chart-pie text-4xl text-blue-200"></i>
             </div>
         </div>
+        
+        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-orange-100 text-sm">شركاء متاحين</p>
+                    <p class="text-3xl font-bold">{{ available_count }}</p>
+                    <p class="text-xs text-orange-200">من {{ total_partners }}</p>
+                </div>
+                <i class="fas fa-user-plus text-4xl text-orange-200"></i>
+            </div>
+        </div>
     </div>
     
     <!-- Add Member Form -->
@@ -66,14 +77,20 @@
             إضافة شريك للمجموعة
         </h3>
         
+        {% set available_to_add = [] %}
+        {% for partner in available_partners %}
+            {% set already_member = members|selectattr('partner.id', 'equalto', partner.id)|list|length > 0 %}
+            {% if not already_member %}
+                {% set _ = available_to_add.append(partner) %}
+            {% endif %}
+        {% endfor %}
+        
+        {% if available_to_add %}
         <form method="POST" action="{{ url_for('partners.add_group_member', id=group.id) }}" class="flex gap-3">
             <select name="partner_id" required class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                <option value="">-- اختر شريك --</option>
-                {% for partner in available_partners %}
-                    {% set already_member = members|selectattr('partner.id', 'equalto', partner.id)|list|length > 0 %}
-                    {% if not already_member %}
+                <option value="">-- اختر شريك ({{ available_to_add|length }} متاح) --</option>
+                {% for partner in available_to_add %}
                     <option value="{{ partner.id }}">{{ partner.name }} ({{ partner.code }})</option>
-                    {% endif %}
                 {% endfor %}
             </select>
             
@@ -87,6 +104,28 @@
                 <span>إضافة</span>
             </button>
         </form>
+        {% else %}
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-info-circle text-yellow-400"></i>
+                </div>
+                <div class="mr-3">
+                    <p class="text-sm text-yellow-700">
+                        لا يوجد شركاء متاحين للإضافة. الأسباب المحتملة:
+                    </p>
+                    <ul class="mt-2 text-sm text-yellow-700 list-disc list-inside">
+                        <li>جميع الشركاء النشطين تم إضافتهم للمجموعة</li>
+                        <li>لا يوجد شركاء نشطين في النظام</li>
+                    </ul>
+                    <a href="{{ url_for('partners.add') }}" class="mt-3 inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-plus-circle"></i>
+                        إضافة شريك جديد
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
         
         {% if total_percentage >= 100 %}
         <div class="mt-3 text-sm text-red-600">

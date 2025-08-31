@@ -414,6 +414,7 @@ def group_detail(id):
     
     # Get current members
     members = []
+    member_ids = []
     for member in group.members:
         partner = Partner.query.get(member.partner_id)
         if partner:
@@ -421,6 +422,13 @@ def group_detail(id):
                 'member': member,
                 'partner': partner
             })
+            member_ids.append(member.partner_id)
+    
+    # Count available partners not in group
+    available_count = 0
+    for partner in available_partners:
+        if partner.id not in member_ids:
+            available_count += 1
     
     total_percentage = group.get_total_percentage()
     
@@ -428,7 +436,9 @@ def group_detail(id):
                          group=group,
                          members=members,
                          total_percentage=total_percentage,
-                         available_partners=available_partners)
+                         available_partners=available_partners,
+                         available_count=available_count,
+                         total_partners=len(available_partners))
 
 @bp.route('/groups/<string:id>/add-member', methods=['POST'])
 def add_group_member(id):
