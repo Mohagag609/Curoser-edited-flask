@@ -230,9 +230,9 @@ def detail(id):
         return redirect(url_for('contracts.index'))
     
     # Get installments
-    try:
-        installments = contract.installments.order_by(Installment.due_date).all() if contract.installments else []
-    except:
+    if contract.installments:
+        installments = contract.installments.order_by(Installment.due_date).all()
+    else:
         installments = []
     
     # Calculate statistics
@@ -536,9 +536,9 @@ def delete_contract(id):
         contract = Contract.query.get_or_404(id)
         
         # Check if contract has installments
-        try:
-            has_installments = contract.installments.count() > 0 if contract.installments else False
-        except:
+        if contract.installments:
+            has_installments = contract.installments.count() > 0
+        else:
             has_installments = False
             
         if has_installments:
