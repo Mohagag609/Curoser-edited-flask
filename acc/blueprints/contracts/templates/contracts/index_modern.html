@@ -789,9 +789,16 @@ async function generateInstallments(contractId) {
     }
 }
 
+// Edit contract
+function editContract(contractId) {
+    // For now, redirect to edit page
+    // In future, can implement in-page editing
+    window.location.href = `/contracts/${contractId}/edit`;
+}
+
 // Delete contract
 async function deleteContract(contractId, hasInstallments) {
-    if (hasInstallments) {
+    if (hasInstallments === true || hasInstallments === 'True') {
         showNotification('لا يمكن حذف عقد له أقساط', 'error');
         return;
     }
@@ -802,7 +809,10 @@ async function deleteContract(contractId, hasInstallments) {
     
     try {
         const response = await fetch(`/contracts/${contractId}/delete`, {
-            method: 'POST'
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         });
         
         const result = await response.json();
@@ -814,6 +824,7 @@ async function deleteContract(contractId, hasInstallments) {
             showNotification(result.message || 'حدث خطأ في حذف العقد', 'error');
         }
     } catch (error) {
+        console.error('Delete error:', error);
         showNotification('حدث خطأ في الاتصال', 'error');
     }
 }
