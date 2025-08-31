@@ -229,16 +229,14 @@ def detail(id):
         flash('❌ عقد غير موجود', 'error')
         return redirect(url_for('contracts.index'))
     
-    # Get installments
-    if contract.installments:
-        installments = contract.installments.order_by(Installment.due_date).all()
-    else:
-        installments = []
+    # Get installments - using direct query to avoid property issues
+    from acc.models import Installment as InstallmentModel
+    installments = InstallmentModel.query.filter_by(unit_id=contract.unit_id).order_by(InstallmentModel.due_date).all() if contract.unit_id else []
     
     # Calculate statistics
-    total_paid = sum(i.paid_amount for i in installments if hasattr(i, 'paid_amount') and i.paid_amount)
-    total_due = sum(i.amount for i in installments if hasattr(i, 'amount') and i.amount)
-    overdue_count = sum(1 for i in installments if hasattr(i, 'status') and i.status == 'متأخر')
+    total_paid = sum(i.get_paid_amount() for i in installments if hasattr(i, 'get_paid_amount'))
+    total_due = sum(i.amount for i in installments if i.amount)
+    overdue_count = sum(1 for i in installments if i.status == 'متأخر')
     
     return render_template('contracts/detail.html',
                          contract=contract,
@@ -535,11 +533,9 @@ def delete_contract(id):
     try:
         contract = Contract.query.get_or_404(id)
         
-        # Check if contract has installments
-        if contract.installments:
-            has_installments = contract.installments.count() > 0
-        else:
-            has_installments = False
+        # Check if contract has installments - using direct query
+        from acc.models import Installment as InstallmentModel
+        has_installments = InstallmentModel.query.filter_by(unit_id=contract.unit_id).count() > 0 if contract.unit_id else False
             
         if has_installments:
             return jsonify({'success': False, 'message': 'لا يمكن حذف عقد له أقساط'})
