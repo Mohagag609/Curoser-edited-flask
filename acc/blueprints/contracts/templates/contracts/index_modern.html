@@ -1,0 +1,852 @@
+{% extends "base.html" %}
+
+{% block title %}العقود{% endblock %}
+{% block page_title %}العقود{% endblock %}
+
+{% block extra_head %}
+<style>
+/* Form Section Styles */
+.form-section {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.form-section-hidden {
+    display: none;
+}
+
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.form-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+/* Action Buttons */
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.action-btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+}
+
+.action-btn-primary:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.action-btn-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.action-btn-success:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+}
+
+.action-btn-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+}
+
+.action-btn-warning:hover {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+}
+
+/* Table Styles */
+.table-container {
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 16px;
+    overflow-x: auto;
+    overflow-y: visible;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+}
+
+/* Custom Scrollbar */
+.table-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table thead {
+    background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.data-table th {
+    padding: 16px 20px;
+    text-align: right;
+    font-size: 13px;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.data-table tbody tr {
+    border-bottom: 1px solid #f1f5f9;
+    transition: all 0.2s ease;
+}
+
+.data-table tbody tr:hover {
+    background-color: #f8fafc;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.data-table tbody tr:nth-child(even) {
+    background-color: #fafbfc;
+}
+
+.data-table td {
+    padding: 16px 20px;
+    font-size: 14px;
+    color: #334155;
+}
+
+/* Small Action Buttons */
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    border: none;
+    transition: all 0.2s ease;
+    gap: 4px;
+}
+
+.btn-view {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.btn-view:hover {
+    background: #bfdbfe;
+    transform: translateY(-1px);
+}
+
+.btn-edit {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.btn-edit:hover {
+    background: #fde68a;
+    transform: translateY(-1px);
+}
+
+.btn-delete {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.btn-delete:hover {
+    background: #fecaca;
+    transform: translateY(-1px);
+}
+
+/* Notification Styles */
+.notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 16px 24px;
+    border-radius: 8px;
+    font-weight: 500;
+    z-index: 9999;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateX(-50%) translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+}
+
+.notification-success {
+    background: #10b981;
+    color: white;
+}
+
+.notification-error {
+    background: #ef4444;
+    color: white;
+}
+
+/* Status Badge */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-active {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-complete {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.status-cancelled {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+/* Form Grid */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.form-input {
+    padding: 10px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Toggle Section */
+.toggle-section {
+    margin-top: 16px;
+    padding: 16px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    display: none;
+}
+
+.toggle-section.active {
+    display: block;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header with Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100 text-sm">إجمالي العقود</p>
+                    <p class="text-3xl font-bold">{{ total_contracts|default(0) }}</p>
+                </div>
+                <i class="fas fa-file-contract text-4xl text-blue-200"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100 text-sm">عقود نشطة</p>
+                    <p class="text-3xl font-bold">{{ active_contracts|default(0) }}</p>
+                </div>
+                <i class="fas fa-check-circle text-4xl text-green-200"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-100 text-sm">مكتملة</p>
+                    <p class="text-3xl font-bold">{{ completed_contracts|default(0) }}</p>
+                </div>
+                <i class="fas fa-badge-check text-4xl text-purple-200"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-100 text-sm">ملغية</p>
+                    <p class="text-3xl font-bold">{{ cancelled_contracts|default(0) }}</p>
+                </div>
+                <i class="fas fa-times-circle text-4xl text-gray-200"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Add Section -->
+    <div class="form-section" id="quickAddSection">
+        <div class="form-header">
+            <h3 class="form-title">
+                <i class="fas fa-plus-circle text-blue-500 ml-2"></i>
+                إضافة عقد سريع
+            </h3>
+            <button type="button" onclick="toggleSection('quickAdd')" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form id="quickAddForm" onsubmit="saveContract(event, 'quick')">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">العميل <span class="text-red-500">*</span></label>
+                    <select name="customer_id" class="form-input" required>
+                        <option value="">اختر العميل</option>
+                        {% for customer in customers %}
+                        <option value="{{ customer.id }}">{{ customer.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">الوحدة <span class="text-red-500">*</span></label>
+                    <select name="unit_id" class="form-input" required onchange="updateUnitPrice(this)">
+                        <option value="">اختر الوحدة</option>
+                        {% for unit in units %}
+                        <option value="{{ unit.id }}" data-price="{{ unit.total_price }}">
+                            {{ unit.code }} - {{ unit.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">السعر الكلي <span class="text-red-500">*</span></label>
+                    <input type="number" name="total_price" class="form-input" required min="0" step="0.01">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">المبلغ المدفوع (مقدم)</label>
+                    <input type="number" name="down_payment" class="form-input" min="0" step="0.01" value="0">
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-2 mt-4">
+                <button type="submit" class="action-btn action-btn-success">
+                    <i class="fas fa-save"></i>
+                    حفظ سريع
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Full Contract Form -->
+    <div class="form-section form-section-hidden" id="fullContractSection">
+        <div class="form-header">
+            <h3 class="form-title">
+                <i class="fas fa-file-contract text-green-500 ml-2"></i>
+                إضافة عقد كامل
+            </h3>
+            <button type="button" onclick="toggleSection('fullContract')" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form id="fullContractForm" onsubmit="saveContract(event, 'full')">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">العميل <span class="text-red-500">*</span></label>
+                    <select name="customer_id" class="form-input" required>
+                        <option value="">اختر العميل</option>
+                        {% for customer in customers %}
+                        <option value="{{ customer.id }}">{{ customer.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">الوحدة <span class="text-red-500">*</span></label>
+                    <select name="unit_id" class="form-input" required onchange="updateUnitPrice(this)">
+                        <option value="">اختر الوحدة</option>
+                        {% for unit in units %}
+                        <option value="{{ unit.id }}" data-price="{{ unit.total_price }}">
+                            {{ unit.code }} - {{ unit.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">السعر الكلي <span class="text-red-500">*</span></label>
+                    <input type="number" name="total_price" class="form-input" required min="0" step="0.01">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">المبلغ المدفوع (مقدم)</label>
+                    <input type="number" name="down_payment" class="form-input" min="0" step="0.01" value="0">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">اسم البروكر</label>
+                    <input type="text" name="broker_name" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">نسبة العمولة %</label>
+                    <input type="number" name="broker_percent" class="form-input" min="0" max="100" step="0.01" value="0">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">طريقة السداد <span class="text-red-500">*</span></label>
+                    <select name="payment_type" class="form-input" required onchange="togglePaymentSection(this)">
+                        <option value="">اختر طريقة السداد</option>
+                        <option value="cash">كاش</option>
+                        <option value="installment">تقسيط</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">تاريخ البداية <span class="text-red-500">*</span></label>
+                    <input type="date" name="start_date" class="form-input" required value="{{ today }}">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">خزينة الاستلام</label>
+                    <select name="safe_id" class="form-input">
+                        <option value="">اختر الخزينة</option>
+                        {% for safe in safes %}
+                        <option value="{{ safe.id }}">{{ safe.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">وديعة الصيانة</label>
+                    <input type="number" name="maintenance_deposit" class="form-input" min="0" step="0.01" value="0">
+                </div>
+            </div>
+            
+            <!-- Installment Section -->
+            <div class="toggle-section" id="installmentSection">
+                <h4 class="font-semibold text-gray-700 mb-3">تفاصيل التقسيط</h4>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">عدد الدفعات السنوية</label>
+                        <select name="installment_type" class="form-input" onchange="calculateInstallment()">
+                            <option value="12">شهري (12 دفعة)</option>
+                            <option value="4">ربع سنوي (4 دفعات)</option>
+                            <option value="2">نصف سنوي (دفعتين)</option>
+                            <option value="1">سنوي (دفعة واحدة)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">عدد السنوات</label>
+                        <input type="number" name="years" class="form-input" min="1" value="1" onchange="calculateInstallment()">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">قيمة الدفعة</label>
+                        <input type="number" name="installment_amount" class="form-input" readonly>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-2 mt-4">
+                <button type="submit" class="action-btn action-btn-primary">
+                    <i class="fas fa-save"></i>
+                    حفظ + توليد أقساط
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-wrap gap-2 mb-4">
+        <button onclick="toggleSection('quickAdd')" class="action-btn action-btn-success">
+            <i class="fas fa-plus-circle"></i>
+            إضافة سريع
+        </button>
+        <button onclick="toggleSection('fullContract')" class="action-btn action-btn-primary">
+            <i class="fas fa-file-contract"></i>
+            عقد كامل
+        </button>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+        <div class="flex flex-wrap gap-4 items-end">
+            <div class="flex-1 min-w-[300px]">
+                <label class="block text-sm font-medium text-gray-700 mb-1">البحث</label>
+                <div class="relative">
+                    <input type="text" 
+                           id="searchInput" 
+                           placeholder="ابحث برقم العقد، اسم العميل، رقم الوحدة..."
+                           class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           onkeyup="searchContracts()">
+                    <i class="fas fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+            </div>
+            
+            <div class="min-w-[150px]">
+                <label class="block text-sm font-medium text-gray-700 mb-1">الحالة</label>
+                <select id="statusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" onchange="searchContracts()">
+                    <option value="">جميع الحالات</option>
+                    <option value="نشط">نشط</option>
+                    <option value="مكتمل">مكتمل</option>
+                    <option value="ملغي">ملغي</option>
+                </select>
+            </div>
+            
+            <button onclick="searchContracts()" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                <i class="fas fa-filter ml-2"></i>
+                تطبيق
+            </button>
+        </div>
+    </div>
+
+    <!-- Contracts Table -->
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>كود العقد</th>
+                    <th>اسم العميل</th>
+                    <th>الوحدة</th>
+                    <th>الدور</th>
+                    <th>المبنى</th>
+                    <th>نوع الوحدة</th>
+                    <th>الشركاء</th>
+                    <th>السعر</th>
+                    <th>المتبقي</th>
+                    <th>الحالة</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody id="contractsTableBody">
+                {% for contract in contracts %}
+                <tr>
+                    <td class="font-mono text-sm">{{ contract.code }}</td>
+                    <td class="font-semibold">{{ contract.customer.name if contract.customer else '-' }}</td>
+                    <td>{{ contract.unit.name if contract.unit else '-' }}</td>
+                    <td>{{ contract.unit.floor if contract.unit else '-' }}</td>
+                    <td>{{ contract.unit.building if contract.unit else '-' }}</td>
+                    <td>{{ contract.unit.unit_type if contract.unit else '-' }}</td>
+                    <td>
+                        {% if contract.unit and contract.unit.partners %}
+                            {{ contract.unit.partners|length }} شريك
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td class="font-mono">{{ format_currency(contract.total_price) }}</td>
+                    <td class="font-mono text-orange-600">
+                        {{ format_currency(contract.total_price - contract.down_payment) }}
+                    </td>
+                    <td>
+                        {% if contract.status == 'نشط' %}
+                            <span class="status-badge status-active">
+                                <i class="fas fa-check-circle"></i>
+                                نشط
+                            </span>
+                        {% elif contract.status == 'مكتمل' %}
+                            <span class="status-badge status-complete">
+                                <i class="fas fa-badge-check"></i>
+                                مكتمل
+                            </span>
+                        {% else %}
+                            <span class="status-badge status-cancelled">
+                                <i class="fas fa-times-circle"></i>
+                                ملغي
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="flex gap-2">
+                            <a href="{{ url_for('contracts.detail', id=contract.id) }}" class="btn-action btn-view">
+                                <i class="fas fa-eye"></i>
+                                معاينة
+                            </a>
+                            <button onclick="editContract('{{ contract.id }}')" class="btn-action btn-edit">
+                                <i class="fas fa-edit"></i>
+                                تعديل
+                            </button>
+                            <button onclick="deleteContract('{{ contract.id }}', {{ contract.installments|length > 0 }})" 
+                                    class="btn-action btn-delete">
+                                <i class="fas fa-trash"></i>
+                                حذف
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        {% if not contracts %}
+        <div class="text-center py-12">
+            <i class="fas fa-file-contract text-6xl text-gray-300 mb-4"></i>
+            <p class="text-gray-500 text-lg">لا توجد عقود حتى الآن</p>
+            <button onclick="toggleSection('quickAdd')" class="action-btn action-btn-primary mt-4">
+                <i class="fas fa-plus-circle"></i>
+                إضافة أول عقد
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Toggle form sections
+function toggleSection(section) {
+    const sections = {
+        'quickAdd': 'quickAddSection',
+        'fullContract': 'fullContractSection'
+    };
+    
+    // Hide all sections first
+    Object.values(sections).forEach(id => {
+        document.getElementById(id).classList.add('form-section-hidden');
+    });
+    
+    // Show selected section
+    if (sections[section]) {
+        document.getElementById(sections[section]).classList.remove('form-section-hidden');
+    }
+}
+
+// Update unit price
+function updateUnitPrice(select) {
+    const selectedOption = select.options[select.selectedIndex];
+    const price = selectedOption.getAttribute('data-price');
+    const form = select.closest('form');
+    const priceInput = form.querySelector('input[name="total_price"]');
+    
+    if (price) {
+        priceInput.value = price;
+        calculateInstallment();
+    }
+}
+
+// Toggle payment section
+function togglePaymentSection(select) {
+    const form = select.closest('form');
+    const installmentSection = form.querySelector('#installmentSection');
+    
+    if (select.value === 'installment') {
+        installmentSection.classList.add('active');
+        calculateInstallment();
+    } else {
+        installmentSection.classList.remove('active');
+    }
+}
+
+// Calculate installment amount
+function calculateInstallment() {
+    const form = document.getElementById('fullContractForm');
+    const totalPrice = parseFloat(form.querySelector('input[name="total_price"]').value) || 0;
+    const downPayment = parseFloat(form.querySelector('input[name="down_payment"]').value) || 0;
+    const installmentType = parseInt(form.querySelector('select[name="installment_type"]').value) || 12;
+    const years = parseInt(form.querySelector('input[name="years"]').value) || 1;
+    
+    const remaining = totalPrice - downPayment;
+    const totalInstallments = installmentType * years;
+    const installmentAmount = remaining / totalInstallments;
+    
+    form.querySelector('input[name="installment_amount"]').value = installmentAmount.toFixed(2);
+}
+
+// Save contract
+async function saveContract(event, type) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch('/contracts/add_ajax', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification('تم حفظ العقد بنجاح', 'success');
+            
+            // Generate installments if needed
+            if (formData.get('payment_type') === 'installment') {
+                await generateInstallments(result.contract_id);
+            }
+            
+            // Reload the page to show new contract
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showNotification(result.message || 'حدث خطأ في حفظ العقد', 'error');
+        }
+    } catch (error) {
+        showNotification('حدث خطأ في الاتصال', 'error');
+    }
+}
+
+// Generate installments
+async function generateInstallments(contractId) {
+    try {
+        const response = await fetch(`/contracts/${contractId}/generate_installments`, {
+            method: 'POST'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification('تم توليد الأقساط بنجاح', 'success');
+        }
+    } catch (error) {
+        console.error('Error generating installments:', error);
+    }
+}
+
+// Delete contract
+async function deleteContract(contractId, hasInstallments) {
+    if (hasInstallments) {
+        showNotification('لا يمكن حذف عقد له أقساط', 'error');
+        return;
+    }
+    
+    if (!confirm('هل أنت متأكد من حذف هذا العقد؟')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/contracts/${contractId}/delete`, {
+            method: 'POST'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification('تم حذف العقد بنجاح', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showNotification(result.message || 'حدث خطأ في حذف العقد', 'error');
+        }
+    } catch (error) {
+        showNotification('حدث خطأ في الاتصال', 'error');
+    }
+}
+
+// Search contracts
+async function searchContracts() {
+    const searchInput = document.getElementById('searchInput').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    
+    const params = new URLSearchParams({
+        q: searchInput,
+        status: statusFilter
+    });
+    
+    try {
+        const response = await fetch(`/contracts/search?${params.toString()}`);
+        const html = await response.text();
+        
+        // Update table body
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const newTableBody = doc.querySelector('#contractsTableBody');
+        
+        if (newTableBody) {
+            document.getElementById('contractsTableBody').innerHTML = newTableBody.innerHTML;
+        }
+    } catch (error) {
+        console.error('Search error:', error);
+    }
+}
+
+// Show notification
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-hide forms on start
+    document.getElementById('quickAddSection').classList.add('form-section-hidden');
+    document.getElementById('fullContractSection').classList.add('form-section-hidden');
+});
+</script>
+{% endblock %}

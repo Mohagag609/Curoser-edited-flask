@@ -6,7 +6,7 @@ from acc.services.utils import generate_uid, log_action, Pagination, format_curr
 from acc.services.code_generator import generate_contract_code
 from sqlalchemy import or_, func
 from decimal import Decimal
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 @bp.route('/')
 def index():
@@ -44,7 +44,13 @@ def index():
     completed_contracts = Contract.query.filter_by(project_id=g.project.id, status='مكتمل').count()
     cancelled_contracts = Contract.query.filter_by(project_id=g.project.id, status='ملغي').count()
     
-    return render_template('contracts/index.html',
+    # Get safes for contract form
+    try:
+        safes = Safe.query.filter_by(status='نشط').all()
+    except:
+        safes = []
+    
+    return render_template('contracts/index_modern.html',
                          contracts=pagination.items,
                          pagination=pagination,
                          q=q,
@@ -53,6 +59,10 @@ def index():
                          active_contracts=active_contracts,
                          completed_contracts=completed_contracts,
                          cancelled_contracts=cancelled_contracts,
+                         customers=Customer.query.filter_by(status='نشط').order_by(Customer.name).all(),
+                         units=Unit.query.filter_by(project_id=g.project.id, status='متاحة').order_by(Unit.code).all(),
+                         safes=safes,
+                         today=date.today(),
                          format_currency=format_currency)
 
 @bp.route('/search')
@@ -390,3 +400,146 @@ def report():
                          date_from=date_from,
                          date_to=date_to,
                          format_currency=format_currency)
+
+
+@bp.route('/add_ajax', methods=['POST'])
+def add_ajax():
+    """Add contract via AJAX"""
+    try:
+        # Get form data
+        customer_id = request.form.get('customer_id')
+        unit_id = request.form.get('unit_id')
+        total_price = float(request.form.get('total_price', 0))
+        down_payment = float(request.form.get('down_payment', 0))
+        
+        # Validate required fields
+        if not all([customer_id, unit_id]):
+            return jsonify({'success': False, 'message': 'الرجاء ملء جميع الحقول المطلوبة'})
+        
+        # Check if unit is available
+        unit = Unit.query.get(unit_id)
+        if not unit or unit.status != 'متاحة':
+            return jsonify({'success': False, 'message': 'الوحدة غير متاحة'})
+        
+        # Create contract
+        contract = Contract(
+            id=generate_uid('CNT'),
+            code=generate_contract_code(),
+            project_id=g.project.id,
+            customer_id=customer_id,
+            unit_id=unit_id,
+            total_price=total_price,
+            down_payment=down_payment,
+            broker_name=request.form.get('broker_name'),
+            broker_percent=float(request.form.get('broker_percent', 0)),
+            payment_type=request.form.get('payment_type', 'cash'),
+            start_date=datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date(),
+            commission_safe_id=request.form.get('safe_id'),
+            maintenance_deposit=float(request.form.get('maintenance_deposit', 0)),
+            status='نشط'
+        )
+        
+        # Calculate broker amount
+        if contract.broker_percent > 0:
+            contract.broker_amount = (contract.total_price * contract.broker_percent) / 100
+        
+        # Update unit status
+        unit.status = 'مباعة'
+        
+        db.session.add(contract)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'تم حفظ العقد بنجاح',
+            'contract_id': contract.id
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'حدث خطأ: {str(e)}'})
+
+
+@bp.route('/<string:id>/generate_installments', methods=['POST'])
+def generate_installments(id):
+    """Generate installments for a contract"""
+    try:
+        contract = Contract.query.get_or_404(id)
+        
+        if contract.payment_type != 'installment':
+            return jsonify({'success': False, 'message': 'العقد ليس بنظام التقسيط'})
+        
+        # Get installment details from form
+        installment_type = int(request.form.get('installment_type', 12))
+        years = int(request.form.get('years', 1))
+        
+        # Calculate installment details
+        remaining = contract.total_price - contract.down_payment
+        total_installments = installment_type * years
+        installment_amount = remaining / total_installments
+        
+        # Generate installments
+        start_date = contract.start_date
+        for i in range(total_installments):
+            # Calculate due date based on installment type
+            if installment_type == 12:  # Monthly
+                months = i + 1
+                due_date = start_date.replace(day=1) + timedelta(days=32 * months)
+                due_date = due_date.replace(day=1)
+            elif installment_type == 4:  # Quarterly
+                months = (i + 1) * 3
+                due_date = start_date + timedelta(days=30 * months)
+            elif installment_type == 2:  # Semi-annual
+                months = (i + 1) * 6
+                due_date = start_date + timedelta(days=30 * months)
+            else:  # Annual
+                due_date = start_date.replace(year=start_date.year + i + 1)
+            
+            installment = Installment(
+                id=generate_uid('INS'),
+                unit_id=contract.unit_id,
+                installment_number=i + 1,
+                due_date=due_date,
+                amount=installment_amount,
+                status='غير مدفوع'
+            )
+            db.session.add(installment)
+        
+        # Update contract
+        contract.installment_type = f'{installment_type} دفعة/سنة'
+        contract.installment_count = total_installments
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'تم توليد {total_installments} قسط بنجاح'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'حدث خطأ: {str(e)}'})
+
+
+@bp.route('/<string:id>/delete', methods=['POST'])
+def delete_contract(id):
+    """Delete contract"""
+    try:
+        contract = Contract.query.get_or_404(id)
+        
+        # Check if contract has installments
+        if contract.installments and len(contract.installments) > 0:
+            return jsonify({'success': False, 'message': 'لا يمكن حذف عقد له أقساط'})
+        
+        # Update unit status back to available
+        if contract.unit:
+            contract.unit.status = 'متاحة'
+        
+        db.session.delete(contract)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'تم حذف العقد بنجاح'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'حدث خطأ: {str(e)}'})    
