@@ -190,12 +190,6 @@ def delete(id):
         # Check if customer has contracts
         if len(customer.contracts) > 0:
             error_msg = f'لا يمكن حذف العميل "{customer.name}" لوجود {len(customer.contracts)} عقد مرتبط به.'
-            
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('HX-Request'):
-                response = make_response('', 400)
-                response.headers['X-Error-Message'] = error_msg
-                return response
-            
             flash(f'❌ {error_msg}', 'error')
             return redirect(url_for('customers.index'))
         
@@ -203,12 +197,6 @@ def delete(id):
         installments_count = Installment.query.join(Contract).filter(Contract.customer_id == customer.id).count()
         if installments_count > 0:
             error_msg = f'لا يمكن حذف العميل "{customer.name}" لوجود {installments_count} قسط مرتبط به.'
-            
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('HX-Request'):
-                response = make_response('', 400)
-                response.headers['X-Error-Message'] = error_msg
-                return response
-            
             flash(f'❌ {error_msg}', 'error')
             return redirect(url_for('customers.index'))
         
@@ -216,12 +204,6 @@ def delete(id):
         vouchers_count = Voucher.query.filter_by(customer_id=customer.id).count()
         if vouchers_count > 0:
             error_msg = f'لا يمكن حذف العميل "{customer.name}" لوجود {vouchers_count} سند مرتبط به.'
-            
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('HX-Request'):
-                response = make_response('', 400)
-                response.headers['X-Error-Message'] = error_msg
-                return response
-            
             flash(f'❌ {error_msg}', 'error')
             return redirect(url_for('customers.index'))
         
@@ -238,11 +220,6 @@ def delete(id):
         
         success_msg = f'تم حذف العميل "{customer_name}" بنجاح.'
         
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('HX-Request'):
-            response = make_response('', 200)
-            response.headers['X-Success-Message'] = success_msg
-            return response
-        
         flash(f'✅ {success_msg}', 'success')
         return redirect(url_for('customers.index'))
         
@@ -250,12 +227,6 @@ def delete(id):
         db.session.rollback()
         current_app.logger.error(f"Error deleting customer {id}: {str(e)}", exc_info=True)
         error_msg = f'حدث خطأ في حذف العميل'
-        
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('HX-Request'):
-            response = make_response('', 500)
-            response.headers['X-Error-Message'] = error_msg
-            return response
-            
         flash(f'❌ {error_msg}', 'error')
         return redirect(url_for('customers.index'))
 

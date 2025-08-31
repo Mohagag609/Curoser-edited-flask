@@ -178,19 +178,14 @@
  <i class="fas fa-edit"></i>
  <span>تعديل</span>
  </a>
-                         <button type="button"
-                                hx-post="{{ url_for('customers.delete', id=customer.id) }}"
-                                hx-confirm="هل أنت متأكد من حذف العميل '{{ customer.name }}'؟"
-                                hx-target="closest tr"
-                                hx-swap="outerHTML swap:0.5s"
-                                hx-indicator=".htmx-indicator"
-                                class="modern-btn modern-btn-delete modern-btn-sm">
-                            <i class="fas fa-trash"></i>
-                            <span class="htmx-indicator">
-                                <i class="fas fa-spinner fa-spin"></i>
-                            </span>
-                            <span>حذف</span>
-                        </button>
+                         <form method="POST" action="{{ url_for('customers.delete', id=customer.id) }}" 
+                              style="display: inline;"
+                              onsubmit="return confirm('هل أنت متأكد من حذف العميل {{ customer.name }}؟');">
+                            <button type="submit" class="modern-btn modern-btn-delete modern-btn-sm">
+                                <i class="fas fa-trash"></i>
+                                <span>حذف</span>
+                            </button>
+                        </form>
  </div>
  </td>
  </tr>
