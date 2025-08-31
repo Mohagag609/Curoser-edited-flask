@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, flash
+from flask import render_template, request, redirect, url_for, flash, g
 from acc.blueprints.installments import bp
 from acc.models import Installment, Unit, Contract, Voucher
 from acc.extensions import db
@@ -48,8 +48,8 @@ def index():
     pagination = Pagination(query, page)
     installments = pagination.items
     
-    # Get all units for filter
-    units = Unit.query.order_by(Unit.code).all()
+    # Get all units for filter (project specific)
+    units = Unit.query.filter_by(project_id=g.project.id).order_by(Unit.code).all()
     
     # Calculate stats
     total_installments = Installment.query.count()

@@ -6,6 +6,7 @@ from acc.services.utils import generate_uid, log_action, Pagination, format_curr
 from acc.services.code_generator import generate_contract_code
 from sqlalchemy import or_, func
 from decimal import Decimal
+from datetime import date, datetime
 
 @bp.route('/')
 def index():
