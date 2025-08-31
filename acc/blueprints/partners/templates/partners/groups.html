@@ -1,83 +1,141 @@
 {% extends "base.html" %}
 
-{% block title %}مجموعات الشركاء - {{ super() }}{% endblock %}
+{% block title %}مجموعات الشركاء{% endblock %}
+{% block page_title %}مجموعات الشركاء{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
-        <div>
-            <h2 class="text-3xl font-bold text-gray-900">مجموعات الشركاء</h2>
-            <p class="text-gray-600 mt-1">إدارة مجموعات الشركاء</p>
-        </div>
-        <div class="flex gap-2">
-            <a href="{{ url_for('partners.index') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-right"></i>
-                العودة للشركاء
-            </a>
-            <a href="{{ url_for('partners.add_group') }}" class="btn btn-primary">
-                <i class="fas fa-plus"></i>
-                إضافة مجموعة
-            </a>
-        </div>
-    </div>
-    
-    <!-- Search -->
-    <div class="card mb-6">
-        {% include '_partials/search_bar.html' %}
-    </div>
-    
-    <!-- Table -->
-    <div class="card">
-        <div class="table-container">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>اسم المجموعة</th>
-                        <th>عدد الأعضاء</th>
-                        <th>إجمالي النسب</th>
-                        <th>تاريخ الإنشاء</th>
-                        <th>الإجراءات</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for group in groups %}
-                    <tr>
-                        <td>
-                            <a href="{{ url_for('partners.group_detail', id=group.id) }}" class="text-blue-600 hover:underline font-medium">
-                                {{ group.name }}
-                            </a>
-                        </td>
-                        <td>
-                            <span class="badge badge-secondary">
-                                {{ group.members.count() }}
-                            </span>
-                        </td>
-                        <td>
-                            <span class="badge {% if group.get_total_percentage() == 100 %}badge-success{% elif group.get_total_percentage() > 100 %}badge-danger{% else %}badge-warning{% endif %}">
-                                {{ group.get_total_percentage() }}%
-                            </span>
-                        </td>
-                        <td>{{ group.created_at.strftime('%Y-%m-%d') if group.created_at else '-' }}</td>
-                        <td>
-                            <a href="{{ url_for('partners.group_detail', id=group.id) }}" class="btn btn-sm btn-secondary">
-                                <i class="fas fa-eye"></i>
-                                عرض
-                            </a>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="5" class="text-center text-gray-500">لا توجد مجموعات</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        
-        {% if pagination.pages > 1 %}
-            {% include '_partials/pagination.html' %}
-        {% endif %}
-    </div>
+<div class="space-y-6 page-content">
+ <!-- Header with Back Button -->
+ <div class="flex items-center gap-4 mb-4">
+  <a href="{{ url_for('dashboard.index') }}" class="modern-btn modern-btn-back modern-btn-sm">
+   <i class="fas fa-arrow-right"></i>
+   <span>الرئيسية</span>
+  </a>
+  <div>
+   <h1 class="text-2xl font-bold text-gray-900">مجموعات الشركاء</h1>
+   <p class="text-sm text-gray-600">إدارة مجموعات الشركاء</p>
+  </div>
+ </div>
+ 
+ <!-- Navigation Tabs -->
+ <div class="bg-white rounded-lg shadow-sm p-1 mb-6">
+  <nav class="flex space-x-1 rtl:space-x-reverse">
+   <a href="{{ url_for('partners.index') }}" 
+      class="flex-1 text-center py-2 px-4 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
+    <i class="fas fa-user-friends ml-2"></i>
+    الشركاء
+   </a>
+   <a href="{{ url_for('partners.groups') }}" 
+      class="flex-1 text-center py-2 px-4 rounded-md text-sm font-medium bg-blue-500 text-white">
+    <i class="fas fa-users ml-2"></i>
+    مجموعات الشركاء
+   </a>
+  </nav>
+ </div>
+ 
+ <!-- Stats -->
+ <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white mb-6">
+  <div class="flex items-center justify-between">
+   <div>
+    <p class="text-purple-100 text-sm">إجمالي المجموعات</p>
+    <p class="text-3xl font-bold">{{ groups_data|length }}</p>
+   </div>
+   <i class="fas fa-layer-group text-4xl text-purple-200"></i>
+  </div>
+ </div>
+ 
+ <!-- Search -->
+ <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+  <form method="GET" action="{{ url_for('partners.groups') }}" class="flex gap-4">
+   <input type="text" name="q" value="{{ q }}" 
+          placeholder="بحث بالاسم أو الكود..."
+          class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+   <button type="submit" class="modern-btn modern-btn-primary">
+    <i class="fas fa-search"></i>
+    <span>بحث</span>
+   </button>
+   {% if q %}
+   <a href="{{ url_for('partners.groups') }}" class="modern-btn modern-btn-secondary">
+    <i class="fas fa-times"></i>
+    <span>إلغاء</span>
+   </a>
+   {% endif %}
+  </form>
+ </div>
+ 
+ <!-- Groups Table -->
+ <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+  <table class="min-w-full divide-y divide-gray-200">
+   <thead class="bg-gray-50">
+    <tr>
+     <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الكود</th>
+     <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">اسم المجموعة</th>
+     <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">عدد الأعضاء</th>
+     <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">النسبة الإجمالية</th>
+     <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
+    </tr>
+   </thead>
+   <tbody class="bg-white divide-y divide-gray-200">
+    {% for item in groups_data %}
+    {% set group = item.group %}
+    <tr class="hover:bg-gray-50">
+     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+      <span class="px-2 py-1 text-xs rounded-md bg-purple-100 text-purple-700">
+       {{ group.code }}
+      </span>
+     </td>
+     <td class="px-6 py-4 whitespace-nowrap">
+      <a href="{{ url_for('partners.group_detail', id=group.id) }}" class="text-blue-600 hover:text-blue-900 font-medium">
+       {{ group.name }}
+      </a>
+     </td>
+     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+      <i class="fas fa-users text-gray-400 ml-2"></i>
+      {{ item.members_count }} شريك
+     </td>
+     <td class="px-6 py-4 whitespace-nowrap">
+      <div class="flex items-center">
+       <div class="flex-1 bg-gray-200 rounded-full h-2 ml-2">
+        <div class="bg-green-500 rounded-full h-2" style="width: {{ item.total_percentage }}%"></div>
+       </div>
+       <span class="text-sm font-medium text-gray-900">{{ item.total_percentage }}%</span>
+      </div>
+     </td>
+     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+      <div class="flex gap-2">
+       <a href="{{ url_for('partners.group_detail', id=group.id) }}" class="text-blue-600 hover:text-blue-900">
+        <i class="fas fa-eye"></i>
+       </a>
+       <form method="POST" action="{{ url_for('partners.delete_group', id=group.id) }}" class="inline" 
+             onsubmit="return confirm('هل أنت متأكد من حذف هذه المجموعة؟');">
+        <button type="submit" class="text-red-600 hover:text-red-900">
+         <i class="fas fa-trash"></i>
+        </button>
+       </form>
+      </div>
+     </td>
+    </tr>
+    {% else %}
+    <tr>
+     <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+      <i class="fas fa-layer-group text-4xl text-gray-300 mb-4"></i>
+      <p class="text-lg">لا توجد مجموعات</p>
+     </td>
+    </tr>
+    {% endfor %}
+   </tbody>
+  </table>
+  
+  {% if pagination and pagination.pages > 1 %}
+  <div class="bg-gray-50 px-4 py-3 border-t border-gray-200">
+   {% include 'shared/pagination.html' %}
+  </div>
+  {% endif %}
+ </div>
 </div>
+
+<!-- Floating Action Button -->
+<a href="{{ url_for('partners.add_group') }}" class="modern-fab">
+ <i class="fas fa-plus text-xl"></i>
+</a>
 {% endblock %}

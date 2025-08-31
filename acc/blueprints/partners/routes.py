@@ -1,7 +1,7 @@
 from flask import render_template, request, redirect, url_for, flash, jsonify
 from acc.blueprints.partners import bp
 from acc.extensions import db
-from acc.models import Partner
+from acc.models import Partner, PartnerGroup, PartnerGroupMember
 from acc.services.utils import generate_uid, log_action, Pagination, format_currency
 from acc.services.code_generator import generate_partner_code
 from sqlalchemy import or_, func
@@ -327,7 +327,193 @@ def report():
                          total_partners=total_partners,
                          active_partners=active_partners,
                          inactive_partners=inactive_partners,
-                         total_shares=total_shares,
-                         status=status,
-                         date_from=date_from,
-                         date_to=date_to)
+                                                 total_shares=total_shares,
+                        status=status,
+                        date_from=date_from,
+                        date_to=date_to)
+
+# Partner Groups Routes
+@bp.route('/groups')
+def groups():
+    """عرض مجموعات الشركاء"""
+    page = request.args.get('page', 1, type=int)
+    q = request.args.get('q', '')
+    
+    query = PartnerGroup.query
+    
+    if q:
+        query = query.filter(
+            or_(
+                PartnerGroup.name.contains(q),
+                PartnerGroup.code.contains(q)
+            )
+        )
+    
+    query = query.order_by(PartnerGroup.created_at.desc())
+    pagination = Pagination(query, page)
+    
+    # Get member count and total percentage for each group
+    groups_data = []
+    for group in pagination.items:
+        members_count = group.members.count()
+        total_percentage = float(group.get_total_percentage())
+        groups_data.append({
+            'group': group,
+            'members_count': members_count,
+            'total_percentage': total_percentage
+        })
+    
+    return render_template('partners/groups.html',
+                         groups_data=groups_data,
+                         pagination=pagination,
+                         q=q)
+
+@bp.route('/groups/add', methods=['GET', 'POST'])
+def add_group():
+    """إضافة مجموعة شركاء جديدة"""
+    if request.method == 'POST':
+        try:
+            name = request.form.get('name', '').strip()
+            notes = request.form.get('notes', '').strip() or None
+            
+            if not name:
+                flash('❌ الرجاء إدخال اسم المجموعة', 'error')
+                return redirect(url_for('partners.add_group'))
+            
+            # Generate code
+            existing_count = PartnerGroup.query.count()
+            code = f'PG{str(existing_count + 1).zfill(3)}'
+            
+            group = PartnerGroup(
+                id=generate_uid('PG'),
+                code=code,
+                name=name,
+                notes=notes
+            )
+            
+            db.session.add(group)
+            db.session.commit()
+            
+            flash(f'✅ تم إضافة المجموعة "{name}" بنجاح', 'success')
+            return redirect(url_for('partners.group_detail', id=group.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'❌ خطأ في إضافة المجموعة: {str(e)}', 'error')
+            return redirect(url_for('partners.add_group'))
+    
+    return render_template('partners/add_group.html')
+
+@bp.route('/groups/<string:id>')
+def group_detail(id):
+    """عرض تفاصيل مجموعة الشركاء"""
+    group = PartnerGroup.query.get_or_404(id)
+    
+    # Get all partners for adding
+    available_partners = Partner.query.filter_by(status='نشط').all()
+    
+    # Get current members
+    members = []
+    for member in group.members:
+        partner = Partner.query.get(member.partner_id)
+        if partner:
+            members.append({
+                'member': member,
+                'partner': partner
+            })
+    
+    total_percentage = group.get_total_percentage()
+    
+    return render_template('partners/group_detail.html',
+                         group=group,
+                         members=members,
+                         total_percentage=total_percentage,
+                         available_partners=available_partners)
+
+@bp.route('/groups/<string:id>/add-member', methods=['POST'])
+def add_group_member(id):
+    """إضافة شريك للمجموعة"""
+    group = PartnerGroup.query.get_or_404(id)
+    
+    try:
+        partner_id = request.form.get('partner_id')
+        percentage = float(request.form.get('percentage', 0))
+        
+        if not partner_id:
+            flash('❌ الرجاء اختيار شريك', 'error')
+            return redirect(url_for('partners.group_detail', id=id))
+        
+        # Check if partner already in group
+        existing = PartnerGroupMember.query.filter_by(
+            group_id=id,
+            partner_id=partner_id
+        ).first()
+        
+        if existing:
+            flash('⚠️ هذا الشريك موجود بالفعل في المجموعة', 'warning')
+            return redirect(url_for('partners.group_detail', id=id))
+        
+        # Check total percentage
+        current_total = group.get_total_percentage()
+        if current_total + percentage > 100:
+            flash(f'❌ المجموع سيتجاوز 100% (الحالي: {current_total}%)', 'error')
+            return redirect(url_for('partners.group_detail', id=id))
+        
+        member = PartnerGroupMember(
+            id=generate_uid('PGM'),
+            group_id=id,
+            partner_id=partner_id,
+            percentage=percentage
+        )
+        
+        db.session.add(member)
+        db.session.commit()
+        
+        partner = Partner.query.get(partner_id)
+        flash(f'✅ تم إضافة الشريك "{partner.name}" للمجموعة', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'❌ خطأ في إضافة الشريك: {str(e)}', 'error')
+    
+    return redirect(url_for('partners.group_detail', id=id))
+
+@bp.route('/groups/<string:group_id>/remove-member/<string:member_id>', methods=['POST'])
+def remove_group_member(group_id, member_id):
+    """حذف شريك من المجموعة"""
+    member = PartnerGroupMember.query.get_or_404(member_id)
+    partner_name = member.partner.name
+    
+    try:
+        db.session.delete(member)
+        db.session.commit()
+        
+        flash(f'✅ تم حذف الشريك "{partner_name}" من المجموعة', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'❌ خطأ في حذف الشريك: {str(e)}', 'error')
+    
+    return redirect(url_for('partners.group_detail', id=group_id))
+
+@bp.route('/groups/<string:id>/delete', methods=['POST'])
+def delete_group(id):
+    """حذف مجموعة الشركاء"""
+    group = PartnerGroup.query.get_or_404(id)
+    group_name = group.name
+    
+    try:
+        # Check if group is used in any units
+        from acc.models import Unit, UnitPartner
+        # This would need implementation based on how groups are linked to units
+        
+        db.session.delete(group)
+        db.session.commit()
+        
+        flash(f'✅ تم حذف المجموعة "{group_name}" بنجاح', 'success')
+        return redirect(url_for('partners.groups'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'❌ خطأ في حذف المجموعة: {str(e)}', 'error')
+        return redirect(url_for('partners.group_detail', id=id))
