@@ -1,0 +1,37 @@
+<tr id="row-{{ customer.id }}">
+    <td><span class="code-badge">{{ customer.code }}</span></td>
+    <td class="font-medium">{{ customer.name }}</td>
+    <td class="font-mono text-sm" dir="ltr">{{ customer.phone or '-' }}</td>
+    <td class="text-sm text-gray-600">{{ customer.national_id or '-' }}</td>
+    <td class="text-sm text-gray-600">{{ customer.address or '-' }}</td>
+    <td>
+        {% if customer.status == 'نشط' %}
+            <span class="status-badge active">
+                <i class="fas fa-circle text-xs"></i>
+                نشط
+            </span>
+        {% else %}
+            <span class="status-badge inactive">
+                <i class="fas fa-circle text-xs"></i>
+                معلق
+            </span>
+        {% endif %}
+    </td>
+    <td>
+        <div class="flex gap-2">
+            <a href="{{ url_for('customers.detail', id=customer.id) }}" class="btn-sm btn-view">
+                <i class="fas fa-eye"></i>
+                عرض
+            </a>
+            <a href="{{ url_for('customers.edit', id=customer.id) }}" class="btn-sm btn-edit">
+                <i class="fas fa-edit"></i>
+                تعديل
+            </a>
+            <button onclick="deleteCustomer('{{ customer.id }}', '{{ customer.name }}')" 
+                    class="btn-sm btn-delete">
+                <i class="fas fa-trash"></i>
+                حذف
+            </button>
+        </div>
+    </td>
+</tr>
