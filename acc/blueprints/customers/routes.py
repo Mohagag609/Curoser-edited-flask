@@ -226,9 +226,23 @@ def delete(id):
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error deleting customer {id}: {str(e)}", exc_info=True)
-        error_msg = f'حدث خطأ في حذف العميل'
+        
+        # معالجة أنواع الأخطاء المختلفة
+        if "foreign key constraint" in str(e).lower():
+            error_msg = 'لا يمكن حذف العميل لوجود بيانات مرتبطة به'
+        elif "not found" in str(e).lower():
+            error_msg = 'العميل غير موجود'
+        else:
+            error_msg = f'حدث خطأ في حذف العميل: {str(e)}'
+            
         flash(f'❌ {error_msg}', 'error')
         return redirect(url_for('customers.index'))
+
+@bp.route('/test-delete')
+def test_delete():
+    """صفحة اختبار الحذف"""
+    customers = Customer.query.all()
+    return render_template('customers/test_delete.html', customers=customers)
 
 @bp.route('/search')
 def search():
