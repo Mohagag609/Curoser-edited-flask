@@ -92,7 +92,7 @@ class Contract(db.Model):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     
     # العلاقات
-    project = relationship('Project', backref='contracts')
+    project = relationship('Project', back_populates='contracts')
     unit = relationship('Unit', backref='contract', uselist=False)
     customer = relationship('Customer', backref='contracts')
     broker = relationship('Broker', backref='contracts')
