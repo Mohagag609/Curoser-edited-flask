@@ -879,8 +879,7 @@ async function generateInstallments(contractId, formData) {
 }
 
 function editContract(contractId) {
-    const editUrl = `{{ url_for('contracts.edit', id='CONTRACT_ID') }}`.replace('CONTRACT_ID', contractId);
-    window.location.href = editUrl;
+    window.location.href = `/contracts/${contractId}/edit`;
 }
 
 async function deleteContract(contractId, hasInstallments) {
@@ -895,8 +894,8 @@ async function deleteContract(contractId, hasInstallments) {
     }
     
     try {
-        // Use Flask url_for generated URL
-        const deleteUrl = `{{ url_for('contracts.delete', id='CONTRACT_ID') }}`.replace('CONTRACT_ID', contractId);
+        // Use direct URL path
+        const deleteUrl = `/contracts/${contractId}/delete`;
         console.log(`Using delete URL: ${deleteUrl}`);
         
         const response = await fetch(deleteUrl, {
