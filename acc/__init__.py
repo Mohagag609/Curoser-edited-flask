@@ -112,6 +112,12 @@ def create_app(config_class=Config):
     from acc.api import api
     app.register_blueprint(api)
     
+    # API routes
+    from acc.api import customers as customers_api
+    from acc.api import units as units_api
+    app.register_blueprint(customers_api.bp, url_prefix='/api/customers')
+    app.register_blueprint(units_api.bp, url_prefix='/api/units')
+    
     # Register context processors
     from acc.context_processors import inject_global_vars
     app.context_processor(inject_global_vars)

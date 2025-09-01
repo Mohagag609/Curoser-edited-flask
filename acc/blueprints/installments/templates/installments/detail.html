@@ -1,221 +1,269 @@
 {% extends "base.html" %}
 
-{% block title %}تفاصيل القسط - {{ super() }}{% endblock %}
+{% block title %}تفاصيل القسط - {{ g.project.name }}{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
+<div class="container py-4" dir="rtl">
     <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
-        <div>
-            <h2 class="text-3xl font-bold text-gray-900">تفاصيل القسط</h2>
-            <p class="text-gray-600 mt-1">قسط رقم {{ installment.installment_number or '-' }}</p>
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center">
+            <a href="{{ url_for('installments.index') }}" class="btn btn-outline-secondary me-3">
+                <i class="fas fa-arrow-right"></i>
+            </a>
+            <div>
+                <h1 class="h3 mb-0">تفاصيل القسط رقم {{ installment.installment_number }}</h1>
+                <p class="text-muted mb-0">معلومات القسط والمدفوعات</p>
+            </div>
         </div>
-        <a href="{{ url_for('installments.index') }}" class="btn btn-secondary">
-            <i class="fas fa-arrow-right"></i>
-            العودة للأقساط
+        {% if installment.status != 'مدفوع' %}
+        <a href="{{ url_for('installments.pay', id=installment.id) }}" class="btn btn-success">
+            <i class="fas fa-money-bill-wave me-2"></i>
+            دفع القسط
         </a>
+        {% endif %}
     </div>
-    
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Installment Info -->
-        <div class="lg:col-span-2">
-            <div class="card">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">معلومات القسط</h3>
-                
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="form-label">الوحدة</label>
-                        <p class="text-lg">
-                            <a href="{{ url_for('units.detail', id=installment.unit_id) }}" class="text-blue-600 hover:underline">
-                                {{ installment.unit.get_display_name() }}
-                            </a>
-                        </p>
-                    </div>
-                    
-                    <div>
-                        <label class="form-label">العميل</label>
-                        <p class="text-lg">
-                            {% if installment.unit.contracts %}
-                                <a href="{{ url_for('customers.detail', id=installment.unit.contracts.customer_id) }}" class="text-blue-600 hover:underline">
-                                    {{ installment.unit.contracts.customer.name }}
-                                </a>
-                            {% else %}
-                                -
-                            {% endif %}
-                        </p>
-                    </div>
-                    
-                    <div>
-                        <label class="form-label">نوع القسط</label>
-                        <p class="text-lg">{{ installment.type }}</p>
-                    </div>
-                    
-                    <div>
-                        <label class="form-label">رقم القسط</label>
-                        <p class="text-lg">{{ installment.installment_number or '-' }}</p>
-                    </div>
-                    
-                    <div>
-                        <label class="form-label">تاريخ الاستحقاق</label>
-                        <p class="text-lg">{{ installment.due_date }}</p>
-                    </div>
-                    
-                    <div>
-                        <label class="form-label">الحالة</label>
-                        <p class="text-lg">
-                            {% if installment.status == 'مدفوع' %}
-                                <span class="badge badge-success">{{ installment.status }}</span>
-                            {% elif installment.status == 'مدفوع جزئياً' %}
-                                <span class="badge badge-warning">{{ installment.status }}</span>
-                            {% else %}
-                                <span class="badge badge-danger">{{ installment.status }}</span>
-                            {% endif %}
-                        </p>
+
+    <div class="row g-4">
+        <!-- Installment Details -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        معلومات القسط
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small">العميل</label>
+                            <div class="fw-bold">
+                                {% if installment.customer %}
+                                    {{ installment.customer.name }}
+                                    <br>
+                                    <small class="text-muted">{{ installment.customer.phone }}</small>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">الوحدة</label>
+                            <div class="fw-bold">
+                                {% if installment.unit %}
+                                    {{ installment.unit.name }} ({{ installment.unit.code }})
+                                    <br>
+                                    <small class="text-muted">
+                                        المبنى {{ installment.unit.building }} - الدور {{ installment.unit.floor }}
+                                    </small>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">العقد</label>
+                            <div class="fw-bold">
+                                {% if installment.contract %}
+                                    <a href="{{ url_for('contracts.view', id=installment.contract.id) }}">
+                                        {{ installment.contract.code }}
+                                    </a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">النوع</label>
+                            <div>
+                                {% if installment.type %}
+                                    <span class="badge bg-secondary">{{ installment.type }}</span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark">قسط عادي</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">تاريخ الاستحقاق</label>
+                            <div class="fw-bold">
+                                {{ installment.due_date.strftime('%Y-%m-%d') }}
+                                {% set today = g.today if g.today else [] %}
+                                {% if installment.status == 'مستحق' and installment.due_date < today %}
+                                    <br>
+                                    <small class="text-danger">
+                                        متأخر {{ (today - installment.due_date).days }} يوم
+                                    </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">الحالة</label>
+                            <div>
+                                {% if installment.status == 'مدفوع' %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check-circle me-1"></i>
+                                        مدفوع
+                                    </span>
+                                    {% if installment.paid_date %}
+                                        <br>
+                                        <small class="text-muted">
+                                            بتاريخ {{ installment.paid_date.strftime('%Y-%m-%d') }}
+                                        </small>
+                                    {% endif %}
+                                {% elif installment.due_date < today %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-exclamation-circle me-1"></i>
+                                        متأخر
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-clock me-1"></i>
+                                        مستحق
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
                 </div>
-                
-                <div class="mt-6 border-t pt-6">
-                    <div class="grid grid-cols-3 gap-4">
-                        <div>
-                            <label class="form-label">المبلغ الأصلي</label>
-                            <p class="text-2xl font-bold text-gray-900">{{ format_currency(installment.original_amount) }}</p>
-                        </div>
-                        
-                        <div>
-                            <label class="form-label">المدفوع</label>
-                            <p class="text-2xl font-bold text-green-600">
-                                {{ format_currency(installment.original_amount - installment.amount) }}
-                            </p>
-                        </div>
-                        
-                        <div>
-                            <label class="form-label">المتبقي</label>
-                            <p class="text-2xl font-bold text-red-600">{{ format_currency(installment.amount) }}</p>
-                        </div>
-                    </div>
-                </div>
-                
-                {% if installment.payment_date %}
-                <div class="mt-4">
-                    <label class="form-label">تاريخ السداد</label>
-                    <p class="text-lg">{{ installment.payment_date }}</p>
-                </div>
-                {% endif %}
             </div>
-            
+
             <!-- Payment History -->
-            <div class="card mt-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">سجل المدفوعات</h3>
-                
-                <div class="table-container">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>التاريخ</th>
-                                <th>المبلغ</th>
-                                <th>الخزينة</th>
-                                <th>الملاحظات</th>
-                                <th>الإجراءات</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for voucher in vouchers %}
-                            <tr>
-                                <td>{{ voucher.date }}</td>
-                                <td class="font-semibold text-green-600">{{ format_currency(voucher.amount) }}</td>
-                                <td>{{ voucher.safe.name if voucher.safe else '-' }}</td>
-                                <td>{{ voucher.notes or '-' }}</td>
-                                <td>
-                                    <form method="post" action="{{ url_for('installments.cancel_payment', id=installment.id, voucher_id=voucher.id) }}" 
-                                          class="inline" onsubmit="return confirm('هل أنت متأكد من إلغاء هذه الدفعة؟')">
-                                        <button type="submit" class="btn btn-sm btn-danger">
-                                            <i class="fas fa-times"></i>
-                                            إلغاء
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="5" class="text-center text-gray-500">لا توجد مدفوعات</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            {% if vouchers %}
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>
+                        سجل المدفوعات
+                    </h5>
                 </div>
-            </div>
-        </div>
-        
-        <!-- Payment Form -->
-        <div>
-            {% if installment.status != 'مدفوع' %}
-            <div class="card">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">تسجيل دفعة</h3>
-                
-                <form method="post" action="{{ url_for('installments.pay', id=installment.id) }}">
-                    <div class="space-y-4">
-                        <div>
-                            <label class="form-label">المبلغ المدفوع</label>
-                            <input type="number" name="amount" step="0.01" max="{{ installment.amount }}" 
-                                   value="{{ installment.amount }}" required
-                                   class="form-input">
-                            <p class="text-sm text-gray-500 mt-1">المتبقي: {{ format_currency(installment.amount) }}</p>
-                        </div>
-                        
-                        <div>
-                            <label class="form-label">تاريخ الدفع</label>
-                            <input type="date" name="payment_date" value="{{ today }}" required class="form-input">
-                        </div>
-                        
-                        <div>
-                            <label class="form-label">الخزينة</label>
-                            <select name="safe_id" required class="form-select">
-                                <option value="">اختر الخزينة...</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="form-label">ملاحظات</label>
-                            <textarea name="notes" rows="3" class="form-input"></textarea>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary w-full">
-                            <i class="fas fa-check"></i>
-                            تسجيل الدفعة
-                        </button>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>التاريخ</th>
+                                    <th>المبلغ</th>
+                                    <th>طريقة الدفع</th>
+                                    <th>الخزنة</th>
+                                    <th>الملاحظات</th>
+                                    <th width="100">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for voucher in vouchers %}
+                                <tr>
+                                    <td>{{ voucher.date.strftime('%Y-%m-%d') }}</td>
+                                    <td class="fw-bold text-success">
+                                        {{ "{:,.2f}".format(voucher.amount) }} ج.م
+                                    </td>
+                                    <td>
+                                        {% if voucher.payment_method == 'cash' %}
+                                            <i class="fas fa-money-bill-wave text-success me-1"></i> نقدي
+                                        {% elif voucher.payment_method == 'check' %}
+                                            <i class="fas fa-money-check text-info me-1"></i> شيك
+                                        {% else %}
+                                            <i class="fas fa-exchange-alt text-primary me-1"></i> تحويل
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if voucher.safe %}
+                                            {{ voucher.safe.name }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ voucher.notes or '-' }}</td>
+                                    <td>
+                                        <a href="{{ url_for('vouchers.detail', id=voucher.id) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-receipt"></i>
+                                            السند
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
-                </form>
-            </div>
-            {% else %}
-            <div class="card">
-                <div class="text-center py-8">
-                    <i class="fas fa-check-circle text-6xl text-green-500 mb-4"></i>
-                    <p class="text-lg font-semibold text-gray-900">تم سداد هذا القسط بالكامل</p>
-                    <p class="text-gray-600 mt-2">تاريخ السداد: {{ installment.payment_date }}</p>
                 </div>
             </div>
             {% endif %}
         </div>
+
+        <!-- Financial Summary -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calculator me-2"></i>
+                        الملخص المالي
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="financial-item">
+                        <span class="label">قيمة القسط</span>
+                        <span class="value text-primary">{{ "{:,.2f}".format(installment.amount) }} ج.م</span>
+                    </div>
+                    <div class="financial-item">
+                        <span class="label">المبلغ المدفوع</span>
+                        <span class="value text-success">{{ "{:,.2f}".format(paid_amount) }} ج.م</span>
+                    </div>
+                    <div class="financial-item">
+                        <span class="label">المبلغ المتبقي</span>
+                        <span class="value text-danger">{{ "{:,.2f}".format(remaining_amount) }} ج.م</span>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="progress mb-2" style="height: 25px;">
+                        {% set progress = (paid_amount / installment.amount * 100) if installment.amount > 0 else 0 %}
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {{ progress }}%">
+                            {{ "%.1f"|format(progress) }}%
+                        </div>
+                    </div>
+                    <small class="text-muted">نسبة السداد</small>
+                    
+                    {% if installment.status != 'مدفوع' %}
+                    <div class="mt-3">
+                        <a href="{{ url_for('installments.pay', id=installment.id) }}" 
+                           class="btn btn-success w-100">
+                            <i class="fas fa-money-bill-wave me-2"></i>
+                            دفع القسط
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
-<script>
-// Load safes
-fetch('{{ url_for("treasury.api_safes") }}')
-    .then(response => response.json())
-    .then(safes => {
-        const select = document.querySelector('select[name="safe_id"]');
-        if (select) {
-            safes.forEach(safe => {
-                const option = document.createElement('option');
-                option.value = safe.id;
-                option.textContent = safe.name + ' (' + safe.balance.toLocaleString('ar-EG', {minimumFractionDigits: 2}) + ' ج.م)';
-                if (safe.is_default) {
-                    option.selected = true;
-                }
-                select.appendChild(option);
-            });
-        }
-    });
-</script>
+<style>
+.financial-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.financial-item:last-child {
+    border-bottom: none;
+}
+
+.financial-item .label {
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.financial-item .value {
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.card-header {
+    font-weight: 500;
+}
+</style>
 {% endblock %}

@@ -1,99 +1,567 @@
 {% extends "base.html" %}
 
-{% block title %}العقود{% endblock %}
-{% block page_title %}العقود{% endblock %}
+{% block title %}العقود - {{ g.project.name }}{% endblock %}
 
 {% block content %}
-<div class="space-y-6 page-content">
- <!-- Header with Back Button -->
- <div class="flex items-center gap-4 mb-4">
- <a href="{{ url_for('dashboard.index') }}" class="modern-btn modern-btn-back modern-btn-sm">
- <i class="fas fa-arrow-right"></i>
- <span>الرئيسية</span>
- </a>
- <div>
- <h1 class="text-2xl font-bold text-gray-900">العقود</h1>
- <p class="text-sm text-gray-600">إدارة بيانات العقود</p>
- </div>
- </div>
- 
- <!-- Stats Cards - Same colors as Customers -->
- <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
- <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
- <div class="flex items-center justify-between">
- <div>
- <p class="text-blue-100 text-sm">إجمالي العقود</p>
- <p class="text-3xl font-bold">{{ total_contracts|default(0) }}</p>
- </div>
- <i class="fas fa-file-contract text-4xl text-blue-200"></i>
- </div>
- </div>
- 
- <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
- <div class="flex items-center justify-between">
- <div>
- <p class="text-green-100 text-sm">عقود نشطة</p>
- <p class="text-3xl font-bold">{{ active_contracts|default(0) }}</p>
- </div>
- <i class="fas fa-check-circle text-4xl text-green-200"></i>
- </div>
- </div>
- 
- <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
- <div class="flex items-center justify-between">
- <div>
- <p class="text-purple-100 text-sm">مكتملة</p>
- <p class="text-3xl font-bold">{{ completed_contracts|default(0) }}</p>
- </div>
- <i class="fas fa-badge-check text-4xl text-purple-200"></i>
- </div>
- </div>
- 
- <div class="bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl p-6 text-white">
- <div class="flex items-center justify-between">
- <div>
- <p class="text-gray-100 text-sm">ملغية</p>
- <p class="text-3xl font-bold">{{ cancelled_contracts|default(0) }}</p>
- </div>
- <i class="fas fa-times-circle text-4xl text-gray-200"></i>
- </div>
- </div>
- </div>
- 
- <!-- Action Buttons -->
- <div class="flex flex-wrap gap-2 mb-6">
- <a href="{{ url_for('contracts.add') }}" class="modern-btn modern-btn-primary" style="display: inline-flex !important; align-items: center !important; gap: 0.5rem !important; padding: 0.5rem 1rem !important; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important; color: white !important; border-radius: 0.375rem !important; text-decoration: none !important; font-weight: 500 !important;">
- <i class="fas fa-plus-circle"></i>
- <span>إضافة عقد جديد</span>
- </a>
+<div class="container-fluid py-4" dir="rtl">
+    <!-- Header -->
+    <div class="page-header">
+        <div class="row align-items-center mb-4">
+            <div class="col">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-file-contract text-primary me-2"></i>
+                    إدارة العقود
+                </h1>
+                <p class="text-muted mt-1">إدارة عقود البيع والشراء</p>
+            </div>
+            <div class="col-auto">
+                <button onclick="showCreateModal()" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    عقد جديد
+                </button>
+            </div>
+        </div>
+    </div>
 
- <a href="{{ url_for('installments.index') }}" class="modern-btn modern-btn-secondary" style="display: inline-flex !important; align-items: center !important; gap: 0.5rem !important; padding: 0.5rem 1rem !important; background: white !important; color: #4b5563 !important; border: 1px solid #e5e7eb !important; border-radius: 0.375rem !important; text-decoration: none !important; font-weight: 500 !important;">
- <i class="fas fa-money-bill-wave"></i>
- <span>الأقساط</span>
- </a>
- </div>
- 
- <!-- Enhanced Search Bar -->
- {% set search_url = url_for('contracts.search') %}
- {% set search_placeholder = 'البحث برقم العقد، العميل، المشروع...' %}
- {% set filter_options = [
- {'value': '', 'label': 'جميع الحالات'},
- {'value': 'نشط', 'label': 'نشط'},
- {'value': 'مكتمل', 'label': 'مكتمل'},
- {'value': 'ملغي', 'label': 'ملغي'}
- ] %}
- {% set filter_name = 'status' %}
- {% set filter_label = 'الحالة' %}
- {% include 'shared/search_bar.html' %}
- 
- <!-- Results Container -->
- <div id="results-container">
- {% include 'contracts/_results.html' %}
- </div>
+    <!-- Statistics Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon bg-primary">
+                    <i class="fas fa-file-contract"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ stats.total }}</div>
+                    <div class="stat-label">إجمالي العقود</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon bg-success">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ stats.active }}</div>
+                    <div class="stat-label">عقود نشطة</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon bg-info">
+                    <i class="fas fa-flag-checkered"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ stats.completed }}</div>
+                    <div class="stat-label">عقود مكتملة</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon bg-danger">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ stats.cancelled }}</div>
+                    <div class="stat-label">عقود ملغية</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" action="{{ url_for('contracts.index') }}" class="row g-3">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" name="q" class="form-control" 
+                               placeholder="البحث بالكود، اسم العميل، الوحدة..." 
+                               value="{{ q }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select name="status" class="form-select">
+                        <option value="">جميع الحالات</option>
+                        <option value="نشط" {% if status == 'نشط' %}selected{% endif %}>نشط</option>
+                        <option value="مكتمل" {% if status == 'مكتمل' %}selected{% endif %}>مكتمل</option>
+                        <option value="ملغي" {% if status == 'ملغي' %}selected{% endif %}>ملغي</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>
+                        تطبيق
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contracts Table -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th width="100">كود العقد</th>
+                            <th>العميل</th>
+                            <th>الوحدة</th>
+                            <th>السعر الإجمالي</th>
+                            <th>المدفوع</th>
+                            <th>المتبقي</th>
+                            <th>تاريخ البداية</th>
+                            <th width="100">الحالة</th>
+                            <th width="150">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for contract in contracts %}
+                        <tr>
+                            <td>
+                                <span class="badge bg-secondary">{{ contract.code }}</span>
+                            </td>
+                            <td>
+                                {% if contract.customer %}
+                                    <div class="fw-bold">{{ contract.customer.name }}</div>
+                                    <small class="text-muted">{{ contract.customer.phone }}</small>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if contract.unit %}
+                                    <div class="fw-bold">{{ contract.unit.name }}</div>
+                                    <small class="text-muted">
+                                        {{ contract.unit.code }} - 
+                                        المبنى {{ contract.unit.building }} - 
+                                        الدور {{ contract.unit.floor }}
+                                    </small>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-primary fw-bold">
+                                {{ "{:,.2f}".format(contract.total_price) }} ج.م
+                            </td>
+                            <td class="text-success">
+                                {{ "{:,.2f}".format(contract.down_payment) }} ج.م
+                            </td>
+                            <td class="text-danger">
+                                {{ "{:,.2f}".format(contract.total_price - contract.down_payment) }} ج.م
+                            </td>
+                            <td>
+                                {{ contract.start_date.strftime('%Y-%m-%d') }}
+                            </td>
+                            <td>
+                                {% if contract.status == 'نشط' %}
+                                    <span class="badge bg-success">نشط</span>
+                                {% elif contract.status == 'مكتمل' %}
+                                    <span class="badge bg-info">مكتمل</span>
+                                {% else %}
+                                    <span class="badge bg-danger">ملغي</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('contracts.view', id=contract.id) }}" 
+                                       class="btn btn-outline-primary" title="عرض">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('contracts.edit', id=contract.id) }}" 
+                                       class="btn btn-outline-warning" title="تعديل">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button onclick="deleteContract('{{ contract.id }}')" 
+                                            class="btn btn-outline-danger" title="حذف">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5 text-muted">
+                                <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+                                لا توجد عقود
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        {% if pagination.pages > 1 %}
+        <div class="card-footer">
+            <nav>
+                <ul class="pagination justify-content-center mb-0">
+                    {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('contracts.index', page=pagination.prev_num, q=q, status=status) }}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in pagination.iter_pages(left_edge=1, left_current=1, right_current=2, right_edge=1) %}
+                        {% if page_num %}
+                            {% if page_num != pagination.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('contracts.index', page=page_num, q=q, status=status) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('contracts.index', page=pagination.next_num, q=q, status=status) }}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
 </div>
 
-<!-- Floating Action Button -->
-<a href="{{ url_for('contracts.add') }}" class="modern-fab" style="position: fixed !important; bottom: 2rem !important; left: 2rem !important; width: 3.5rem !important; height: 3.5rem !important; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important; color: white !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important; text-decoration: none !important; z-index: 50 !important;">
- <i class="fas fa-plus text-xl"></i>
-</a>
+<!-- Create Contract Modal -->
+<div class="modal fade" id="createModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle text-primary me-2"></i>
+                    إنشاء عقد جديد
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createForm" onsubmit="createContract(event)">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">العميل <span class="text-danger">*</span></label>
+                            <select name="customer_id" class="form-select" required>
+                                <option value="">اختر العميل</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">الوحدة <span class="text-danger">*</span></label>
+                            <select name="unit_id" class="form-select" required onchange="updateUnitPrice(this)">
+                                <option value="">اختر الوحدة</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">السعر الإجمالي <span class="text-danger">*</span></label>
+                            <input type="number" name="total_price" class="form-control" 
+                                   min="0" step="0.01" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">المقدم</label>
+                            <input type="number" name="down_payment" class="form-control" 
+                                   min="0" step="0.01" value="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">اسم السمسار</label>
+                            <input type="text" name="broker_name" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">نسبة العمولة %</label>
+                            <input type="number" name="broker_percent" class="form-control" 
+                                   min="0" max="100" step="0.01" value="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">طريقة السداد</label>
+                            <select name="payment_type" class="form-select" onchange="toggleInstallmentOptions(this)">
+                                <option value="cash">كاش</option>
+                                <option value="installment">تقسيط</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">تاريخ البداية <span class="text-danger">*</span></label>
+                            <input type="date" name="start_date" class="form-control" 
+                                   value="{{ today }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">وديعة الصيانة</label>
+                            <input type="number" name="maintenance_deposit" class="form-control" 
+                                   min="0" step="0.01" value="0">
+                        </div>
+                    </div>
+                    
+                    <!-- Installment Options -->
+                    <div id="installmentOptions" class="mt-4 p-3 bg-light rounded" style="display: none;">
+                        <h6 class="mb-3">خيارات التقسيط</h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">نوع التقسيط</label>
+                                <select name="installment_type" class="form-select">
+                                    <option value="شهري">شهري</option>
+                                    <option value="ربع سنوي">ربع سنوي</option>
+                                    <option value="نصف سنوي">نصف سنوي</option>
+                                    <option value="سنوي">سنوي</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">عدد السنوات</label>
+                                <input type="number" name="years" class="form-control" 
+                                       min="1" max="30" value="1">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">دفعات سنوية إضافية</label>
+                                <input type="number" name="extra_annual" class="form-control" 
+                                       min="0" value="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">قيمة الدفعة السنوية</label>
+                                <input type="number" name="annual_payment" class="form-control" 
+                                       min="0" step="0.01" value="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>
+                        حفظ العقد
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Statistics Cards */
+.stat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    transition: transform 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 15px;
+    flex-shrink: 0;
+}
+
+.stat-icon i {
+    font-size: 24px;
+    color: white;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #2c3e50;
+    line-height: 1;
+}
+
+.stat-label {
+    color: #6c757d;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+/* Table Styles */
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+    white-space: nowrap;
+}
+
+.table td {
+    vertical-align: middle;
+    padding: 12px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .stat-card {
+        margin-bottom: 15px;
+    }
+    
+    .table {
+        font-size: 14px;
+    }
+    
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+}
+</style>
+
+<script>
+// Load data when modal opens
+document.getElementById('createModal').addEventListener('show.bs.modal', async function() {
+    try {
+        // Load customers
+        const customersResponse = await fetch('/api/customers/active');
+        const customersData = await customersResponse.json();
+        
+        const customerSelect = document.querySelector('select[name="customer_id"]');
+        customerSelect.innerHTML = '<option value="">اختر العميل</option>';
+        customersData.customers.forEach(customer => {
+            customerSelect.innerHTML += `<option value="${customer.id}">${customer.name}</option>`;
+        });
+        
+        // Load units
+        const unitsResponse = await fetch('/api/units/available');
+        const unitsData = await unitsResponse.json();
+        
+        const unitSelect = document.querySelector('select[name="unit_id"]');
+        unitSelect.innerHTML = '<option value="">اختر الوحدة</option>';
+        unitsData.units.forEach(unit => {
+            unitSelect.innerHTML += `
+                <option value="${unit.id}" data-price="${unit.total_price}">
+                    ${unit.code} - ${unit.name} - ${unit.total_price.toLocaleString()} ج.م
+                </option>
+            `;
+        });
+    } catch (error) {
+        console.error('Error loading data:', error);
+    }
+});
+
+// Show create modal
+function showCreateModal() {
+    const modal = new bootstrap.Modal(document.getElementById('createModal'));
+    modal.show();
+}
+
+// Update unit price
+function updateUnitPrice(select) {
+    const selectedOption = select.options[select.selectedIndex];
+    const price = selectedOption.getAttribute('data-price');
+    if (price) {
+        document.querySelector('input[name="total_price"]').value = price;
+    }
+}
+
+// Toggle installment options
+function toggleInstallmentOptions(select) {
+    const installmentOptions = document.getElementById('installmentOptions');
+    if (select.value === 'installment') {
+        installmentOptions.style.display = 'block';
+    } else {
+        installmentOptions.style.display = 'none';
+    }
+}
+
+// Create contract
+async function createContract(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    
+    try {
+        const response = await fetch('{{ url_for("contracts.create") }}', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Generate installments if needed
+            if (formData.get('payment_type') === 'installment') {
+                const installmentData = new FormData();
+                installmentData.append('contract_id', result.contract_id);
+                installmentData.append('installment_type', formData.get('installment_type'));
+                installmentData.append('years', formData.get('years'));
+                installmentData.append('extra_annual', formData.get('extra_annual'));
+                installmentData.append('annual_payment', formData.get('annual_payment'));
+                
+                await fetch(`/contracts/${result.contract_id}/installments/generate`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: installmentData
+                });
+            }
+            
+            window.notify(result.message, 'success');
+            setTimeout(() => {
+                window.location.href = `/contracts/${result.contract_id}`;
+            }, 1000);
+        } else {
+            window.notify(result.message, 'error');
+        }
+    } catch (error) {
+        window.notify('حدث خطأ في الاتصال', 'error');
+    }
+}
+
+// Delete contract
+async function deleteContract(id) {
+    if (!confirm('هل أنت متأكد من حذف هذا العقد؟')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/contracts/${id}/delete`, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            window.notify(result.message, 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            window.notify(result.message, 'error');
+        }
+    } catch (error) {
+        window.notify('حدث خطأ في الاتصال', 'error');
+    }
+}
+</script>
 {% endblock %}

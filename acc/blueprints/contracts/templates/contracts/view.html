@@ -1,143 +1,314 @@
 {% extends "base.html" %}
 
-{% block title %}عرض العقد - {{ contract.code }}{% endblock %}
-{% block page_title %}تفاصيل العقد{% endblock %}
+{% block title %}عقد رقم {{ contract.code }} - {{ g.project.name }}{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="container-fluid py-4" dir="rtl">
     <!-- Header -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex justify-between items-start">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center">
+            <a href="{{ url_for('contracts.index') }}" class="btn btn-outline-secondary me-3">
+                <i class="fas fa-arrow-right"></i>
+            </a>
             <div>
-                <h1 class="text-2xl font-bold text-gray-900 mb-2">عقد رقم: {{ contract.code }}</h1>
-                <p class="text-gray-600">تاريخ العقد: {{ contract.start_date.strftime('%Y-%m-%d') if contract.start_date else '-' }}</p>
+                <h1 class="h3 mb-0">عقد رقم {{ contract.code }}</h1>
+                <p class="text-muted mb-0">تفاصيل العقد والأقساط</p>
             </div>
-            <div class="flex gap-2">
-                <a href="{{ url_for('contracts.edit', id=contract.id) }}" class="btn btn-primary">
-                    <i class="fas fa-edit"></i>
-                    تعديل
-                </a>
-                <a href="{{ url_for('contracts.index') }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-right"></i>
-                    رجوع
-                </a>
-            </div>
+        </div>
+        <div>
+            <a href="{{ url_for('contracts.edit', id=contract.id) }}" class="btn btn-warning">
+                <i class="fas fa-edit me-2"></i>
+                تعديل
+            </a>
+            <button onclick="deleteContract('{{ contract.id }}')" class="btn btn-danger">
+                <i class="fas fa-trash me-2"></i>
+                حذف
+            </button>
         </div>
     </div>
 
-    <!-- Contract Details -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Basic Info -->
-        <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">معلومات أساسية</h2>
-            <dl class="space-y-3">
-                <div class="flex justify-between">
-                    <dt class="text-gray-600">العميل:</dt>
-                    <dd class="font-medium">{{ contract.customer.name if contract.customer else '-' }}</dd>
+    <div class="row g-4">
+        <!-- Contract Details -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-contract me-2"></i>
+                        بيانات العقد
+                    </h5>
                 </div>
-                <div class="flex justify-between">
-                    <dt class="text-gray-600">الوحدة:</dt>
-                    <dd class="font-medium">
-                        {% if contract.unit %}
-                            {{ contract.unit.name }} - {{ contract.unit.building }} - {{ contract.unit.floor }}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </dd>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small">العميل</label>
+                            <div class="fw-bold">
+                                {% if contract.customer %}
+                                    {{ contract.customer.name }}
+                                    <br>
+                                    <small class="text-muted">{{ contract.customer.phone }}</small>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">الوحدة</label>
+                            <div class="fw-bold">
+                                {% if contract.unit %}
+                                    {{ contract.unit.name }} ({{ contract.unit.code }})
+                                    <br>
+                                    <small class="text-muted">
+                                        المبنى {{ contract.unit.building }} - الدور {{ contract.unit.floor }}
+                                    </small>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">تاريخ البداية</label>
+                            <div class="fw-bold">{{ contract.start_date.strftime('%Y-%m-%d') }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">الحالة</label>
+                            <div>
+                                {% if contract.status == 'نشط' %}
+                                    <span class="badge bg-success">نشط</span>
+                                {% elif contract.status == 'مكتمل' %}
+                                    <span class="badge bg-info">مكتمل</span>
+                                {% else %}
+                                    <span class="badge bg-danger">ملغي</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">السمسار</label>
+                            <div class="fw-bold">
+                                {% if contract.broker_name %}
+                                    {{ contract.broker_name }}
+                                    <br>
+                                    <small class="text-muted">
+                                        العمولة: {{ contract.broker_percent }}% 
+                                        ({{ "{:,.2f}".format(contract.broker_amount) }} ج.م)
+                                    </small>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">طريقة السداد</label>
+                            <div class="fw-bold">
+                                {% if contract.payment_type == 'cash' %}
+                                    <i class="fas fa-money-bill-wave text-success me-1"></i> كاش
+                                {% else %}
+                                    <i class="fas fa-calendar-alt text-info me-1"></i> تقسيط
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="flex justify-between">
-                    <dt class="text-gray-600">الحالة:</dt>
-                    <dd>
-                        {% if contract.status == 'نشط' %}
-                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">نشط</span>
-                        {% elif contract.status == 'مكتمل' %}
-                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">مكتمل</span>
-                        {% else %}
-                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">ملغي</span>
-                        {% endif %}
-                    </dd>
+            </div>
+
+            <!-- Installments Table -->
+            {% if installments %}
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-check me-2"></i>
+                        جدول الأقساط
+                    </h5>
                 </div>
-            </dl>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th width="60">#</th>
+                                    <th>تاريخ الاستحقاق</th>
+                                    <th>المبلغ</th>
+                                    <th>المدفوع</th>
+                                    <th>المتبقي</th>
+                                    <th>النوع</th>
+                                    <th width="100">الحالة</th>
+                                    <th width="120">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for installment in installments %}
+                                <tr>
+                                    <td>{{ installment.installment_number }}</td>
+                                    <td>{{ installment.due_date.strftime('%Y-%m-%d') }}</td>
+                                    <td class="fw-bold">{{ "{:,.2f}".format(installment.amount) }} ج.م</td>
+                                    <td class="text-success">
+                                        {{ "{:,.2f}".format(installment.get_paid_amount()) }} ج.م
+                                    </td>
+                                    <td class="text-danger">
+                                        {{ "{:,.2f}".format(installment.amount - installment.get_paid_amount()) }} ج.م
+                                    </td>
+                                    <td>
+                                        {% if installment.type %}
+                                            <span class="badge bg-secondary">{{ installment.type }}</span>
+                                        {% else %}
+                                            <span class="badge bg-light text-dark">قسط عادي</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if installment.status == 'مدفوع' %}
+                                            <span class="badge bg-success">مدفوع</span>
+                                        {% elif installment.status == 'مستحق' %}
+                                            <span class="badge bg-warning">مستحق</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">متأخر</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('installments.detail', id=installment.id) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                            عرض
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
 
-        <!-- Financial Info -->
-        <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">معلومات مالية</h2>
-            <dl class="space-y-3">
-                <div class="flex justify-between">
-                    <dt class="text-gray-600">السعر الكلي:</dt>
-                    <dd class="font-medium">{{ format_currency(contract.total_price) }}</dd>
+        <!-- Financial Summary -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        الملخص المالي
+                    </h5>
                 </div>
-                <div class="flex justify-between">
-                    <dt class="text-gray-600">المبلغ المدفوع:</dt>
-                    <dd class="font-medium text-green-600">{{ format_currency(contract.down_payment) }}</dd>
+                <div class="card-body">
+                    <div class="financial-item">
+                        <span class="label">السعر الإجمالي</span>
+                        <span class="value text-primary">{{ "{:,.2f}".format(contract.total_price) }} ج.م</span>
+                    </div>
+                    <div class="financial-item">
+                        <span class="label">المقدم</span>
+                        <span class="value text-success">{{ "{:,.2f}".format(contract.down_payment) }} ج.م</span>
+                    </div>
+                    <div class="financial-item">
+                        <span class="label">إجمالي المدفوع</span>
+                        <span class="value text-success">{{ "{:,.2f}".format(contract.down_payment + stats.total_paid) }} ج.م</span>
+                    </div>
+                    <div class="financial-item">
+                        <span class="label">المتبقي</span>
+                        <span class="value text-danger">{{ "{:,.2f}".format(stats.remaining_amount) }} ج.م</span>
+                    </div>
+                    {% if contract.maintenance_deposit > 0 %}
+                    <div class="financial-item">
+                        <span class="label">وديعة الصيانة</span>
+                        <span class="value text-info">{{ "{:,.2f}".format(contract.maintenance_deposit) }} ج.م</span>
+                    </div>
+                    {% endif %}
+                    
+                    <hr>
+                    
+                    <div class="progress mb-2" style="height: 25px;">
+                        {% set progress = ((contract.down_payment + stats.total_paid) / contract.total_price * 100) %}
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {{ progress }}%">
+                            {{ "%.1f"|format(progress) }}%
+                        </div>
+                    </div>
+                    <small class="text-muted">نسبة السداد</small>
                 </div>
-                <div class="flex justify-between">
-                    <dt class="text-gray-600">المتبقي:</dt>
-                    <dd class="font-medium text-orange-600">{{ format_currency(contract.total_price - contract.down_payment) }}</dd>
+            </div>
+
+            <!-- Installments Summary -->
+            {% if installments %}
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list-ol me-2"></i>
+                        ملخص الأقساط
+                    </h5>
                 </div>
-                <div class="flex justify-between">
-                    <dt class="text-gray-600">طريقة السداد:</dt>
-                    <dd class="font-medium">{{ 'كاش' if contract.payment_type == 'cash' else 'تقسيط' }}</dd>
+                <div class="card-body">
+                    <div class="financial-item">
+                        <span class="label">إجمالي الأقساط</span>
+                        <span class="value">{{ stats.total_installments }}</span>
+                    </div>
+                    <div class="financial-item">
+                        <span class="label">الأقساط المدفوعة</span>
+                        <span class="value text-success">{{ stats.paid_installments }}</span>
+                    </div>
+                    <div class="financial-item">
+                        <span class="label">الأقساط المتبقية</span>
+                        <span class="value text-danger">{{ stats.total_installments - stats.paid_installments }}</span>
+                    </div>
                 </div>
-            </dl>
+            </div>
+            {% endif %}
         </div>
     </div>
-
-    <!-- Broker Info if exists -->
-    {% if contract.broker_name %}
-    <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">معلومات السمسار</h2>
-        <dl class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-                <dt class="text-gray-600">اسم السمسار:</dt>
-                <dd class="font-medium">{{ contract.broker_name }}</dd>
-            </div>
-            <div>
-                <dt class="text-gray-600">نسبة العمولة:</dt>
-                <dd class="font-medium">{{ contract.broker_percent }}%</dd>
-            </div>
-            <div>
-                <dt class="text-gray-600">مبلغ العمولة:</dt>
-                <dd class="font-medium">{{ format_currency(contract.broker_amount) }}</dd>
-            </div>
-        </dl>
-    </div>
-    {% endif %}
-
-    <!-- Installments if any -->
-    {% if installments %}
-    <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">الأقساط</h2>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">رقم القسط</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">تاريخ الاستحقاق</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المبلغ</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الحالة</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for installment in installments %}
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">{{ installment.installment_number }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">{{ installment.due_date.strftime('%Y-%m-%d') if installment.due_date else '-' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">{{ format_currency(installment.amount) }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            {% if installment.status == 'مدفوع' %}
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">مدفوع</span>
-                            {% else %}
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">غير مدفوع</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    {% endif %}
 </div>
+
+<style>
+.financial-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.financial-item:last-child {
+    border-bottom: none;
+}
+
+.financial-item .label {
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.financial-item .value {
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.card-header {
+    font-weight: 500;
+}
+</style>
+
+<script>
+async function deleteContract(id) {
+    if (!confirm('هل أنت متأكد من حذف هذا العقد؟')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/contracts/${id}/delete`, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            window.notify(result.message, 'success');
+            setTimeout(() => {
+                window.location.href = '{{ url_for("contracts.index") }}';
+            }, 1000);
+        } else {
+            window.notify(result.message, 'error');
+        }
+    } catch (error) {
+        window.notify('حدث خطأ في الاتصال', 'error');
+    }
+}
+</script>
 {% endblock %}

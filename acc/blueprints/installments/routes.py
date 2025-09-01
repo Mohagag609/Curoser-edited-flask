@@ -1,216 +1,284 @@
-from flask import render_template, request, redirect, url_for, flash, g
+from flask import render_template, request, redirect, url_for, flash, jsonify, g
 from acc.blueprints.installments import bp
-from acc.models import Installment, Unit, Contract, Voucher
 from acc.extensions import db
-from acc.services.utils import generate_uid, log_action, Pagination, parse_number, get_today
-from datetime import datetime
-from sqlalchemy import func, or_
+from acc.models import Installment, Contract, Unit, Customer, Voucher, Safe
+from acc.services.utils import generate_uid, log_action, Pagination, format_currency, format_date
+from sqlalchemy import or_, and_, func
+from decimal import Decimal
+from datetime import datetime, date, timedelta
 
 @bp.route('/')
 def index():
+    """عرض قائمة الأقساط"""
     page = request.args.get('page', 1, type=int)
-    search = request.args.get('search', '')
+    q = request.args.get('q', '')
     status = request.args.get('status', '')
     unit_id = request.args.get('unit_id', '')
-    from_date = request.args.get('from_date', '')
-    to_date = request.args.get('to_date', '')
     
-    # Base query
-    query = Installment.query
+    # البحث والتصفية
+    query = Installment.query.filter_by(project_id=g.project.id)
     
-    # Search
-    if search:
-        unit_ids = db.session.query(Unit.id).filter(
+    if q:
+        search_term = f'%{q}%'
+        query = query.join(Customer).join(Unit).filter(
             or_(
-                Unit.code.ilike(f'%{search}%'),
-                Unit.name.ilike(f'%{search}%')
+                Customer.name.ilike(search_term),
+                Unit.name.ilike(search_term),
+                Unit.code.ilike(search_term)
             )
-        ).subquery()
-        query = query.filter(Installment.unit_id.in_(unit_ids))
+        )
     
-    # Filters
     if status:
         query = query.filter(Installment.status == status)
     
     if unit_id:
         query = query.filter(Installment.unit_id == unit_id)
     
-    if from_date:
-        query = query.filter(Installment.due_date >= datetime.strptime(from_date, '%Y-%m-%d').date())
-    
-    if to_date:
-        query = query.filter(Installment.due_date <= datetime.strptime(to_date, '%Y-%m-%d').date())
-    
-    # Order by due date
+    # الترتيب والترقيم
     query = query.order_by(Installment.due_date)
+    pagination = Pagination(query, page, per_page=30)
     
-    # Pagination
-    pagination = Pagination(query, page)
-    installments = pagination.items
+    # الإحصائيات
+    base_query = Installment.query.filter_by(project_id=g.project.id)
+    stats = {
+        'total': base_query.count(),
+        'paid': base_query.filter_by(status='مدفوع').count(),
+        'due': base_query.filter_by(status='مستحق').count(),
+        'overdue': base_query.filter(
+            and_(
+                Installment.status == 'مستحق',
+                Installment.due_date < date.today()
+            )
+        ).count(),
+        'total_amount': db.session.query(func.sum(Installment.amount)).filter_by(
+            project_id=g.project.id
+        ).scalar() or 0,
+        'paid_amount': db.session.query(func.sum(Voucher.amount)).join(
+            Installment, Voucher.installment_id == Installment.id
+        ).filter(
+            Installment.project_id == g.project.id
+        ).scalar() or 0
+    }
     
-    # Get all units for filter (project specific)
+    # جلب الوحدات للفلتر
     units = Unit.query.filter_by(project_id=g.project.id).order_by(Unit.code).all()
     
-    # Calculate stats
-    total_installments = Installment.query.count()
-    paid_installments = Installment.query.filter_by(status='مدفوع').count()
-    overdue_installments = Installment.query.filter(
-        Installment.status != 'مدفوع',
-        Installment.due_date < get_today()
-    ).count()
-    total_remaining = db.session.query(func.sum(Installment.amount)).filter(
-        Installment.status != 'مدفوع'
-    ).scalar() or 0
-    
     return render_template('installments/index.html',
-                         installments=installments,
+                         installments=pagination.items,
                          pagination=pagination,
-                         search=search,
+                         q=q,
                          status=status,
                          unit_id=unit_id,
-                         from_date=from_date,
-                         to_date=to_date,
                          units=units,
-                         total_installments=total_installments,
-                         paid_installments=paid_installments,
-                         overdue_installments=overdue_installments,
-                         total_remaining=total_remaining,
-                         today=get_today())
+                         stats=stats,
+                         today=date.today())
 
-@bp.route('/<id>')
+@bp.route('/<string:id>')
 def detail(id):
+    """عرض تفاصيل القسط"""
     installment = Installment.query.get_or_404(id)
     
-    # Get related vouchers
-    vouchers = Voucher.query.filter_by(
-        linked_type='installment',
-        linked_ref=id
-    ).order_by(Voucher.date.desc()).all()
+    if installment.project_id != g.project.id:
+        flash('القسط غير موجود', 'error')
+        return redirect(url_for('installments.index'))
+    
+    # جلب السندات المرتبطة
+    vouchers = Voucher.query.filter_by(installment_id=id).order_by(Voucher.date.desc()).all()
+    
+    # حساب المدفوع والمتبقي
+    paid_amount = sum(v.amount for v in vouchers)
+    remaining_amount = installment.amount - paid_amount
     
     return render_template('installments/detail.html',
                          installment=installment,
                          vouchers=vouchers,
-                         today=get_today())
+                         paid_amount=paid_amount,
+                         remaining_amount=remaining_amount,
+                         date=date)
 
-@bp.route('/<id>/pay', methods=['POST'])
+@bp.route('/<string:id>/pay', methods=['GET', 'POST'])
 def pay(id):
+    """دفع القسط"""
     installment = Installment.query.get_or_404(id)
     
-    if installment.status == 'مدفوع':
-        flash('هذا القسط مدفوع بالفعل!', 'warning')
-        return redirect(url_for('installments.detail', id=id))
-    
-    amount = parse_number(request.form.get('amount', 0))
-    payment_date = request.form.get('payment_date', get_today().isoformat())
-    safe_id = request.form.get('safe_id')
-    notes = request.form.get('notes', '')
-    
-    if amount <= 0:
-        flash('الرجاء إدخال مبلغ صحيح', 'error')
-        return redirect(url_for('installments.detail', id=id))
-    
-    if amount > installment.amount:
-        flash('المبلغ المدفوع أكبر من قيمة القسط!', 'error')
-        return redirect(url_for('installments.detail', id=id))
-    
-    # Create voucher
-    voucher = Voucher(
-        type='receipt',
-        date=datetime.strptime(payment_date, '%Y-%m-%d').date(),
-        amount=amount,
-        safe_id=safe_id,
-        linked_type='installment',
-        linked_ref=id,
-        description=f'سداد قسط - {installment.unit.get_display_name()}',
-        notes=notes
-    )
-    db.session.add(voucher)
-    
-    # Update installment
-    installment.amount -= amount
-    if installment.amount <= 0:
-        installment.status = 'مدفوع'
-        installment.payment_date = datetime.strptime(payment_date, '%Y-%m-%d').date()
-    else:
-        installment.status = 'مدفوع جزئياً'
-    
-    log_action('سداد قسط', {
-        'installment_id': id,
-        'amount': amount,
-        'voucher_id': voucher.id
-    })
-    
-    db.session.commit()
-    flash('تم تسجيل الدفعة بنجاح', 'success')
-    
-    return redirect(url_for('installments.detail', id=id))
-
-@bp.route('/<id>/cancel-payment/<voucher_id>', methods=['POST'])
-def cancel_payment(id, voucher_id):
-    installment = Installment.query.get_or_404(id)
-    voucher = Voucher.query.get_or_404(voucher_id)
-    
-    if voucher.linked_ref != id:
-        flash('هذا السند غير مرتبط بهذا القسط', 'error')
-        return redirect(url_for('installments.detail', id=id))
-    
-    # Update installment amount
-    installment.amount += voucher.amount
-    if installment.amount == installment.original_amount:
-        installment.status = 'غير مدفوع'
-        installment.payment_date = None
-    else:
-        installment.status = 'مدفوع جزئياً'
-    
-    # Delete voucher
-    db.session.delete(voucher)
-    
-    log_action('إلغاء سداد قسط', {
-        'installment_id': id,
-        'amount': voucher.amount,
-        'voucher_id': voucher_id
-    })
-    
-    db.session.commit()
-    flash('تم إلغاء الدفعة بنجاح', 'success')
-    
-    return redirect(url_for('installments.detail', id=id))
-
-@bp.route('/batch-update', methods=['POST'])
-def batch_update():
-    installment_ids = request.form.getlist('installment_ids')
-    action = request.form.get('action')
-    
-    if not installment_ids:
-        flash('الرجاء اختيار قسط واحد على الأقل', 'warning')
+    if installment.project_id != g.project.id:
+        flash('القسط غير موجود', 'error')
         return redirect(url_for('installments.index'))
     
-    if action == 'mark_paid':
-        # Mark selected installments as paid
-        payment_date = request.form.get('payment_date', get_today().isoformat())
-        safe_id = request.form.get('safe_id')
-        
-        for inst_id in installment_ids:
-            installment = Installment.query.get(inst_id)
-            if installment and installment.status != 'مدفوع':
-                # Create voucher
-                voucher = Voucher(
-                    type='receipt',
-                    date=datetime.strptime(payment_date, '%Y-%m-%d').date(),
-                    amount=installment.amount,
-                    safe_id=safe_id,
-                    linked_type='installment',
-                    linked_ref=inst_id,
-                    description=f'سداد قسط - {installment.unit.get_display_name()}'
-                )
-                db.session.add(voucher)
-                
-                # Update installment
-                installment.amount = 0
+    if request.method == 'POST':
+        try:
+            amount = Decimal(request.form.get('amount', 0))
+            safe_id = request.form.get('safe_id')
+            payment_method = request.form.get('payment_method', 'cash')
+            notes = request.form.get('notes', '')
+            
+            # التحقق من المبلغ
+            paid_amount = installment.get_paid_amount()
+            remaining = installment.amount - paid_amount
+            
+            if amount <= 0:
+                raise Exception('المبلغ يجب أن يكون أكبر من صفر')
+            
+            if amount > remaining:
+                raise Exception(f'المبلغ المدفوع أكبر من المتبقي ({remaining} ج.م)')
+            
+            # إنشاء سند القبض
+            voucher = Voucher(
+                id=generate_uid('VOU'),
+                project_id=g.project.id,
+                type='قبض',
+                installment_id=id,
+                customer_id=installment.customer_id,
+                unit_id=installment.unit_id,
+                safe_id=safe_id,
+                amount=amount,
+                payment_method=payment_method,
+                date=date.today(),
+                notes=notes
+            )
+            
+            db.session.add(voucher)
+            
+            # تحديث حالة القسط
+            new_paid = paid_amount + amount
+            if new_paid >= installment.amount:
                 installment.status = 'مدفوع'
-                installment.payment_date = datetime.strptime(payment_date, '%Y-%m-%d').date()
-        
-        db.session.commit()
-        flash(f'تم تحديث {len(installment_ids)} قسط بنجاح', 'success')
+                installment.paid_date = date.today()
+            
+            # تحديث رصيد الخزنة
+            if safe_id:
+                safe = Safe.query.get(safe_id)
+                if safe:
+                    safe.balance += amount
+            
+            db.session.commit()
+            
+            log_action('دفع قسط', {
+                'installment_id': id,
+                'amount': float(amount),
+                'voucher_id': voucher.id
+            })
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({
+                    'success': True,
+                    'message': 'تم دفع القسط بنجاح',
+                    'voucher_id': voucher.id
+                })
+            
+            flash('تم دفع القسط بنجاح', 'success')
+            return redirect(url_for('installments.detail', id=id))
+            
+        except Exception as e:
+            db.session.rollback()
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'message': str(e)}), 400
+            flash(f'خطأ: {str(e)}', 'error')
     
-    return redirect(url_for('installments.index'))
+    # عرض نموذج الدفع
+    safes = Safe.query.filter_by(project_id=g.project.id, status='نشط').all()
+    paid_amount = installment.get_paid_amount()
+    remaining_amount = installment.amount - paid_amount
+    
+    return render_template('installments/pay.html',
+                         installment=installment,
+                         safes=safes,
+                         paid_amount=paid_amount,
+                         remaining_amount=remaining_amount)
+
+@bp.route('/upcoming')
+def upcoming():
+    """عرض الأقساط القادمة"""
+    # الأقساط المستحقة خلال الشهر القادم
+    today = date.today()
+    next_month = today + timedelta(days=30)
+    
+    query = Installment.query.filter(
+        and_(
+            Installment.project_id == g.project.id,
+            Installment.status == 'مستحق',
+            Installment.due_date >= today,
+            Installment.due_date <= next_month
+        )
+    ).order_by(Installment.due_date)
+    
+    installments = query.all()
+    
+    # حساب الإجمالي
+    total_amount = sum(i.amount for i in installments)
+    
+    return render_template('installments/upcoming.html',
+                         installments=installments,
+                         total_amount=total_amount,
+                         date_from=today,
+                         date_to=next_month)
+
+@bp.route('/overdue')
+def overdue():
+    """عرض الأقساط المتأخرة"""
+    query = Installment.query.filter(
+        and_(
+            Installment.project_id == g.project.id,
+            Installment.status == 'مستحق',
+            Installment.due_date < date.today()
+        )
+    ).order_by(Installment.due_date)
+    
+    installments = query.all()
+    
+    # حساب الإجمالي والتأخير
+    total_amount = 0
+    for installment in installments:
+        installment.days_overdue = (date.today() - installment.due_date).days
+        total_amount += installment.amount - installment.get_paid_amount()
+    
+    return render_template('installments/overdue.html',
+                         installments=installments,
+                         total_amount=total_amount)
+
+@bp.route('/search')
+def search():
+    """البحث في الأقساط (AJAX)"""
+    q = request.args.get('q', '')
+    page = request.args.get('page', 1, type=int)
+    
+    query = Installment.query.filter_by(project_id=g.project.id)
+    
+    if q:
+        search_term = f'%{q}%'
+        query = query.join(Customer).join(Unit).filter(
+            or_(
+                Customer.name.ilike(search_term),
+                Unit.name.ilike(search_term),
+                Unit.code.ilike(search_term)
+            )
+        )
+    
+    query = query.order_by(Installment.due_date)
+    pagination = Pagination(query, page, per_page=30)
+    
+    installments = []
+    for installment in pagination.items:
+        installments.append({
+            'id': installment.id,
+            'customer_name': installment.customer.name if installment.customer else '',
+            'unit_name': installment.unit.name if installment.unit else '',
+            'unit_code': installment.unit.code if installment.unit else '',
+            'amount': float(installment.amount),
+            'paid_amount': float(installment.get_paid_amount()),
+            'due_date': installment.due_date.strftime('%Y-%m-%d'),
+            'status': installment.status,
+            'installment_number': installment.installment_number
+        })
+    
+    return jsonify({
+        'success': True,
+        'installments': installments,
+        'pagination': {
+            'page': pagination.page,
+            'pages': pagination.pages,
+            'total': pagination.total,
+            'has_prev': pagination.has_prev,
+            'has_next': pagination.has_next
+        }
+    })
