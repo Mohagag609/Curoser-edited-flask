@@ -1,0 +1,8 @@
+# Auto Push Configuration
+# This file indicates that all changes should be pushed automatically
+
+AUTO_PUSH_ENABLED=true
+COMMIT_PREFIX="🔧"
+PUSH_BRANCH="cursor/fix-program-issues-cfab"
+
+# سيتم دفع جميع التغييرات تلقائياً بعد كل إصلاح
