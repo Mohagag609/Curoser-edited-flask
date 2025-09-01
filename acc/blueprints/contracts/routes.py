@@ -208,7 +208,7 @@ def edit(id):
     
     return render_template('contracts/edit.html', contract=contract)
 
-@bp.route('/<string:id>/delete', methods=['POST'])
+@bp.route('/<string:id>/delete', methods=['POST', 'DELETE'])
 def delete(id):
     """حذف العقد"""
     try:
@@ -237,7 +237,8 @@ def delete(id):
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)}), 500
+        app.logger.error(f'Error deleting contract {id}: {str(e)}')
+        return jsonify({'success': False, 'message': f'خطأ في حذف العقد: {str(e)}'}), 500
 
 @bp.route('/<string:id>/installments/generate', methods=['POST'])
 def generate_installments(contract_id=None):

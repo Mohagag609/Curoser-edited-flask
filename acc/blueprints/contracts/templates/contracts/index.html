@@ -544,11 +544,21 @@ async function deleteContract(id) {
     }
     
     try {
+        // Get CSRF token if available
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        const headers = {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+        };
+        
+        if (csrfToken) {
+            headers['X-CSRFToken'] = csrfToken.getAttribute('content');
+        }
+        
         const response = await fetch(`/contracts/${id}/delete`, {
             method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
+            headers: headers,
+            body: JSON.stringify({})
         });
         
         const result = await response.json();
