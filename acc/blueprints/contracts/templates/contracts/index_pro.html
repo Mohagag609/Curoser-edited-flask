@@ -832,26 +832,39 @@ async function deleteContract(contractId) {
     }
     
     try {
-        const response = await fetch(`/contracts/${contractId}/delete`, {
+        const deleteUrl = `/contracts/${contractId}/delete`;
+        console.log('Deleting contract:', contractId, 'URL:', deleteUrl);
+        
+        const response = await fetch(deleteUrl, {
             method: 'POST',
             headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({})
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         });
+        
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         
         const result = await response.json();
         
         if (result.success) {
-            alert('تم حذف العقد بنجاح');
-            window.location.reload();
+            window.notify('تم حذف العقد بنجاح', 'success');
+            setTimeout(() => window.location.reload(), 1000);
         } else {
-            alert(result.message || 'حدث خطأ في حذف العقد');
+            window.notify(result.message || 'حدث خطأ في حذف العقد', 'error');
         }
     } catch (error) {
-        console.error('Error:', error);
-        alert('حدث خطأ في الاتصال');
+        console.error('Delete error:', error);
+        if (error.message.includes('404')) {
+            window.notify('صفحة الحذف غير موجودة (404)', 'error');
+        } else if (error.message.includes('405')) {
+            window.notify('طريقة الطلب غير مسموحة (405)', 'error');
+        } else {
+            window.notify(`حدث خطأ: ${error.message}`, 'error');
+        }
     }
 }
 

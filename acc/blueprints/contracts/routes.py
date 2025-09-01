@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify, g
+from flask import render_template, request, redirect, url_for, flash, jsonify, g, current_app as app
 from acc.blueprints.contracts import bp
 from acc.extensions import db
 from acc.models import Contract, Customer, Unit, Broker, Installment, Safe, Voucher
@@ -7,6 +7,19 @@ from acc.services.code_generator import generate_contract_code
 from sqlalchemy import or_, func
 from decimal import Decimal
 from datetime import date, datetime, timedelta
+
+@bp.route('/test-routes')
+def test_routes():
+    """Test route to list all contract routes"""
+    routes = []
+    for rule in app.url_map.iter_rules():
+        if 'contracts' in rule.rule:
+            routes.append({
+                'endpoint': rule.endpoint,
+                'methods': list(rule.methods),
+                'rule': rule.rule
+            })
+    return jsonify(routes)
 
 @bp.route('/')
 def index():
@@ -530,15 +543,30 @@ def generate_installments(id):
 @bp.route('/<string:id>/delete', methods=['POST'])
 def delete(id):
     """Delete contract"""
+    # Check if this is an AJAX request
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
+    app.logger.info(f"Delete request for contract {id}, AJAX: {is_ajax}")
+    
     try:
-        contract = Contract.query.get_or_404(id)
+        contract = Contract.query.filter_by(id=id, project_id=g.project.id).first()
+        if not contract:
+            if is_ajax:
+                return jsonify({'success': False, 'message': 'العقد غير موجود'}), 404
+            else:
+                flash('العقد غير موجود', 'error')
+                return redirect(url_for('contracts.index'))
         
         # Check if contract has installments - using direct query
         from acc.models import Installment as InstallmentModel
         has_installments = InstallmentModel.query.filter_by(unit_id=contract.unit_id).count() > 0 if contract.unit_id else False
             
         if has_installments:
-            return jsonify({'success': False, 'message': 'لا يمكن حذف عقد له أقساط'})
+            if is_ajax:
+                return jsonify({'success': False, 'message': 'لا يمكن حذف عقد له أقساط'})
+            else:
+                flash('لا يمكن حذف عقد له أقساط', 'error')
+                return redirect(url_for('contracts.index'))
         
         # Update unit status back to available
         if contract.unit:
@@ -547,8 +575,16 @@ def delete(id):
         db.session.delete(contract)
         db.session.commit()
         
-        return jsonify({'success': True, 'message': 'تم حذف العقد بنجاح'})
+        if is_ajax:
+            return jsonify({'success': True, 'message': 'تم حذف العقد بنجاح'})
+        else:
+            flash('تم حذف العقد بنجاح', 'success')
+            return redirect(url_for('contracts.index'))
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'message': f'حدث خطأ: {str(e)}'})    
+        if is_ajax:
+            return jsonify({'success': False, 'message': f'حدث خطأ: {str(e)}'})
+        else:
+            flash(f'حدث خطأ: {str(e)}', 'error')
+            return redirect(url_for('contracts.index'))    
