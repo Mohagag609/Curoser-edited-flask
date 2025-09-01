@@ -79,6 +79,116 @@ def index():
                          stats=stats,
                          today=date.today())
 
+@bp.route('/pro')
+def index_pro():
+    """نسخة محسّنة ببحث حي HTMX"""
+    try:
+        db.session.rollback()
+    except:
+        pass
+
+    page = request.args.get('page', 1, type=int)
+    q = request.args.get('q', '')
+    status = request.args.get('status', '')
+    unit_id = request.args.get('unit_id', '')
+
+    query = Installment.query.filter_by(project_id=g.project.id)
+
+    if q:
+        search_term = f'%{q}%'
+        query = query.outerjoin(Customer).outerjoin(Unit).filter(
+            or_(
+                Customer.name.ilike(search_term),
+                Unit.name.ilike(search_term),
+                Unit.code.ilike(search_term)
+            )
+        )
+
+    if status:
+        query = query.filter(Installment.status == status)
+
+    if unit_id:
+        query = query.filter(Installment.unit_id == unit_id)
+
+    query = query.order_by(Installment.due_date)
+    pagination = Pagination(query, page, per_page=30)
+
+    # الإحصائيات
+    base_query = Installment.query.filter_by(project_id=g.project.id)
+    stats = {
+        'total': base_query.count(),
+        'paid': base_query.filter_by(status='مدفوع').count(),
+        'due': base_query.filter_by(status='مستحق').count(),
+        'overdue': base_query.filter(
+            and_(
+                Installment.status == 'مستحق',
+                Installment.due_date < date.today()
+            )
+        ).count(),
+        'total_amount': db.session.query(func.sum(Installment.amount)).filter_by(
+            project_id=g.project.id
+        ).scalar() or 0,
+        'paid_amount': db.session.query(func.sum(Voucher.amount)).join(
+            Installment, Voucher.installment_id == Installment.id
+        ).filter(
+            Installment.project_id == g.project.id
+        ).scalar() or 0
+    }
+
+    units = Unit.query.filter_by(project_id=g.project.id).order_by(Unit.code).all()
+
+    return render_template('installments/index_pro.html',
+                         installments=pagination.items,
+                         pagination=pagination,
+                         q=q,
+                         status=status,
+                         unit_id=unit_id,
+                         units=units,
+                         stats=stats,
+                         today=date.today())
+
+@bp.route('/table')
+def table_partial():
+    """Partial HTML for installments table + pagination (HTMX)."""
+    try:
+        db.session.rollback()
+    except:
+        pass
+
+    page = request.args.get('page', 1, type=int)
+    q = request.args.get('q', '')
+    status = request.args.get('status', '')
+    unit_id = request.args.get('unit_id', '')
+
+    query = Installment.query.filter_by(project_id=g.project.id)
+
+    if q:
+        search_term = f'%{q}%'
+        query = query.outerjoin(Customer).outerjoin(Unit).filter(
+            or_(
+                Customer.name.ilike(search_term),
+                Unit.name.ilike(search_term),
+                Unit.code.ilike(search_term)
+            )
+        )
+
+    if status:
+        query = query.filter(Installment.status == status)
+
+    if unit_id:
+        query = query.filter(Installment.unit_id == unit_id)
+
+    query = query.order_by(Installment.due_date)
+    pagination = Pagination(query, page, per_page=30)
+
+    return render_template('installments/_table.html',
+                         installments=pagination.items,
+                         pagination=pagination,
+                         q=q,
+                         status=status,
+                         unit_id=unit_id,
+                         today=date.today())
+
 @bp.route('/<string:id>')
 def detail(id):
     """عرض تفاصيل القسط"""

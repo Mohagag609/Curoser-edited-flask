@@ -59,6 +59,89 @@ def index():
                          status=status,
                          stats=stats)
 
+@bp.route('/pro')
+def index_pro():
+    """نسخة محسّنة ببحث حي HTMX"""
+    try:
+        db.session.rollback()
+    except:
+        pass
+
+    page = request.args.get('page', 1, type=int)
+    q = request.args.get('q', '')
+    status = request.args.get('status', '')
+
+    query = Contract.query.filter_by(project_id=g.project.id)
+
+    if q:
+        search_term = f'%{q}%'
+        query = query.outerjoin(Customer).outerjoin(Unit).filter(
+            or_(
+                Contract.code.ilike(search_term),
+                Customer.name.ilike(search_term),
+                Unit.name.ilike(search_term),
+                Unit.code.ilike(search_term)
+            )
+        )
+
+    if status:
+        query = query.filter(Contract.status == status)
+
+    query = query.order_by(Contract.created_at.desc())
+    pagination = Pagination(query, page, per_page=20)
+
+    stats = {
+        'total': Contract.query.filter_by(project_id=g.project.id).count(),
+        'active': Contract.query.filter_by(project_id=g.project.id, status='نشط').count(),
+        'completed': Contract.query.filter_by(project_id=g.project.id, status='مكتمل').count(),
+        'cancelled': Contract.query.filter_by(project_id=g.project.id, status='ملغي').count()
+    }
+
+    return render_template('contracts/index_pro.html',
+                         contracts=pagination.items,
+                         pagination=pagination,
+                         q=q,
+                         status=status,
+                         stats=stats)
+
+@bp.route('/table')
+def table_partial():
+    """Partial HTML for contracts table + pagination (HTMX)."""
+    # Clean rollback
+    try:
+        db.session.rollback()
+    except:
+        pass
+
+    page = request.args.get('page', 1, type=int)
+    q = request.args.get('q', '')
+    status = request.args.get('status', '')
+
+    query = Contract.query.filter_by(project_id=g.project.id)
+
+    if q:
+        search_term = f'%{q}%'
+        query = query.outerjoin(Customer).outerjoin(Unit).filter(
+            or_(
+                Contract.code.ilike(search_term),
+                Customer.name.ilike(search_term),
+                Unit.name.ilike(search_term),
+                Unit.code.ilike(search_term)
+            )
+        )
+
+    if status:
+        query = query.filter(Contract.status == status)
+
+    query = query.order_by(Contract.created_at.desc())
+    pagination = Pagination(query, page, per_page=20)
+
+    return render_template('contracts/_table.html',
+                         contracts=pagination.items,
+                         pagination=pagination,
+                         q=q,
+                         status=status)
+
 @bp.route('/create', methods=['GET', 'POST'])
 def create():
     """إنشاء عقد جديد"""

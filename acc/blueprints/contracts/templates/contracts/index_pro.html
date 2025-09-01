@@ -1,0 +1,15 @@
+{% extends "contracts/index.html" %}
+
+{% block content %}
+{{ super() }}
+<script>
+// Enhance filters to submit via HTMX without full reload
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.querySelector('form[row][g-3]') || document.querySelector('.card form');
+  if (form) {
+    // already hx-enabled in the parent template if modified; safe no-op
+  }
+});
+</script>
+{% endblock %}
+

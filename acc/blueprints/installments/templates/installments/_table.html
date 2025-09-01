@@ -1,0 +1,108 @@
+<div id="installments-table-wrapper">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th width="50">#</th>
+          <th>العميل</th>
+          <th>الوحدة</th>
+          <th>تاريخ الاستحقاق</th>
+          <th>المبلغ</th>
+          <th>المدفوع</th>
+          <th>المتبقي</th>
+          <th width="100">الحالة</th>
+          <th width="150">الإجراءات</th>
+        </tr>
+      </thead>
+      <tbody id="installments-tbody">
+        {% for installment in installments %}
+        <tr class="{% if installment.status == 'مستحق' and installment.due_date < today %}table-danger{% endif %}">
+          <td>{{ installment.installment_number }}</td>
+          <td>
+            {% if installment.customer %}
+              <div class="fw-bold">{{ installment.customer.name }}</div>
+              <small class="text-muted">{{ installment.customer.phone }}</small>
+            {% else %}
+              <span class="text-muted">-</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if installment.unit %}
+              <div class="fw-bold">{{ installment.unit.name }}</div>
+              <small class="text-muted">{{ installment.unit.code }}</small>
+            {% else %}
+              <span class="text-muted">-</span>
+            {% endif %}
+          </td>
+          <td>
+            {{ installment.due_date.strftime('%Y-%m-%d') }}
+            {% if installment.status == 'مستحق' and installment.due_date < today %}
+              <br><small class="text-danger">متأخر {{ (today - installment.due_date).days }} يوم</small>
+            {% endif %}
+          </td>
+          <td class="fw-bold">{{ "{:,.2f}".format(installment.amount) }} ج.م</td>
+          <td class="text-success">{{ "{:,.2f}".format(installment.get_paid_amount()) }} ج.م</td>
+          <td class="text-danger">{{ "{:,.2f}".format(installment.amount - installment.get_paid_amount()) }} ج.م</td>
+          <td>
+            {% if installment.status == 'مدفوع' %}
+              <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>مدفوع</span>
+            {% elif installment.due_date < today %}
+              <span class="badge bg-danger"><i class="fas fa-exclamation-circle me-1"></i>متأخر</span>
+            {% else %}
+              <span class="badge bg-warning"><i class="fas fa-clock me-1"></i>مستحق</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="btn-group btn-group-sm">
+              <a href="{{ url_for('installments.detail', id=installment.id) }}" class="btn btn-outline-primary" title="التفاصيل"><i class="fas fa-eye"></i></a>
+              {% if installment.status != 'مدفوع' %}
+              <a href="{{ url_for('installments.pay', id=installment.id) }}" class="btn btn-outline-success" title="دفع"><i class="fas fa-money-bill-wave"></i></a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="9" class="text-center py-5 text-muted">
+            <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+            لا توجد أقساط
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if pagination.pages > 1 %}
+  <div class="card-footer">
+    <nav>
+      <ul class="pagination justify-content-center mb-0">
+        {% if pagination.has_prev %}
+        <li class="page-item">
+          <a class="page-link" hx-get="{{ url_for('installments.table_partial', page=pagination.prev_num, q=q, status=status, unit_id=unit_id) }}" hx-target="#installments-table-wrapper" hx-swap="outerHTML"><i class="fas fa-chevron-right"></i></a>
+        </li>
+        {% endif %}
+
+        {% for page_num in pagination.iter_pages(left_edge=1, left_current=1, right_current=2, right_edge=1) %}
+          {% if page_num %}
+            {% if page_num != pagination.page %}
+            <li class="page-item"><a class="page-link" hx-get="{{ url_for('installments.table_partial', page=page_num, q=q, status=status, unit_id=unit_id) }}" hx-target="#installments-table-wrapper" hx-swap="outerHTML">{{ page_num }}</a></li>
+            {% else %}
+            <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+            {% endif %}
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">...</span></li>
+          {% endif %}
+        {% endfor %}
+
+        {% if pagination.has_next %}
+        <li class="page-item">
+          <a class="page-link" hx-get="{{ url_for('installments.table_partial', page=pagination.next_num, q=q, status=status, unit_id=unit_id) }}" hx-target="#installments-table-wrapper" hx-swap="outerHTML"><i class="fas fa-chevron-left"></i></a>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+
