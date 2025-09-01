@@ -83,8 +83,8 @@ class Contract(db.Model):
     terms_conditions = Column(Text)
     
     # التدقيق
-    created_by = Column(String(20), ForeignKey('users.id'))
-    approved_by = Column(String(20), ForeignKey('users.id'))
+    created_by = Column(String(20))
+    approved_by = Column(String(20))
     approval_date = Column(DateTime)
     
     # الطوابع الزمنية
@@ -263,6 +263,6 @@ class ContractDocument(db.Model):
     file_path = Column(String(500), nullable=False)
     file_name = Column(String(200), nullable=False)
     uploaded_at = Column(DateTime, default=func.now())
-    uploaded_by = Column(String(20), ForeignKey('users.id'))
+    uploaded_by = Column(String(20))
     
     contract = relationship('Contract', back_populates='documents')

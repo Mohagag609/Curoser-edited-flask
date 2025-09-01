@@ -120,7 +120,7 @@ def create():
                 broker_id=request.form.get('broker_id') or None,
                 broker_percent=Decimal(request.form.get('broker_percent', 0)),
                 status=ContractStatus.DRAFT,
-                created_by=g.user.id if hasattr(g, 'user') else None
+                created_by='system' if not hasattr(g, 'user') else g.user.id
             )
             
             # حساب الأسعار
@@ -339,7 +339,7 @@ def activate(id):
         
         # تفعيل العقد
         contract.status = ContractStatus.ACTIVE
-        contract.approved_by = g.user.id if hasattr(g, 'user') else None
+        contract.approved_by = 'system' if not hasattr(g, 'user') else g.user.id
         contract.approval_date = datetime.now()
         
         # تحديث حالة الوحدة

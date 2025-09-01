@@ -51,7 +51,7 @@ class Installment(db.Model):
     # معلومات الدفع
     payment_method = Column(String(50))  # نقدي، شيك، تحويل، الخ
     payment_reference = Column(String(100))  # رقم الشيك أو التحويل
-    collected_by = Column(String(20), ForeignKey('users.id'))
+    collected_by = Column(String(20))
     
     # التدقيق
     created_at = Column(DateTime, default=func.now())
@@ -154,7 +154,7 @@ class InstallmentPayment(db.Model):
     payment_method = Column(String(50))
     reference = Column(String(100))
     notes = Column(Text)
-    created_by = Column(String(20), ForeignKey('users.id'))
+    created_by = Column(String(20))
     
     installment = relationship('Installment', back_populates='payments')
 
