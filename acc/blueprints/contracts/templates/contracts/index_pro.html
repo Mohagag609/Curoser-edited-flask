@@ -894,16 +894,40 @@ async function deleteContract(contractId, hasInstallments) {
     }
     
     try {
-        const response = await fetch(`/contracts/${contractId}/delete`, {
+        // Try primary endpoint first
+        let response = await fetch(`/contracts/${contractId}/delete`, {
             method: 'POST',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
                 'Content-Type': 'application/json'
-            }
+            },
+            credentials: 'same-origin'
         });
         
+        // If primary fails with 404/405, try alternative endpoint
+        if (!response.ok && (response.status === 404 || response.status === 405)) {
+            console.log('Trying alternative delete endpoint...');
+            response = await fetch(`/contracts/delete/${contractId}`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'same-origin'
+            });
+        }
+        
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            // Log detailed error info
+            console.error(`Delete failed - Status: ${response.status}, StatusText: ${response.statusText}`);
+            if (response.status === 405) {
+                showNotification('خطأ: الطريقة غير مسموحة (405) - تحقق من إعدادات الخادم', 'error');
+            } else if (response.status === 404) {
+                showNotification('خطأ: المسار غير موجود (404)', 'error');
+            } else {
+                showNotification(`خطأ في الخادم: ${response.status}`, 'error');
+            }
+            return;
         }
         
         const result = await response.json();
@@ -922,6 +946,8 @@ async function deleteContract(contractId, hasInstallments) {
         }
     } catch (error) {
         console.error('Delete error:', error);
+        console.error('Contract ID:', contractId);
+        console.error('Full error details:', error.message);
         showNotification(`حدث خطأ: ${error.message}`, 'error');
     }
 }

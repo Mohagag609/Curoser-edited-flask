@@ -449,19 +449,24 @@ def generate_installments(id):
 
 
 # Single delete endpoint
-@bp.route('/<string:id>/delete', methods=['POST'])
+@bp.route('/<string:id>/delete', methods=['POST', 'DELETE', 'GET'])
+@bp.route('/delete/<string:id>', methods=['POST', 'DELETE', 'GET'])  # Alternative route
 def delete(id):
     """Delete contract via AJAX"""
+    # Allow GET for debugging, but convert to DELETE
+    if request.method == 'GET':
+        return jsonify({'success': False, 'message': 'استخدم POST أو DELETE لحذف العقد'}), 405
+        
     try:
         # Log for debugging
         app.logger.info(f"Delete request for contract {id}")
         app.logger.info(f"Request method: {request.method}")
-        app.logger.info(f"Is AJAX: {request.headers.get('X-Requested-With') == 'XMLHttpRequest'}")
+        app.logger.info(f"Request headers: {dict(request.headers)}")
         
         # Get the contract
         contract = Contract.query.filter_by(id=id, project_id=g.project.id).first()
         if not contract:
-            return jsonify({'success': False, 'message': 'العقد غير موجود'})
+            return jsonify({'success': False, 'message': 'العقد غير موجود'}), 404
         
         # Check if contract has installments
         from acc.models import Installment as InstallmentModel
@@ -486,7 +491,9 @@ def delete(id):
     except Exception as e:
         db.session.rollback()
         app.logger.error(f"Error deleting contract: {str(e)}")
-        return jsonify({'success': False, 'message': f'حدث خطأ: {str(e)}'})
+        app.logger.error(f"Error type: {type(e).__name__}")
+        app.logger.error(f"Error traceback: {e.__traceback__}")
+        return jsonify({'success': False, 'message': f'حدث خطأ: {str(e)}'}), 500
 
 
 
