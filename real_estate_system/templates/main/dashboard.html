@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة التحكم - {{ config.SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="h3 mb-4">لوحة التحكم</h1>
+    </div>
+</div>
+
+<!-- Statistics Overview -->
+<div class="row">
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ stats.projects.total or 0 }}</h4>
+                        <p class="card-text">إجمالي المشاريع</p>
+                        <small>{{ stats.projects.active or 0 }} نشط</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-building fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ stats.customers.total or 0 }}</h4>
+                        <p class="card-text">إجمالي العملاء</p>
+                        <small>{{ stats.customers.active or 0 }} نشط</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-people fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ stats.contracts.total or 0 }}</h4>
+                        <p class="card-text">إجمالي العقود</p>
+                        <small>{{ stats.contracts.active or 0 }} نشط</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-file-text fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ stats.units.total or 0 }}</h4>
+                        <p class="card-text">إجمالي الوحدات</p>
+                        <small>{{ stats.units.available or 0 }} متاح</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-house-door fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Units Status -->
+<div class="row">
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <i class="bi bi-house-check text-success fs-1"></i>
+                <h4 class="card-title text-success">{{ stats.units.sold or 0 }}</h4>
+                <p class="card-text">الوحدات المباعة</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <i class="bi bi-house-lock text-warning fs-1"></i>
+                <h4 class="card-title text-warning">{{ stats.units.reserved or 0 }}</h4>
+                <p class="card-text">الوحدات المحجوزة</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <i class="bi bi-house text-primary fs-1"></i>
+                <h4 class="card-title text-primary">{{ stats.units.available or 0 }}</h4>
+                <p class="card-text">الوحدات المتاحة</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Installments Status -->
+<div class="row">
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <i class="bi bi-calendar-check text-info fs-1"></i>
+                <h4 class="card-title text-info">{{ stats.installments.paid or 0 }}</h4>
+                <p class="card-text">الأقساط المدفوعة</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <i class="bi bi-calendar text-warning fs-1"></i>
+                <h4 class="card-title text-warning">{{ stats.installments.pending or 0 }}</h4>
+                <p class="card-text">الأقساط المعلقة</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card border-danger">
+            <div class="card-body text-center">
+                <i class="bi bi-calendar-x text-danger fs-1"></i>
+                <h4 class="card-title text-danger">{{ stats.installments.overdue or 0 }}</h4>
+                <p class="card-text">الأقساط المتأخرة</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Top Customers -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-trophy"></i> أفضل العملاء
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if top_customers %}
+                    <div class="list-group list-group-flush">
+                        {% for customer in top_customers %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ customer.name }}</h6>
+                                <small class="text-muted">{{ customer.phone or 'لا يوجد هاتف' }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-primary rounded-pill">{{ customer.total_contracts }} عقد</span>
+                                <br>
+                                <small class="text-muted">{{ format_currency(customer.total_contracts_value) }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">لا يوجد عملاء</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Customers with Overdue Payments -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-exclamation-triangle text-danger"></i> العملاء المتأخرين
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if customers_with_overdue %}
+                    <div class="list-group list-group-flush">
+                        {% for customer in customers_with_overdue %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ customer.name }}</h6>
+                                <small class="text-muted">{{ customer.phone or 'لا يوجد هاتف' }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-danger rounded-pill">متأخر</span>
+                                <br>
+                                <small class="text-muted">{{ format_currency(customer.remaining_amount) }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">لا يوجد عملاء متأخرين</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Contracts with Overdue Installments -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-file-text text-danger"></i> العقود التي لديها أقساط متأخرة
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if contracts_with_overdue %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>رقم العقد</th>
+                                    <th>العميل</th>
+                                    <th>الوحدة</th>
+                                    <th>المشروع</th>
+                                    <th>إجمالي العقد</th>
+                                    <th>المتبقي</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for contract in contracts_with_overdue %}
+                                <tr>
+                                    <td>{{ contract.code }}</td>
+                                    <td>{{ contract.customer.name }}</td>
+                                    <td>{{ contract.unit.name }}</td>
+                                    <td>{{ contract.project.name if contract.project else 'غير محدد' }}</td>
+                                    <td>{{ format_currency(contract.total_price) }}</td>
+                                    <td>{{ format_currency(contract.remaining_amount) }}</td>
+                                    <td>
+                                        <a href="{{ url_for('contracts.detail', id=contract.id) }}" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-eye"></i> عرض
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">لا توجد عقود لديها أقساط متأخرة</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning"></i> الإجراءات السريعة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                        <a href="{{ url_for('projects.create') }}" class="btn btn-primary w-100">
+                            <i class="bi bi-plus-circle"></i><br>إضافة مشروع
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                        <a href="{{ url_for('customers.create') }}" class="btn btn-success w-100">
+                            <i class="bi bi-person-plus"></i><br>إضافة عميل
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                        <a href="{{ url_for('units.create') }}" class="btn btn-info w-100">
+                            <i class="bi bi-house-add"></i><br>إضافة وحدة
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                        <a href="{{ url_for('contracts.create') }}" class="btn btn-warning w-100">
+                            <i class="bi bi-file-plus"></i><br>إضافة عقد
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                        <a href="{{ url_for('treasury.create') }}" class="btn btn-secondary w-100">
+                            <i class="bi bi-bank"></i><br>إضافة خزينة
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                        <a href="{{ url_for('main.reports') }}" class="btn btn-dark w-100">
+                            <i class="bi bi-graph-up"></i><br>التقارير
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

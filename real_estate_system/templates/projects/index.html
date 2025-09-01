@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}المشاريع - {{ config.SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">المشاريع</h1>
+            <a href="{{ url_for('projects.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> إضافة مشروع
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="status" class="form-label">الحالة</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="">جميع الحالات</option>
+                            <option value="نشط" {% if current_status == 'نشط' %}selected{% endif %}>نشط</option>
+                            <option value="معلق" {% if current_status == 'معلق' %}selected{% endif %}>معلق</option>
+                            <option value="مكتمل" {% if current_status == 'مكتمل' %}selected{% endif %}>مكتمل</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="search" class="form-label">البحث</label>
+                        <input type="text" class="form-control" id="search" name="search" 
+                               value="{{ search_term }}" placeholder="البحث في المشاريع...">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="bi bi-search"></i> بحث
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Projects List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                {% if projects %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>الكود</th>
+                                    <th>اسم المشروع</th>
+                                    <th>النوع</th>
+                                    <th>الموقع</th>
+                                    <th>المقاول</th>
+                                    <th>تاريخ البداية</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for project in projects %}
+                                <tr>
+                                    <td>{{ project.code }}</td>
+                                    <td>
+                                        <strong>{{ project.name }}</strong>
+                                        {% if project.is_default %}
+                                            <span class="badge bg-success ms-2">افتراضي</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ project.project_type }}</td>
+                                    <td>{{ project.location or 'غير محدد' }}</td>
+                                    <td>{{ project.contractor.name if project.contractor else 'غير محدد' }}</td>
+                                    <td>{{ project.start_date or 'غير محدد' }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if project.status == 'نشط' else 'warning' if project.status == 'معلق' else 'info' }}">
+                                            {{ project.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('projects.detail', id=project.id) }}" 
+                                               class="btn btn-sm btn-outline-primary" title="عرض التفاصيل">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('projects.edit', id=project.id) }}" 
+                                               class="btn btn-sm btn-outline-secondary" title="تعديل">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            {% if not project.is_default %}
+                                            <form method="POST" action="{{ url_for('projects.set_default', id=project.id) }}" 
+                                                  class="d-inline" onsubmit="return confirm('هل تريد تعيين هذا المشروع كافتراضي؟')">
+                                                <button type="submit" class="btn btn-sm btn-outline-success" title="تعيين كافتراضي">
+                                                    <i class="bi bi-star"></i>
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                            <form method="POST" action="{{ url_for('projects.delete', id=project.id) }}" 
+                                                  class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف هذا المشروع؟')">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="حذف">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if pagination %}
+                    <nav aria-label="صفحات المشاريع">
+                        <ul class="pagination justify-content-center">
+                            {% if pagination.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('projects.index', page=pagination.prev_num, status=current_status, search=search_term) }}">
+                                    السابق
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for page_num in pagination.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != pagination.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('projects.index', page=page_num, status=current_status, search=search_term) }}">
+                                            {{ page_num }}
+                                        </a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                    {% endif %}
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if pagination.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('projects.index', page=pagination.next_num, status=current_status, search=search_term) }}">
+                                    التالي
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-building fs-1 text-muted"></i>
+                        <h5 class="text-muted mt-3">لا توجد مشاريع</h5>
+                        <p class="text-muted">ابدأ بإضافة مشروع جديد</p>
+                        <a href="{{ url_for('projects.create') }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> إضافة مشروع
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

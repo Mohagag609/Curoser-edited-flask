@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة مشروع - {{ config.SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">إضافة مشروع جديد</h1>
+            <a href="{{ url_for('projects.index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-right"></i> العودة للقائمة
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">بيانات المشروع</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">اسم المشروع <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="code" class="form-label">كود المشروع</label>
+                            <input type="text" class="form-control" id="code" name="code">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="project_type" class="form-label">نوع المشروع</label>
+                            <select class="form-select" id="project_type" name="project_type">
+                                <option value="عقاري">عقاري</option>
+                                <option value="محاسبي">محاسبي</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="contractor_id" class="form-label">المقاول</label>
+                            <select class="form-select" id="contractor_id" name="contractor_id">
+                                <option value="">اختر المقاول</option>
+                                {% for contractor in contractors %}
+                                <option value="{{ contractor.id }}">{{ contractor.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="location" class="form-label">الموقع</label>
+                            <input type="text" class="form-control" id="location" name="location">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="area" class="form-label">المساحة</label>
+                            <input type="text" class="form-control" id="area" name="area">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="start_date" class="form-label">تاريخ البداية</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="expected_end_date" class="form-label">تاريخ الانتهاء المتوقع</label>
+                            <input type="date" class="form-control" id="expected_end_date" name="expected_end_date">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="budget" class="form-label">الميزانية</label>
+                            <input type="number" class="form-control" id="budget" name="budget" step="0.01">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">الوصف</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> حفظ المشروع
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">نصائح</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="bi bi-info-circle text-primary"></i>
+                        <small>اسم المشروع مطلوب ولا يمكن تركه فارغاً</small>
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-info-circle text-primary"></i>
+                        <small>كود المشروع سيتم توليده تلقائياً إذا لم يتم إدخاله</small>
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-info-circle text-primary"></i>
+                        <small>يمكنك اختيار المقاول من القائمة المنسدلة</small>
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-info-circle text-primary"></i>
+                        <small>جميع الحقول الأخرى اختيارية</small>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
