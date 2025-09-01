@@ -519,17 +519,9 @@ def generate_installments(id):
 
 
 # Single delete endpoint with improved error handling
-@bp.route('/<string:id>/delete', methods=['POST', 'OPTIONS'])
-@bp.route('/delete/<string:id>', methods=['POST', 'OPTIONS'])  # Alternative route
-@bp.route('/api/delete/<string:id>', methods=['POST', 'OPTIONS'])  # API route for clarity
+@bp.route('/<string:id>/delete', methods=['POST'])
 def delete(id):
     """Delete contract via AJAX"""
-    # Handle OPTIONS request for CORS
-    if request.method == 'OPTIONS':
-        response = make_response()
-        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, X-Requested-With'
-        return response, 200
         
     try:
         # Log for debugging
@@ -580,14 +572,32 @@ def delete(id):
 
 
 
-# Simple test endpoint
-@bp.route('/test-delete', methods=['GET', 'POST'])
-def test_delete():
-    """Test endpoint to verify routing"""
-    return jsonify({'success': True, 'message': 'Delete endpoint is working', 'method': request.method})
+# Debug endpoint to list all routes
+@bp.route('/debug-routes')
+def debug_routes():
+    """Debug endpoint to show all registered routes"""
+    from flask import current_app
+    rules = []
+    for rule in current_app.url_map.iter_rules():
+        if 'contracts' in rule.endpoint:
+            rules.append({
+                'endpoint': rule.endpoint,
+                'methods': list(rule.methods),
+                'rule': str(rule)
+            })
+    return jsonify({
+        'routes': rules,
+        'current_project': g.project.name if hasattr(g, 'project') and g.project else 'No project'
+    })
+
+# Test delete endpoint
+@bp.route('/test-delete-simple', methods=['GET', 'POST'])
+def test_delete_simple():
+    """Simple test for delete"""
+    return jsonify({'success': True, 'message': 'Test works!', 'method': request.method})
 
 
-@bp.route('/<string:id>')
+@bp.route('/view/<string:id>')
 def view(id):
     contract = Contract.query.get_or_404(id)
     
