@@ -57,8 +57,7 @@ class Contract(db.Model):
     def __repr__(self):
         return f'<Contract {self.code} - {self.customer.name if self.customer else "Unknown"}>'
     
-    @property
-    def installments(self):
+    def get_installments(self):
         """الحصول على أقساط العقد"""
         from acc.models import Installment
         return Installment.query.filter_by(contract_id=self.id).order_by(Installment.installment_number)
@@ -66,7 +65,7 @@ class Contract(db.Model):
     @property
     def total_paid_amount(self):
         """إجمالي المبلغ المدفوع"""
-        return sum(installment.paid_amount for installment in self.installments)
+        return sum(installment.paid_amount for installment in self.get_installments())
     
     @property
     def remaining_amount(self):
