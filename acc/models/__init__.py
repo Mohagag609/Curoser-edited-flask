@@ -26,3 +26,6 @@ __all__ = [
     'MaterialIssue', 'PartnerLedger', 'PhaseSettlement', 'PhaseSettlementLine', 
     'InterProjectTransfer'
 ]
+# Contract models
+from acc.models.contract import Contract, ContractStatus, PaymentType, InstallmentPeriod, ContractDocument
+from acc.models.installment import Installment, InstallmentStatus, InstallmentType, InstallmentPayment, InstallmentReminder

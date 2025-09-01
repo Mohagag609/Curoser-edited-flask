@@ -35,6 +35,13 @@ with app.app_context():
 "
 
 # Run database fixes if needed
+
+# Run contracts system update
+if [ -f "update_contracts_db.py" ]; then
+    echo "Updating contracts database schema..."
+    python3 update_contracts_db.py || echo "Warning: Contracts update may have partially failed"
+fi
+
 echo "Checking for database fixes..."
 if [ -f "fix_db_errors.py" ]; then
     echo "Running database fixes..."
