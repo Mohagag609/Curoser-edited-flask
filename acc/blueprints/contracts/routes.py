@@ -449,6 +449,7 @@ def generate_installments(id):
 
 
 @bp.route('/<string:id>/delete', methods=['POST', 'DELETE'])
+@bp.route('/delete/<string:id>', methods=['POST', 'DELETE'])  # Alternative route
 def delete(id):
     """Delete contract - supports both POST and DELETE methods"""
     # Check if this is an AJAX request
@@ -521,6 +522,33 @@ def delete(id):
             flash(f'حدث خطأ: {str(e)}', 'error')
             return redirect(url_for('contracts.index'))
 
+@bp.route('/remove/<string:id>', methods=['POST'])
+def remove(id):
+    """Simple remove endpoint for contracts"""
+    try:
+        contract = Contract.query.filter_by(id=id, project_id=g.project.id).first_or_404()
+        
+        # Check installments
+        from acc.models import Installment as InstallmentModel
+        if contract.unit_id and InstallmentModel.query.filter_by(unit_id=contract.unit_id).count() > 0:
+            return jsonify({'success': False, 'message': 'لا يمكن حذف عقد له أقساط'}), 400
+        
+        # Update unit status
+        if contract.unit:
+            contract.unit.status = 'متاحة'
+        
+        contract_code = contract.code
+        db.session.delete(contract)
+        db.session.commit()
+        
+        log_action('حذف عقد', {'id': id, 'code': contract_code})
+        return jsonify({'success': True, 'message': 'تم حذف العقد بنجاح'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'خطأ: {str(e)}'}), 500
+
+
 @bp.route('/<string:id>')
 def view(id):
     contract = Contract.query.get_or_404(id)
@@ -547,4 +575,41 @@ def view(id):
                          overdue_count=overdue_count,
                          format_currency=format_currency,
                          format_date=format_date)
+
+
+@bp.route('/api/delete', methods=['POST'])
+def delete_api():
+    """API endpoint for deleting contracts - alternative to RESTful route"""
+    contract_id = request.json.get('id') if request.is_json else request.form.get('id')
+    
+    if not contract_id:
+        return jsonify({'success': False, 'message': 'معرف العقد مطلوب'}), 400
+    
+    try:
+        contract = Contract.query.filter_by(id=contract_id, project_id=g.project.id).first()
+        if not contract:
+            return jsonify({'success': False, 'message': 'العقد غير موجود'}), 404
+        
+        # Check if contract has installments
+        from acc.models import Installment as InstallmentModel
+        has_installments = InstallmentModel.query.filter_by(unit_id=contract.unit_id).count() > 0 if contract.unit_id else False
+        
+        if has_installments:
+            return jsonify({'success': False, 'message': 'لا يمكن حذف عقد له أقساط'}), 400
+        
+        # Update unit status if exists
+        if contract.unit:
+            contract.unit.status = 'متاحة'
+        
+        db.session.delete(contract)
+        db.session.commit()
+        
+        log_action('حذف عقد', {'id': contract_id, 'code': contract.code})
+        
+        return jsonify({'success': True, 'message': 'تم حذف العقد بنجاح'})
+    
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error in delete_api: {str(e)}")
+        return jsonify({'success': False, 'message': f'حدث خطأ: {str(e)}'}), 500
 

@@ -896,17 +896,54 @@ async function deleteContract(contractId, hasInstallments) {
     }
     
     try {
-        const deleteUrl = `/contracts/${contractId}/delete`;
-        console.log('Deleting contract:', contractId, 'URL:', deleteUrl);
-        console.log('Full URL:', window.location.origin + deleteUrl);
+        // Try multiple URLs in case of routing issues
+        const urls = [
+            `/contracts/${contractId}/delete`,
+            `/contracts/delete/${contractId}`,
+            `/contracts/remove/${contractId}`,
+            `/contracts/api/delete`
+        ];
         
-        const response = await fetch(deleteUrl, {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            credentials: 'same-origin'
-        });
+        let response;
+        let lastError;
+        
+        // Try the first three URLs with RESTful approach
+        for (let i = 0; i < 3; i++) {
+            const deleteUrl = urls[i];
+            console.log('Trying URL:', deleteUrl);
+            
+            try {
+                response = await fetch(deleteUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                });
+                
+                if (response.status !== 404 && response.status !== 405) {
+                    // We got a response that's not 404/405, use it
+                    break;
+                }
+            } catch (err) {
+                lastError = err;
+                console.log('Error with URL:', deleteUrl, err);
+            }
+        }
+        
+        // If all RESTful URLs failed, try the API endpoint
+        if (!response || response.status === 404 || response.status === 405) {
+            console.log('Trying API endpoint');
+            response = await fetch(urls[3], {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ id: contractId }),
+                credentials: 'same-origin'
+            });
+        }
         
         console.log('Response status:', response.status);
         console.log('Response statusText:', response.statusText);
