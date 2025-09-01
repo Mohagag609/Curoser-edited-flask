@@ -448,105 +448,45 @@ def generate_installments(id):
         return jsonify({'success': False, 'message': f'حدث خطأ: {str(e)}'})
 
 
-@bp.route('/<string:id>/delete', methods=['POST', 'DELETE'])
-@bp.route('/delete/<string:id>', methods=['POST', 'DELETE'])  # Alternative route
+# Single delete endpoint
+@bp.route('/delete/<string:id>', methods=['POST'])
 def delete(id):
-    """Delete contract - supports both POST and DELETE methods"""
-    # Check if this is an AJAX request
-    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    
-    app.logger.info(f"Delete request for contract {id}, AJAX: {is_ajax}")
-    app.logger.info(f"Request method: {request.method}")
-    app.logger.info(f"Request headers: {dict(request.headers)}")
-    app.logger.info(f"Request path: {request.path}")
-    app.logger.info(f"Current project: {g.project.id if hasattr(g, 'project') and g.project else 'None'}")
-    
-    # Check if project is selected
-    if not hasattr(g, 'project') or not g.project:
-        app.logger.error("No project selected")
-        if is_ajax:
-            return jsonify({'success': False, 'message': 'الرجاء اختيار مشروع أولاً'}), 401
-        else:
-            flash('الرجاء اختيار مشروع أولاً', 'error')
-            return redirect(url_for('main.select_project'))
-    
+    """Delete contract via AJAX"""
     try:
+        # Log for debugging
+        app.logger.info(f"Delete request for contract {id}")
+        
+        # Get the contract
         contract = Contract.query.filter_by(id=id, project_id=g.project.id).first()
         if not contract:
-            app.logger.warning(f"Contract {id} not found in project {g.project.id}")
-            if is_ajax:
-                return jsonify({'success': False, 'message': 'العقد غير موجود'}), 404
-            else:
-                flash('العقد غير موجود', 'error')
-                return redirect(url_for('contracts.index'))
+            return jsonify({'success': False, 'message': 'العقد غير موجود'})
         
-        # Check if contract has installments - using direct query
+        # Check if contract has installments
         from acc.models import Installment as InstallmentModel
         has_installments = InstallmentModel.query.filter_by(unit_id=contract.unit_id).count() > 0 if contract.unit_id else False
         
-        app.logger.info(f"Contract {id} has installments: {has_installments}")
-            
         if has_installments:
-            if is_ajax:
-                return jsonify({'success': False, 'message': 'لا يمكن حذف عقد له أقساط'}), 400
-            else:
-                flash('لا يمكن حذف عقد له أقساط', 'error')
-                return redirect(url_for('contracts.index'))
-        
-        # Store contract code for log
-        contract_code = contract.code
-        
-        # Update unit status back to available
-        if contract.unit:
-            contract.unit.status = 'متاحة'
-            app.logger.info(f"Updated unit {contract.unit.id} status to 'متاحة'")
-        
-        db.session.delete(contract)
-        db.session.commit()
-        
-        log_action('حذف عقد', {'id': id, 'code': contract_code})
-        app.logger.info(f"Successfully deleted contract {contract_code}")
-        
-        if is_ajax:
-            return jsonify({'success': True, 'message': 'تم حذف العقد بنجاح'})
-        else:
-            flash('تم حذف العقد بنجاح', 'success')
-            return redirect(url_for('contracts.index'))
-        
-    except Exception as e:
-        db.session.rollback()
-        app.logger.error(f"Error deleting contract {id}: {str(e)}")
-        if is_ajax:
-            return jsonify({'success': False, 'message': f'حدث خطأ: {str(e)}'}), 500
-        else:
-            flash(f'حدث خطأ: {str(e)}', 'error')
-            return redirect(url_for('contracts.index'))
-
-@bp.route('/remove/<string:id>', methods=['POST'])
-def remove(id):
-    """Simple remove endpoint for contracts"""
-    try:
-        contract = Contract.query.filter_by(id=id, project_id=g.project.id).first_or_404()
-        
-        # Check installments
-        from acc.models import Installment as InstallmentModel
-        if contract.unit_id and InstallmentModel.query.filter_by(unit_id=contract.unit_id).count() > 0:
-            return jsonify({'success': False, 'message': 'لا يمكن حذف عقد له أقساط'}), 400
+            return jsonify({'success': False, 'message': 'لا يمكن حذف عقد له أقساط'})
         
         # Update unit status
         if contract.unit:
             contract.unit.status = 'متاحة'
         
+        # Delete the contract
         contract_code = contract.code
         db.session.delete(contract)
         db.session.commit()
         
         log_action('حذف عقد', {'id': id, 'code': contract_code})
+        
         return jsonify({'success': True, 'message': 'تم حذف العقد بنجاح'})
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'message': f'خطأ: {str(e)}'}), 500
+        app.logger.error(f"Error deleting contract: {str(e)}")
+        return jsonify({'success': False, 'message': f'حدث خطأ: {str(e)}'})
+
+
 
 
 @bp.route('/<string:id>')
@@ -577,39 +517,5 @@ def view(id):
                          format_date=format_date)
 
 
-@bp.route('/api/delete', methods=['POST'])
-def delete_api():
-    """API endpoint for deleting contracts - alternative to RESTful route"""
-    contract_id = request.json.get('id') if request.is_json else request.form.get('id')
-    
-    if not contract_id:
-        return jsonify({'success': False, 'message': 'معرف العقد مطلوب'}), 400
-    
-    try:
-        contract = Contract.query.filter_by(id=contract_id, project_id=g.project.id).first()
-        if not contract:
-            return jsonify({'success': False, 'message': 'العقد غير موجود'}), 404
-        
-        # Check if contract has installments
-        from acc.models import Installment as InstallmentModel
-        has_installments = InstallmentModel.query.filter_by(unit_id=contract.unit_id).count() > 0 if contract.unit_id else False
-        
-        if has_installments:
-            return jsonify({'success': False, 'message': 'لا يمكن حذف عقد له أقساط'}), 400
-        
-        # Update unit status if exists
-        if contract.unit:
-            contract.unit.status = 'متاحة'
-        
-        db.session.delete(contract)
-        db.session.commit()
-        
-        log_action('حذف عقد', {'id': contract_id, 'code': contract.code})
-        
-        return jsonify({'success': True, 'message': 'تم حذف العقد بنجاح'})
-    
-    except Exception as e:
-        db.session.rollback()
-        app.logger.error(f"Error in delete_api: {str(e)}")
-        return jsonify({'success': False, 'message': f'حدث خطأ: {str(e)}'}), 500
+
 

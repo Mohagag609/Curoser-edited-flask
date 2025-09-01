@@ -883,8 +883,6 @@ function editContract(contractId) {
 }
 
 async function deleteContract(contractId, hasInstallments) {
-    console.log('deleteContract called with:', { contractId, hasInstallments, hasInstallmentsType: typeof hasInstallments });
-    
     // Check if contract has installments
     if (hasInstallments === true || hasInstallments === 'true' || hasInstallments === 'True') {
         showNotification('لا يمكن حذف عقد له أقساط', 'error');
@@ -896,83 +894,12 @@ async function deleteContract(contractId, hasInstallments) {
     }
     
     try {
-        // Try multiple URLs in case of routing issues
-        const urls = [
-            `/contracts/${contractId}/delete`,
-            `/contracts/delete/${contractId}`,
-            `/contracts/remove/${contractId}`,
-            `/contracts/api/delete`
-        ];
-        
-        let response;
-        let lastError;
-        
-        // Try the first three URLs with RESTful approach
-        for (let i = 0; i < 3; i++) {
-            const deleteUrl = urls[i];
-            console.log('Trying URL:', deleteUrl);
-            
-            try {
-                response = await fetch(deleteUrl, {
-                    method: 'POST',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    credentials: 'same-origin'
-                });
-                
-                if (response.status !== 404 && response.status !== 405) {
-                    // We got a response that's not 404/405, use it
-                    break;
-                }
-            } catch (err) {
-                lastError = err;
-                console.log('Error with URL:', deleteUrl, err);
+        const response = await fetch(`/contracts/delete/${contractId}`, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
             }
-        }
-        
-        // If all RESTful URLs failed, try the API endpoint
-        if (!response || response.status === 404 || response.status === 405) {
-            console.log('Trying API endpoint');
-            response = await fetch(urls[3], {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({ id: contractId }),
-                credentials: 'same-origin'
-            });
-        }
-        
-        console.log('Response status:', response.status);
-        console.log('Response statusText:', response.statusText);
-        console.log('Response ok:', response.ok);
-        
-        // Handle specific status codes
-        if (response.status === 401) {
-            showNotification('الرجاء تسجيل الدخول أو اختيار مشروع', 'error');
-            setTimeout(() => {
-                window.location.href = '/select-project';
-            }, 2000);
-            return;
-        }
-        
-        if (response.status === 404) {
-            showNotification('العقد غير موجود', 'error');
-            return;
-        }
-        
-        if (response.status === 405) {
-            showNotification('طريقة الطلب غير مسموحة - تحقق من إعدادات الخادم', 'error');
-            return;
-        }
-        
-        if (!response.ok && response.status !== 400) {
-            // For non-OK responses that aren't handled above
-            showNotification(`خطأ في الخادم: ${response.status} ${response.statusText}`, 'error');
-            return;
-        }
+        });
         
         const result = await response.json();
         
