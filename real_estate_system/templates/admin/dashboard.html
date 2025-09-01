@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة التحكم - نظام العقارات{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12 mb-4">
+            <h1 class="display-5 fw-bold">لوحة التحكم</h1>
+            <p class="lead">إدارة نظام العقارات</p>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-5">
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ properties_count }}</h4>
+                            <p class="card-text">إجمالي العقارات</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-home fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ agents_count }}</h4>
+                            <p class="card-text">الوكلاء</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-user-tie fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ clients_count }}</h4>
+                            <p class="card-text">العملاء</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ inquiries_count }}</h4>
+                            <p class="card-text">الاستفسارات</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-question-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-12 mb-4">
+            <h3>الإجراءات السريعة</h3>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-plus-circle fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">إضافة عقار</h5>
+                    <p class="card-text">أضف عقار جديد إلى النظام</p>
+                    <a href="{{ url_for('add_property') }}" class="btn btn-primary">إضافة</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-user-plus fa-3x text-success mb-3"></i>
+                    <h5 class="card-title">إضافة وكيل</h5>
+                    <p class="card-text">أضف وكيل عقارات جديد</p>
+                    <a href="{{ url_for('add_agent') }}" class="btn btn-success">إضافة</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-list fa-3x text-info mb-3"></i>
+                    <h5 class="card-title">عرض العقارات</h5>
+                    <p class="card-text">إدارة جميع العقارات</p>
+                    <a href="{{ url_for('admin_properties') }}" class="btn btn-info">عرض</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-comments fa-3x text-warning mb-3"></i>
+                    <h5 class="card-title">الاستفسارات</h5>
+                    <p class="card-text">عرض وإدارة الاستفسارات</p>
+                    <a href="{{ url_for('admin_inquiries') }}" class="btn btn-warning">عرض</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
