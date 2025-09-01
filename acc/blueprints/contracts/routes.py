@@ -397,8 +397,17 @@ def generate_installments(id):
             return jsonify({'success': False, 'message': 'العقد ليس بنظام التقسيط'})
         
         # Get installment details from form
-        installment_type = int(request.form.get('installment_type', 12))
+        installment_type_str = request.form.get('installment_type', 'شهري')
         years = int(request.form.get('years', 1))
+        
+        # Map installment type string to number
+        installment_type_map = {
+            'شهري': 12,
+            'ربع سنوي': 4,
+            'نصف سنوي': 2,
+            'سنوي': 1
+        }
+        installment_type = installment_type_map.get(installment_type_str, 12)
         
         # Calculate installment details
         remaining = contract.total_price - contract.down_payment
@@ -410,17 +419,35 @@ def generate_installments(id):
         for i in range(total_installments):
             # Calculate due date based on installment type
             if installment_type == 12:  # Monthly
-                months = i + 1
-                due_date = start_date.replace(day=1) + timedelta(days=32 * months)
-                due_date = due_date.replace(day=1)
+                # Add months properly
+                year = start_date.year + ((start_date.month + i) // 12)
+                month = ((start_date.month + i - 1) % 12) + 1
+                try:
+                    due_date = start_date.replace(year=year, month=month)
+                except ValueError:
+                    # Handle end of month cases (e.g., Jan 31 -> Feb 28)
+                    due_date = start_date.replace(year=year, month=month, day=1) + timedelta(days=32)
+                    due_date = due_date.replace(day=1) - timedelta(days=1)
             elif installment_type == 4:  # Quarterly
-                months = (i + 1) * 3
-                due_date = start_date + timedelta(days=30 * months)
+                months_to_add = i * 3
+                year = start_date.year + ((start_date.month + months_to_add - 1) // 12)
+                month = ((start_date.month + months_to_add - 1) % 12) + 1
+                try:
+                    due_date = start_date.replace(year=year, month=month)
+                except ValueError:
+                    due_date = start_date.replace(year=year, month=month, day=1) + timedelta(days=32)
+                    due_date = due_date.replace(day=1) - timedelta(days=1)
             elif installment_type == 2:  # Semi-annual
-                months = (i + 1) * 6
-                due_date = start_date + timedelta(days=30 * months)
+                months_to_add = i * 6
+                year = start_date.year + ((start_date.month + months_to_add - 1) // 12)
+                month = ((start_date.month + months_to_add - 1) % 12) + 1
+                try:
+                    due_date = start_date.replace(year=year, month=month)
+                except ValueError:
+                    due_date = start_date.replace(year=year, month=month, day=1) + timedelta(days=32)
+                    due_date = due_date.replace(day=1) - timedelta(days=1)
             else:  # Annual
-                due_date = start_date.replace(year=start_date.year + i + 1)
+                due_date = start_date.replace(year=start_date.year + i)
             
             installment = Installment(
                 id=generate_uid('INS'),
@@ -428,19 +455,61 @@ def generate_installments(id):
                 installment_number=i + 1,
                 due_date=due_date,
                 amount=installment_amount,
-                status='غير مدفوع'
+                status='غير مدفوع',
+                type=installment_type_str
+            )
+            db.session.add(installment)
+        
+        # Add extra annual payments if specified
+        extra_annual = int(request.form.get('extra_annual', 0))
+        annual_payment_value = float(request.form.get('annual_payment_value', 0))
+        if extra_annual > 0 and annual_payment_value > 0:
+            for i in range(extra_annual):
+                due_date = start_date.replace(year=start_date.year + i + 1)
+                installment = Installment(
+                    id=generate_uid('INS'),
+                    unit_id=contract.unit_id,
+                    installment_number=total_installments + i + 1,
+                    due_date=due_date,
+                    amount=annual_payment_value,
+                    status='غير مدفوع',
+                    type='دفعة سنوية إضافية'
+                )
+                db.session.add(installment)
+        
+        # Add maintenance deposit as last installment if exists
+        maintenance_deposit = float(request.form.get('maintenance_deposit', contract.maintenance_deposit or 0))
+        if maintenance_deposit > 0:
+            last_date = start_date.replace(year=start_date.year + years)
+            installment = Installment(
+                id=generate_uid('INS'),
+                unit_id=contract.unit_id,
+                installment_number=total_installments + extra_annual + 1,
+                due_date=last_date,
+                amount=maintenance_deposit,
+                status='غير مدفوع',
+                type='وديعة صيانة'
             )
             db.session.add(installment)
         
         # Update contract
-        contract.installment_type = f'{installment_type} دفعة/سنة'
+        contract.installment_type = installment_type_str
         contract.installment_count = total_installments
+        contract.extra_annual = extra_annual
+        contract.annual_payment_value = annual_payment_value
         
         db.session.commit()
         
+        total_generated = total_installments + extra_annual + (1 if maintenance_deposit > 0 else 0)
+        
         return jsonify({
             'success': True,
-            'message': f'تم توليد {total_installments} قسط بنجاح'
+            'message': f'تم توليد {total_generated} قسط بنجاح',
+            'details': {
+                'regular': total_installments,
+                'extra_annual': extra_annual,
+                'maintenance': 1 if maintenance_deposit > 0 else 0
+            }
         })
         
     except Exception as e:
