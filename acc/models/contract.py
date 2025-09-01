@@ -49,10 +49,10 @@ class Contract(db.Model):
     contract_file_path = Column(String(500))  # مسار ملف العقد
     
     # العلاقات المحسنة
-    project = db.relationship('Project', backref=db.backref('contracts', lazy='dynamic'))
-    unit = db.relationship('Unit', backref=db.backref('contracts', lazy='dynamic'))
-    customer = db.relationship('Customer', backref=db.backref('contracts', lazy='dynamic'))
-    commission_safe = db.relationship('Safe', backref=db.backref('commission_contracts', lazy='dynamic'))
+    project = db.relationship('Project', backref='contracts')
+    unit = db.relationship('Unit', backref='contracts')
+    customer = db.relationship('Customer', backref='contracts')
+    commission_safe = db.relationship('Safe', backref='commission_contracts')
     
     def __repr__(self):
         return f'<Contract {self.code} - {self.customer.name if self.customer else "Unknown"}>'

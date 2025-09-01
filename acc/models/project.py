@@ -25,7 +25,6 @@ class Project(db.Model):
     # Relationships
     contractor = db.relationship('Contractor', foreign_keys=[contractor_id], backref='projects')
     units = db.relationship('Unit', backref='project', lazy='dynamic')
-    contracts = db.relationship('Contract', backref='project', lazy='dynamic')
     safes = db.relationship('Safe', backref='project', lazy='dynamic')
     vouchers = db.relationship('Voucher', backref='project', lazy='dynamic')
     stages = db.relationship('ProjectStage', backref='project', lazy='dynamic', cascade='all, delete-orphan')

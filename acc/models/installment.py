@@ -33,10 +33,10 @@ class Installment(db.Model):
     notes = Column(String(500))
     
     # العلاقات المحسنة
-    project = db.relationship('Project', backref=db.backref('installments', lazy='dynamic'))
-    contract = db.relationship('Contract', foreign_keys=[contract_id], backref=db.backref('installments', lazy='dynamic'))
-    unit = db.relationship('Unit', backref=db.backref('installments', lazy='dynamic'))
-    customer = db.relationship('Customer', foreign_keys=[customer_id], backref=db.backref('installments', lazy='dynamic'))
+    project = db.relationship('Project', backref='installments')
+    contract = db.relationship('Contract', foreign_keys=[contract_id], backref='installments')
+    unit = db.relationship('Unit', backref='installments')
+    customer = db.relationship('Customer', foreign_keys=[customer_id], backref='installments')
     
     def __repr__(self):
         return f'<Installment {self.id} - {self.amount} - {self.status}>'

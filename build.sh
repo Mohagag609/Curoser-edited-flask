@@ -27,6 +27,10 @@ mkdir -p reports
 # Set permissions
 chmod 755 logs backups uploads reports
 
+# Reset database to fix relationship conflicts
+echo "Resetting database to fix relationship conflicts..."
+python3 reset_db_simple.py
+
 # Initialize optimized application
 echo "Initializing optimized application..."
 python3 -c "
