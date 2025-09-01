@@ -1,10 +1,9 @@
 from flask import Flask, render_template, request, jsonify
 from datetime import datetime
 from config import Config
-from acc.services.cache_service import cache
 from acc.extensions import db
-import logging
-from logging.handlers import RotatingFileHandler
+from acc.core.logging import LoggingManager
+from acc.core.backup import backup_manager
 import os
 
 
@@ -15,25 +14,33 @@ def create_app(config_class=Config):
     # Initialize extensions
     db.init_app(app)
     
-    # Configure logging
-    if not os.path.exists('logs'):
-        os.mkdir('logs')
+    # Initialize logging system
+    logging_manager = LoggingManager(app)
     
-    # Always log errors to file
-    file_handler = RotatingFileHandler('logs/acc.log', maxBytes=10240000, backupCount=10)
-    file_handler.setFormatter(logging.Formatter(
-        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-    ))
-    file_handler.setLevel(logging.ERROR)
-    app.logger.addHandler(file_handler)
+    # Run database migrations and optimizations
+    with app.app_context():
+        try:
+            # Import here to avoid circular imports
+            from acc.migrations.migration_manager import run_migrations
+            from acc.core.database_simple import create_essential_indexes, optimize_database_simple
+            
+            # Run migrations
+            run_migrations(app)
+            app.logger.info('✅ Database migrations completed successfully')
+            
+            # Create essential indexes only
+            create_essential_indexes(app)
+            app.logger.info('✅ Essential database indexes created successfully')
+            
+            # Optimize database
+            optimize_database_simple(app)
+            app.logger.info('✅ Database optimization completed successfully')
+            
+        except Exception as e:
+            app.logger.error(f'❌ Database setup failed: {str(e)}')
     
-    # Console logging
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    app.logger.addHandler(console_handler)
-    
-    app.logger.setLevel(logging.INFO)
-    app.logger.info('ACC application startup')
+    # Initialize backup system
+    backup_manager.init_app(app) if hasattr(backup_manager, 'init_app') else None
     
     # Template context processors
     @app.context_processor
