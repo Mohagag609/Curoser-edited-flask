@@ -12,6 +12,12 @@ import json
 @bp.route('/')
 def index():
     """عرض قائمة العقود"""
+    # Clean up any failed transactions
+    try:
+        db.session.rollback()
+    except:
+        pass
+    
     page = request.args.get('page', 1, type=int)
     q = request.args.get('q', '')
     status = request.args.get('status', '')
@@ -21,7 +27,8 @@ def index():
     
     if q:
         search_term = f'%{q}%'
-        query = query.join(Customer).join(Unit).filter(
+        # Use outer joins to handle missing relationships
+        query = query.outerjoin(Customer).outerjoin(Unit).filter(
             or_(
                 Contract.code.ilike(search_term),
                 Customer.name.ilike(search_term),

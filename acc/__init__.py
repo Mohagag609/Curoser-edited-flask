@@ -122,6 +122,10 @@ def create_app(config_class=Config):
     from acc.context_processors import inject_global_vars
     app.context_processor(inject_global_vars)
     
+    # Setup middleware
+    from acc.middleware import setup_middleware
+    setup_middleware(app)
+    
     # Error handlers
     @app.errorhandler(404)
     def not_found_error(error):

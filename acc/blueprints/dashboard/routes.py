@@ -11,6 +11,12 @@ from acc.services.project_context import filter_by_project
 @bp.route('/')
 @project_required
 def index():
+    # Clean up any failed transactions
+    try:
+        db.session.rollback()
+    except:
+        pass
+    
     # Get filter dates
     from_date = request.args.get('from_date')
     to_date = request.args.get('to_date')
@@ -54,27 +60,45 @@ def index():
     # Unit counts
     # Unit stats - filter by current project
     units_query = filter_by_project(Unit.query, Unit)
-    unit_counts = {
-        'total': units_query.count(),
-        'available': units_query.filter_by(status='متاحة').count(),
-        'sold': units_query.filter_by(status='مباعة').count(),
-        'reserved': units_query.filter_by(status='محجوزة').count(),
-    }
+    try:
+        unit_counts = {
+            'total': units_query.count(),
+            'available': units_query.filter_by(status='متاحة').count(),
+            'sold': units_query.filter_by(status='مباعة').count(),
+            'reserved': units_query.filter_by(status='محجوزة').count(),
+        }
+    except Exception as e:
+        # Rollback and retry
+        db.session.rollback()
+        unit_counts = {
+            'total': 0,
+            'available': 0,
+            'sold': 0,
+            'reserved': 0,
+        }
     
     # Upcoming installments
     today = datetime.now().date()
-    upcoming_installments = installments_query\
-        .filter(Installment.status != 'مدفوع')\
-        .filter(Installment.due_date >= today)\
-        .order_by(Installment.due_date)\
-        .limit(10)\
-        .all()
+    try:
+        upcoming_installments = installments_query\
+            .filter(Installment.status != 'مدفوع')\
+            .filter(Installment.due_date >= today)\
+            .order_by(Installment.due_date)\
+            .limit(10)\
+            .all()
+    except:
+        db.session.rollback()
+        upcoming_installments = []
     
     # Recent transactions
-    recent_transactions = vouchers_query\
-        .order_by(Voucher.date.desc())\
-        .limit(10)\
-        .all()
+    try:
+        recent_transactions = vouchers_query\
+            .order_by(Voucher.date.desc())\
+            .limit(10)\
+            .all()
+    except:
+        db.session.rollback()
+        recent_transactions = []
     
     return render_template('dashboard/index.html',
         total_sales=total_sales,

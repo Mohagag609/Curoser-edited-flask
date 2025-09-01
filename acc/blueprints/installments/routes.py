@@ -10,6 +10,12 @@ from datetime import datetime, date, timedelta
 @bp.route('/')
 def index():
     """عرض قائمة الأقساط"""
+    # Clean up any failed transactions
+    try:
+        db.session.rollback()
+    except:
+        pass
+    
     page = request.args.get('page', 1, type=int)
     q = request.args.get('q', '')
     status = request.args.get('status', '')
@@ -20,7 +26,7 @@ def index():
     
     if q:
         search_term = f'%{q}%'
-        query = query.join(Customer).join(Unit).filter(
+        query = query.outerjoin(Customer).outerjoin(Unit).filter(
             or_(
                 Customer.name.ilike(search_term),
                 Unit.name.ilike(search_term),
@@ -246,7 +252,7 @@ def search():
     
     if q:
         search_term = f'%{q}%'
-        query = query.join(Customer).join(Unit).filter(
+        query = query.outerjoin(Customer).outerjoin(Unit).filter(
             or_(
                 Customer.name.ilike(search_term),
                 Unit.name.ilike(search_term),
