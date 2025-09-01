@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}الاستفسارات - نظام العقارات{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12 mb-4">
+            <h1 class="display-5 fw-bold">الاستفسارات</h1>
+            <p class="lead">عرض وإدارة جميع استفسارات العملاء</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>العميل</th>
+                                    <th>العقار</th>
+                                    <th>الرسالة</th>
+                                    <th>الحالة</th>
+                                    <th>تاريخ الاستفسار</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inquiry in inquiries %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">{{ inquiry.client.name }}</div>
+                                        <small class="text-muted">{{ inquiry.client.email }}</small>
+                                        <br>
+                                        <small class="text-muted">{{ inquiry.client.phone }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">{{ inquiry.property.title }}</div>
+                                        <small class="text-muted">{{ inquiry.property.location }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 200px;">
+                                            {{ inquiry.message }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if inquiry.status == 'pending' %}warning{% elif inquiry.status == 'contacted' %}info{% else %}success{% endif %}">
+                                            {% if inquiry.status == 'pending' %}في الانتظار
+                                            {% elif inquiry.status == 'contacted' %}تم التواصل
+                                            {% else %}مكتمل{% endif %}
+                                        </span>
+                                    </td>
+                                    <td>{{ inquiry.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#inquiryModal{{ inquiry.id }}">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <a href="mailto:{{ inquiry.client.email }}" class="btn btn-sm btn-outline-success">
+                                                <i class="fas fa-envelope"></i>
+                                            </a>
+                                            <a href="tel:{{ inquiry.client.phone }}" class="btn btn-sm btn-outline-info">
+                                                <i class="fas fa-phone"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Modal for each inquiry -->
+                                <div class="modal fade" id="inquiryModal{{ inquiry.id }}" tabindex="-1">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">تفاصيل الاستفسار</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <h6>معلومات العميل:</h6>
+                                                        <p><strong>الاسم:</strong> {{ inquiry.client.name }}</p>
+                                                        <p><strong>البريد:</strong> {{ inquiry.client.email }}</p>
+                                                        <p><strong>الهاتف:</strong> {{ inquiry.client.phone }}</p>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <h6>معلومات العقار:</h6>
+                                                        <p><strong>العنوان:</strong> {{ inquiry.property.title }}</p>
+                                                        <p><strong>الموقع:</strong> {{ inquiry.property.location }}</p>
+                                                        <p><strong>السعر:</strong> {{ "{:,.0f}".format(inquiry.property.price) }} ريال</p>
+                                                    </div>
+                                                </div>
+                                                <hr>
+                                                <h6>الرسالة:</h6>
+                                                <p class="bg-light p-3 rounded">{{ inquiry.message }}</p>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                                                <a href="mailto:{{ inquiry.client.email }}" class="btn btn-primary">إرسال بريد</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if not inquiries %}
+    <div class="text-center py-5">
+        <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+        <h4>لا توجد استفسارات</h4>
+        <p class="text-muted">ستظهر الاستفسارات هنا عند وصولها</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

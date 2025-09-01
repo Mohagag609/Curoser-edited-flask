@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}الوكلاء - نظام العقارات{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12 text-center mb-5">
+            <h1 class="display-5 fw-bold">وكلاء العقارات</h1>
+            <p class="lead">فريق من الوكلاء المحترفين لخدمتك</p>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for agent in agents %}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
+                            <i class="fas fa-user fa-3x text-white"></i>
+                        </div>
+                    </div>
+                    <h5 class="card-title">{{ agent.name }}</h5>
+                    <p class="text-muted">{{ agent.bio or 'وكيل عقارات محترف' }}</p>
+                    
+                    <div class="row text-center mb-3">
+                        <div class="col-6">
+                            <div class="fw-bold text-primary">{{ agent.experience_years }}</div>
+                            <small class="text-muted">سنة خبرة</small>
+                        </div>
+                        <div class="col-6">
+                            <div class="fw-bold text-primary">{{ agent.license_number }}</div>
+                            <small class="text-muted">رقم الترخيص</small>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <a href="mailto:{{ agent.email }}" class="btn btn-outline-primary">
+                            <i class="fas fa-envelope me-2"></i>{{ agent.email }}
+                        </a>
+                        <a href="tel:{{ agent.phone }}" class="btn btn-outline-success">
+                            <i class="fas fa-phone me-2"></i>{{ agent.phone }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not agents %}
+    <div class="text-center py-5">
+        <i class="fas fa-user-tie fa-3x text-muted mb-3"></i>
+        <h4>لا يوجد وكلاء متاحين حالياً</h4>
+        <p class="text-muted">سيتم إضافة الوكلاء قريباً</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

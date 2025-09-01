@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}العقارات - نظام العقارات{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12 mb-4">
+            <h1 class="display-5 fw-bold">العقارات المتاحة</h1>
+            <p class="lead">ابحث عن العقار المناسب لاحتياجاتك</p>
+        </div>
+    </div>
+
+    <!-- Search Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('properties') }}">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">نوع العقار</label>
+                                <select name="type" class="form-select">
+                                    <option value="">جميع الأنواع</option>
+                                    <option value="house" {% if property_type == 'house' %}selected{% endif %}>فيلا</option>
+                                    <option value="apartment" {% if property_type == 'apartment' %}selected{% endif %}>شقة</option>
+                                    <option value="commercial" {% if property_type == 'commercial' %}selected{% endif %}>تجاري</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">السعر الأدنى</label>
+                                <input type="number" name="min_price" class="form-control" value="{{ min_price or '' }}" placeholder="0">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">السعر الأعلى</label>
+                                <input type="number" name="max_price" class="form-control" value="{{ max_price or '' }}" placeholder="10000000">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">&nbsp;</label>
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-search me-2"></i>بحث
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Properties Grid -->
+    <div class="row">
+        {% for property in properties.items %}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card property-card h-100">
+                <div class="position-relative">
+                    <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 250px;">
+                        <i class="fas fa-home fa-3x text-white"></i>
+                    </div>
+                    <div class="position-absolute top-0 end-0 m-3">
+                        <span class="price-tag">{{ "{:,.0f}".format(property.price) }} ريال</span>
+                    </div>
+                    <div class="position-absolute top-0 start-0 m-3">
+                        <span class="badge bg-{% if property.property_type == 'house' %}success{% elif property.property_type == 'apartment' %}info{% else %}warning{% endif %}">
+                            {% if property.property_type == 'house' %}فيلا
+                            {% elif property.property_type == 'apartment' %}شقة
+                            {% else %}تجاري{% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ property.title }}</h5>
+                    <p class="card-text text-muted">{{ property.description[:100] }}...</p>
+                    <div class="row text-center mb-3">
+                        <div class="col-4">
+                            <small class="text-muted">غرف</small>
+                            <div><i class="fas fa-bed"></i> {{ property.bedrooms }}</div>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">حمامات</small>
+                            <div><i class="fas fa-bath"></i> {{ property.bathrooms }}</div>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">المساحة</small>
+                            <div><i class="fas fa-ruler-combined"></i> {{ property.area }}م²</div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="fas fa-map-marker-alt"></i> {{ property.location }}
+                        </small>
+                        <a href="{{ url_for('property_detail', property_id=property.id) }}" class="btn btn-primary btn-sm">عرض التفاصيل</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if properties.pages > 1 %}
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if properties.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('properties', page=properties.prev_num, type=property_type, min_price=min_price, max_price=max_price) }}">السابق</a>
+                </li>
+            {% endif %}
+            
+            {% for page_num in properties.iter_pages() %}
+                {% if page_num %}
+                    {% if page_num != properties.page %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('properties', page=page_num, type=property_type, min_price=min_price, max_price=max_price) }}">{{ page_num }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                    {% endif %}
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if properties.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('properties', page=properties.next_num, type=property_type, min_price=min_price, max_price=max_price) }}">التالي</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% if not properties.items %}
+    <div class="text-center py-5">
+        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+        <h4>لم يتم العثور على عقارات</h4>
+        <p class="text-muted">جرب تعديل معايير البحث</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
