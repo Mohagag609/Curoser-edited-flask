@@ -455,6 +455,8 @@ def delete(id):
     try:
         # Log for debugging
         app.logger.info(f"Delete request for contract {id}")
+        app.logger.info(f"Request method: {request.method}")
+        app.logger.info(f"Is AJAX: {request.headers.get('X-Requested-With') == 'XMLHttpRequest'}")
         
         # Get the contract
         contract = Contract.query.filter_by(id=id, project_id=g.project.id).first()
