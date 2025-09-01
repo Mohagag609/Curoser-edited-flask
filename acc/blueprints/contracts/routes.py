@@ -8,19 +8,6 @@ from sqlalchemy import or_, func
 from decimal import Decimal
 from datetime import date, datetime, timedelta
 
-@bp.route('/test-routes')
-def test_routes():
-    """Test route to list all contract routes"""
-    routes = []
-    for rule in app.url_map.iter_rules():
-        if 'contracts' in rule.rule:
-            routes.append({
-                'endpoint': rule.endpoint,
-                'methods': list(rule.methods),
-                'rule': rule.rule
-            })
-    return jsonify(routes)
-
 @bp.route('/')
 def index():
     page = request.args.get('page', 1, type=int)
@@ -313,6 +300,16 @@ def edit(id):
                          contract=contract,
                          brokers=brokers)
 
+@bp.route('/<string:id>/delete_test', methods=['GET', 'POST'])
+def delete_test(id):
+    """Test delete endpoint"""
+    return jsonify({
+        'message': 'Delete test endpoint reached',
+        'id': id,
+        'method': request.method,
+        'headers': dict(request.headers)
+    })
+
 @bp.route('/<string:id>/delete_old', methods=['POST'])
 def delete_old(id):
     try:
@@ -540,15 +537,17 @@ def generate_installments(id):
         return jsonify({'success': False, 'message': f'حدث خطأ: {str(e)}'})
 
 
-@bp.route('/<string:id>/delete', methods=['POST'])
+@bp.route('/<string:id>/delete', methods=['POST', 'DELETE'])
 def delete(id):
-    """Delete contract"""
+    """Delete contract - supports both POST and DELETE methods"""
     # Check if this is an AJAX request
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     
     app.logger.info(f"Delete request for contract {id}, AJAX: {is_ajax}")
     app.logger.info(f"Request method: {request.method}")
-    app.logger.info(f"Headers: {dict(request.headers)}")
+    app.logger.info(f"Request headers: {dict(request.headers)}")
+    app.logger.info(f"Request path: {request.path}")
+    app.logger.info(f"Current project: {g.project.id if hasattr(g, 'project') else 'None'}")
     
     try:
         contract = Contract.query.filter_by(id=id, project_id=g.project.id).first()

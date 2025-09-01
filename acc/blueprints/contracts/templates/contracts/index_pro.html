@@ -542,7 +542,7 @@
                                     <i class="fas fa-edit"></i>
                                     تعديل
                                 </button>
-                                <button onclick="deleteContract('{{ contract.id }}', {% if contract.installments %}{{ contract.installments.count() > 0|lower }}{% else %}false{% endif %})" 
+                                <button onclick="deleteContract('{{ contract.id }}', {% if contract.installments and contract.installments.count() > 0 %}true{% else %}false{% endif %})" 
                                         class="btn-modern btn-sm btn-delete">
                                     <i class="fas fa-trash"></i>
                                     حذف
@@ -883,8 +883,10 @@ function editContract(contractId) {
 }
 
 async function deleteContract(contractId, hasInstallments) {
+    console.log('deleteContract called with:', { contractId, hasInstallments, hasInstallmentsType: typeof hasInstallments });
+    
     // Check if contract has installments
-    if (hasInstallments === true || hasInstallments === 'True' || hasInstallments === 'true') {
+    if (hasInstallments === true || hasInstallments === 'true' || hasInstallments === 'True') {
         showNotification('لا يمكن حذف عقد له أقساط', 'error');
         return;
     }
