@@ -894,38 +894,57 @@ async function deleteContract(contractId, hasInstallments) {
     }
     
     try {
-        // Try primary endpoint first
-        let response = await fetch(`/contracts/${contractId}/delete`, {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/json'
-            },
-            credentials: 'same-origin'
-        });
+        // Define all possible endpoints
+        const endpoints = [
+            `/contracts/${contractId}/delete`,
+            `/contracts/delete/${contractId}`,
+            `/contracts/api/delete/${contractId}`
+        ];
         
-        // If primary fails with 404/405, try alternative endpoint
-        if (!response.ok && (response.status === 404 || response.status === 405)) {
-            console.log('Trying alternative delete endpoint...');
-            response = await fetch(`/contracts/delete/${contractId}`, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'same-origin'
-            });
+        let response = null;
+        let lastError = null;
+        
+        // Try each endpoint until one works
+        for (const endpoint of endpoints) {
+            console.log(`Trying delete endpoint: ${endpoint}`);
+            try {
+                response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'same-origin'
+                });
+                
+                // If we get a successful response or a meaningful error, break
+                if (response.ok || response.status !== 404 && response.status !== 405) {
+                    console.log(`Endpoint ${endpoint} responded with status ${response.status}`);
+                    break;
+                }
+            } catch (err) {
+                console.error(`Failed to fetch ${endpoint}:`, err);
+                lastError = err;
+            }
+        }
+        
+        if (!response) {
+            throw lastError || new Error('جميع المحاولات فشلت');
         }
         
         if (!response.ok) {
             // Log detailed error info
             console.error(`Delete failed - Status: ${response.status}, StatusText: ${response.statusText}`);
-            if (response.status === 405) {
-                showNotification('خطأ: الطريقة غير مسموحة (405) - تحقق من إعدادات الخادم', 'error');
+            const errorData = await response.json().catch(() => ({}));
+            
+            if (response.status === 401) {
+                showNotification('الرجاء تسجيل الدخول أو اختيار مشروع', 'error');
+            } else if (response.status === 405) {
+                showNotification('خطأ: الطريقة غير مسموحة (405)', 'error');
             } else if (response.status === 404) {
-                showNotification('خطأ: المسار غير موجود (404)', 'error');
+                showNotification('خطأ: العقد غير موجود', 'error');
             } else {
-                showNotification(`خطأ في الخادم: ${response.status}`, 'error');
+                showNotification(errorData.message || `خطأ في الخادم: ${response.status}`, 'error');
             }
             return;
         }
@@ -938,6 +957,7 @@ async function deleteContract(contractId, hasInstallments) {
             const row = document.querySelector(`tr[data-contract-id="${contractId}"]`);
             if (row) {
                 row.remove();
+                updateStatistics();
             } else {
                 setTimeout(() => window.location.reload(), 1000);
             }
@@ -947,8 +967,17 @@ async function deleteContract(contractId, hasInstallments) {
     } catch (error) {
         console.error('Delete error:', error);
         console.error('Contract ID:', contractId);
-        console.error('Full error details:', error.message);
+        console.error('Full error details:', error.message, error.stack);
         showNotification(`حدث خطأ: ${error.message}`, 'error');
+    }
+}
+
+// Helper function to update statistics after deletion
+function updateStatistics() {
+    const totalElement = document.querySelector('.stat-value');
+    if (totalElement) {
+        const currentTotal = parseInt(totalElement.textContent) || 0;
+        totalElement.textContent = Math.max(0, currentTotal - 1);
     }
 }
 

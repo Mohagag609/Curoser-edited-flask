@@ -1,5 +1,6 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify, g, current_app as app
+from flask import render_template, request, redirect, url_for, flash, jsonify, g, current_app as app, make_response
 from acc.blueprints.contracts import bp
+from functools import wraps
 from acc.extensions import db
 from acc.models import Contract, Customer, Unit, Broker, Installment, Safe, Voucher
 from acc.services.utils import generate_uid, log_action, Pagination, format_currency, format_date
@@ -517,24 +518,35 @@ def generate_installments(id):
         return jsonify({'success': False, 'message': f'حدث خطأ: {str(e)}'})
 
 
-# Single delete endpoint
-@bp.route('/<string:id>/delete', methods=['POST', 'DELETE', 'GET'])
-@bp.route('/delete/<string:id>', methods=['POST', 'DELETE', 'GET'])  # Alternative route
+# Single delete endpoint with improved error handling
+@bp.route('/<string:id>/delete', methods=['POST', 'OPTIONS'])
+@bp.route('/delete/<string:id>', methods=['POST', 'OPTIONS'])  # Alternative route
+@bp.route('/api/delete/<string:id>', methods=['POST', 'OPTIONS'])  # API route for clarity
 def delete(id):
     """Delete contract via AJAX"""
-    # Allow GET for debugging, but convert to DELETE
-    if request.method == 'GET':
-        return jsonify({'success': False, 'message': 'استخدم POST أو DELETE لحذف العقد'}), 405
+    # Handle OPTIONS request for CORS
+    if request.method == 'OPTIONS':
+        response = make_response()
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, X-Requested-With'
+        return response, 200
         
     try:
         # Log for debugging
         app.logger.info(f"Delete request for contract {id}")
         app.logger.info(f"Request method: {request.method}")
+        app.logger.info(f"Request path: {request.path}")
         app.logger.info(f"Request headers: {dict(request.headers)}")
+        
+        # Check if user is logged in and has project
+        if not hasattr(g, 'project') or not g.project:
+            app.logger.warning(f"No project in g for delete request")
+            return jsonify({'success': False, 'message': 'الرجاء اختيار مشروع أولاً'}), 401
         
         # Get the contract
         contract = Contract.query.filter_by(id=id, project_id=g.project.id).first()
         if not contract:
+            app.logger.warning(f"Contract {id} not found for project {g.project.id}")
             return jsonify({'success': False, 'message': 'العقد غير موجود'}), 404
         
         # Check if contract has installments
@@ -542,7 +554,7 @@ def delete(id):
         has_installments = InstallmentModel.query.filter_by(unit_id=contract.unit_id).count() > 0 if contract.unit_id else False
         
         if has_installments:
-            return jsonify({'success': False, 'message': 'لا يمكن حذف عقد له أقساط'})
+            return jsonify({'success': False, 'message': 'لا يمكن حذف عقد له أقساط'}), 400
         
         # Update unit status
         if contract.unit:
@@ -561,10 +573,18 @@ def delete(id):
         db.session.rollback()
         app.logger.error(f"Error deleting contract: {str(e)}")
         app.logger.error(f"Error type: {type(e).__name__}")
-        app.logger.error(f"Error traceback: {e.__traceback__}")
-        return jsonify({'success': False, 'message': f'حدث خطأ: {str(e)}'}), 500
+        import traceback
+        app.logger.error(f"Full traceback: {traceback.format_exc()}")
+        return jsonify({'success': False, 'message': f'حدث خطأ في حذف العقد: {str(e)}'}), 500
 
 
+
+
+# Simple test endpoint
+@bp.route('/test-delete', methods=['GET', 'POST'])
+def test_delete():
+    """Test endpoint to verify routing"""
+    return jsonify({'success': True, 'message': 'Delete endpoint is working', 'method': request.method})
 
 
 @bp.route('/<string:id>')

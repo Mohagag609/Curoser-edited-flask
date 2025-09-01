@@ -10,7 +10,7 @@ services:
     runtime: python
     region: oregon
     buildCommand: "./build.sh"
-    startCommand: "gunicorn app:app"
+    startCommand: "gunicorn app:app --config gunicorn_config.py"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
