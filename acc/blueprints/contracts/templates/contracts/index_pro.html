@@ -898,22 +898,26 @@ async function deleteContract(contractId, hasInstallments) {
     try {
         const deleteUrl = `/contracts/${contractId}/delete`;
         console.log('Deleting contract:', contractId, 'URL:', deleteUrl);
+        console.log('Full URL:', window.location.origin + deleteUrl);
         
         const response = await fetch(deleteUrl, {
             method: 'POST',
             headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/json'
+                'X-Requested-With': 'XMLHttpRequest'
             },
             credentials: 'same-origin'
         });
         
         console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
+        console.log('Response statusText:', response.statusText);
+        console.log('Response ok:', response.ok);
         
         // Handle specific status codes
         if (response.status === 401) {
             showNotification('الرجاء تسجيل الدخول أو اختيار مشروع', 'error');
+            setTimeout(() => {
+                window.location.href = '/select-project';
+            }, 2000);
             return;
         }
         
@@ -924,6 +928,12 @@ async function deleteContract(contractId, hasInstallments) {
         
         if (response.status === 405) {
             showNotification('طريقة الطلب غير مسموحة - تحقق من إعدادات الخادم', 'error');
+            return;
+        }
+        
+        if (!response.ok && response.status !== 400) {
+            // For non-OK responses that aren't handled above
+            showNotification(`خطأ في الخادم: ${response.status} ${response.statusText}`, 'error');
             return;
         }
         

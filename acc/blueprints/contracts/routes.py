@@ -274,72 +274,9 @@ def edit(id):
                          contract=contract,
                          brokers=brokers)
 
-@bp.route('/<string:id>/delete_test', methods=['GET', 'POST'])
-def delete_test(id):
-    """Test delete endpoint"""
-    return jsonify({
-        'message': 'Delete test endpoint reached',
-        'id': id,
-        'method': request.method,
-        'headers': dict(request.headers)
-    })
 
-@bp.route('/<string:id>/delete_old', methods=['POST'])
-def delete_old(id):
-    try:
-        contract = Contract.query.get_or_404(id)
-        
-        # Ensure contract belongs to current project
-        if contract.project_id != g.project.id:
-            error_msg = 'عقد غير موجود'
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'success': False, 'message': f'❌ {error_msg}'}), 404
-            flash(f'❌ {error_msg}', 'error')
-            return redirect(url_for('contracts.index'))
-        
-        # Check if contract has payments
-        if contract.installments.filter(Installment.paid_amount > 0).count() > 0:
-            error_msg = 'لا يمكن حذف عقد له دفعات مسددة'
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'success': False, 'message': f'❌ {error_msg}'}), 400
-            flash(f'❌ {error_msg}', 'error')
-            return redirect(url_for('contracts.index'))
-        
-        contract_code = contract.code
-        contract_id = contract.id
-        
-        # Update unit status
-        if contract.unit:
-            contract.unit.status = 'متاحة'
-        
-        # Delete related installments
-        Installment.query.filter_by(contract_id=contract.id).delete()
-        
-        db.session.delete(contract)
-        db.session.commit()
-        
-        log_action('حذف عقد', {'id': contract_id, 'code': contract_code})
-        
-        success_msg = f'تم حذف العقد "{contract_code}" بنجاح'
-        
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({
-                'success': True,
-                'message': f'✅ {success_msg}'
-            })
-        
-        flash(f'✅ {success_msg}', 'success')
-        return redirect(url_for('contracts.index'))
-        
-    except Exception as e:
-        db.session.rollback()
-        error_msg = f'خطأ في حذف العقد: {str(e)}'
-        
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'success': False, 'message': f'❌ {error_msg}'}), 500
-        
-        flash(f'❌ {error_msg}', 'error')
-        return redirect(url_for('contracts.index'))
+
+
 
 @bp.route('/report')
 def report():
@@ -521,7 +458,16 @@ def delete(id):
     app.logger.info(f"Request method: {request.method}")
     app.logger.info(f"Request headers: {dict(request.headers)}")
     app.logger.info(f"Request path: {request.path}")
-    app.logger.info(f"Current project: {g.project.id if hasattr(g, 'project') else 'None'}")
+    app.logger.info(f"Current project: {g.project.id if hasattr(g, 'project') and g.project else 'None'}")
+    
+    # Check if project is selected
+    if not hasattr(g, 'project') or not g.project:
+        app.logger.error("No project selected")
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'الرجاء اختيار مشروع أولاً'}), 401
+        else:
+            flash('الرجاء اختيار مشروع أولاً', 'error')
+            return redirect(url_for('main.select_project'))
     
     try:
         contract = Contract.query.filter_by(id=id, project_id=g.project.id).first()
