@@ -27,6 +27,10 @@ with app.app_context():
     print('Database tables ready!')
 "
 
+# Run DB migration to ensure columns exist (idempotent)
+echo "Running DB migration for installments..."
+python3 migrations/add_installment_fields.py || echo "Migration script warning, continuing..."
+
 # Check if this is the first deployment or optimization needed
 OPTIMIZATION_FLAG="/opt/render/project/.optimizations_done"
 
