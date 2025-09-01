@@ -1,0 +1,84 @@
+/* Fix zoom issues after project switch */
+
+/* Prevent unwanted zoom */
+html {
+    font-size: 16px !important;
+    -webkit-text-size-adjust: 100% !important;
+    -moz-text-size-adjust: 100% !important;
+    -ms-text-size-adjust: 100% !important;
+    text-size-adjust: 100% !important;
+    zoom: 1 !important;
+}
+
+body {
+    font-size: 1rem !important;
+    zoom: 1 !important;
+    transform: none !important;
+    -webkit-transform: none !important;
+    -moz-transform: none !important;
+    -ms-transform: none !important;
+}
+
+/* Prevent viewport scaling */
+@viewport {
+    width: device-width;
+    zoom: 1.0;
+    user-zoom: fixed;
+}
+
+/* Fix container widths */
+.container {
+    max-width: 100% !important;
+    transform: none !important;
+}
+
+/* Ensure proper scaling on all elements */
+* {
+    -webkit-transform-origin: top left;
+    transform-origin: top left;
+}
+
+/* Prevent accidental transforms */
+.page-content,
+.card,
+.sidebar,
+.navbar {
+    transform: none !important;
+    -webkit-transform: none !important;
+    zoom: 1 !important;
+}
+
+/* Reset any scaling on page load */
+@media screen and (max-width: 9999px) {
+    body {
+        zoom: 1 !important;
+        -moz-transform: scale(1) !important;
+        -webkit-transform: scale(1) !important;
+        transform: scale(1) !important;
+    }
+}
+
+/* Disable pinch zoom on mobile */
+@media (max-width: 768px) {
+    html, body {
+        touch-action: pan-x pan-y;
+        -ms-touch-action: pan-x pan-y;
+    }
+}
+
+/* Fix for specific browsers */
+@supports (-webkit-touch-callout: none) {
+    /* iOS Safari */
+    body {
+        position: fixed;
+        width: 100%;
+    }
+}
+
+/* Ensure animations don't cause zoom */
+@keyframes * {
+    * {
+        transform: translateZ(0) !important;
+        -webkit-transform: translateZ(0) !important;
+    }
+}

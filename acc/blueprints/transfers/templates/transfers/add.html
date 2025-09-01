@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}تحويل جديد بين المشاريع{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-gray-900">تحويل جديد بين المشاريع</h1>
+            <p class="text-gray-600 mt-2">تحويل أموال من مشروع {{ current_project.name }} إلى مشروع آخر</p>
+        </div>
+
+        <form method="POST" class="bg-white shadow-sm rounded-lg p-6">
+            <!-- من خزينة -->
+            <div class="mb-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-3">
+                    <i class="fas fa-arrow-up text-red-500 ml-2"></i>
+                    من مشروع: {{ current_project.name }}
+                </h3>
+                
+                <div>
+                    <label for="from_safe_id" class="block text-sm font-medium text-gray-700 mb-1">
+                        الخزينة المُرسلة <span class="text-red-500">*</span>
+                    </label>
+                    <select name="from_safe_id" id="from_safe_id" class="form-select" required>
+                        <option value="">اختر الخزينة</option>
+                        {% for safe in from_safes %}
+                        <option value="{{ safe.id }}" data-balance="{{ safe.balance }}">
+                            {{ safe.name }} - رصيد: {{ format_currency(safe.balance) }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- إلى مشروع -->
+            <div class="mb-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-3">
+                    <i class="fas fa-arrow-down text-green-500 ml-2"></i>
+                    إلى مشروع
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="to_project_id" class="block text-sm font-medium text-gray-700 mb-1">
+                            المشروع المُستقبل <span class="text-red-500">*</span>
+                        </label>
+                        <select name="to_project_id" id="to_project_id" class="form-select" required>
+                            <option value="">اختر المشروع</option>
+                            {% for project in other_projects %}
+                            <option value="{{ project.id }}">{{ project.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="to_safe_id" class="block text-sm font-medium text-gray-700 mb-1">
+                            الخزينة المُستقبلة <span class="text-red-500">*</span>
+                        </label>
+                        <select name="to_safe_id" id="to_safe_id" class="form-select" required disabled>
+                            <option value="">اختر المشروع أولاً</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- المبلغ والملاحظات -->
+            <div class="mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">
+                            المبلغ <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" name="amount" id="amount" 
+                               class="form-input" step="0.01" min="0.01" required>
+                        <p class="text-xs text-gray-500 mt-1" id="balance-info"></p>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">
+                        ملاحظات
+                    </label>
+                    <textarea name="notes" id="notes" rows="3" class="form-input"></textarea>
+                </div>
+            </div>
+
+            <!-- الأزرار -->
+            <div class="flex gap-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-exchange-alt ml-2"></i>
+                    تنفيذ التحويل
+                </button>
+                <a href="{{ url_for('transfers.index') }}" class="btn btn-secondary">
+                    إلغاء
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fromSafeSelect = document.getElementById('from_safe_id');
+    const toProjectSelect = document.getElementById('to_project_id');
+    const toSafeSelect = document.getElementById('to_safe_id');
+    const amountInput = document.getElementById('amount');
+    const balanceInfo = document.getElementById('balance-info');
+    
+    // عند اختيار الخزينة المُرسلة
+    fromSafeSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const balance = selectedOption.dataset.balance;
+        
+        if (balance) {
+            balanceInfo.textContent = `الرصيد المتاح: ${new Intl.NumberFormat('ar-EG').format(balance)} جنيه`;
+            amountInput.max = balance;
+        } else {
+            balanceInfo.textContent = '';
+            amountInput.removeAttribute('max');
+        }
+    });
+    
+    // عند اختيار المشروع المُستقبل
+    toProjectSelect.addEventListener('change', function() {
+        const projectId = this.value;
+        
+        if (projectId) {
+            // تحميل خزن المشروع المختار
+            fetch(`/transfers/api/project-safes/${projectId}`)
+                .then(response => response.json())
+                .then(safes => {
+                    toSafeSelect.innerHTML = '<option value="">اختر الخزينة</option>';
+                    
+                    safes.forEach(safe => {
+                        const option = document.createElement('option');
+                        option.value = safe.id;
+                        option.textContent = `${safe.name} - رصيد: ${new Intl.NumberFormat('ar-EG').format(safe.balance)} جنيه`;
+                        toSafeSelect.appendChild(option);
+                    });
+                    
+                    toSafeSelect.disabled = false;
+                });
+        } else {
+            toSafeSelect.innerHTML = '<option value="">اختر المشروع أولاً</option>';
+            toSafeSelect.disabled = true;
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}النسخ الاحتياطي{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-gray-900">النسخ الاحتياطي</h2>
+        <form method="post" action="{{ url_for('system.create_backup_route') }}" class="inline">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-download ml-2"></i>
+                إنشاء نسخة احتياطية جديدة
+            </button>
+        </form>
+    </div>
+    
+    <!-- معلومات النسخ الاحتياطي -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="card bg-blue-50">
+            <h4 class="text-sm text-gray-600 mb-1">عدد النسخ الاحتياطية</h4>
+            <p class="text-xl font-bold text-blue-600">{{ backups|length }}</p>
+        </div>
+        <div class="card bg-green-50">
+            <h4 class="text-sm text-gray-600 mb-1">آخر نسخة احتياطية</h4>
+            <p class="text-lg font-bold text-green-600">
+                {% if backups %}
+                    {{ backups[0].created_str }}
+                {% else %}
+                    لا توجد
+                {% endif %}
+            </p>
+        </div>
+        <div class="card bg-purple-50">
+            <h4 class="text-sm text-gray-600 mb-1">الحجم الإجمالي</h4>
+            <p class="text-xl font-bold text-purple-600">
+                {{ '%.2f' | format(backups|sum(attribute='size') / 1024 / 1024) }} MB
+            </p>
+        </div>
+    </div>
+    
+    <!-- قائمة النسخ الاحتياطية -->
+    <div class="card">
+        <h3 class="text-lg font-semibold mb-4">النسخ الاحتياطية المتاحة</h3>
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>اسم الملف</th>
+                        <th>الحجم</th>
+                        <th>تاريخ الإنشاء</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for backup in backups %}
+                    <tr>
+                        <td>
+                            <i class="fas fa-file-archive text-blue-500 ml-2"></i>
+                            {{ backup.filename }}
+                        </td>
+                        <td>{{ backup.size_mb }} MB</td>
+                        <td>{{ backup.created_str }}</td>
+                        <td>
+                            <div class="flex gap-2">
+                                <a href="{{ url_for('system.download_backup', filename=backup.filename) }}" 
+                                   class="btn btn-sm btn-secondary" title="تحميل">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <form method="post" action="{{ url_for('system.restore_backup_route', filename=backup.filename) }}" 
+                                      class="inline" onsubmit="return confirm('هل أنت متأكد من استعادة هذه النسخة؟ سيتم حذف جميع البيانات الحالية!');">
+                                    <button type="submit" class="btn btn-sm btn-warning" title="استعادة">
+                                        <i class="fas fa-undo"></i>
+                                    </button>
+                                </form>
+                                <form method="post" action="{{ url_for('system.delete_backup', filename=backup.filename) }}" 
+                                      class="inline" onsubmit="return confirm('هل أنت متأكد من حذف هذه النسخة الاحتياطية؟');">
+                                    <button type="submit" class="btn btn-sm btn-danger" title="حذف">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-8 text-gray-500">
+                            لا توجد نسخ احتياطية متاحة
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- تعليمات النسخ الاحتياطي -->
+    <div class="card mt-6">
+        <h3 class="text-lg font-semibold mb-4">تعليمات مهمة</h3>
+        <div class="bg-yellow-50 p-4 rounded">
+            <ul class="list-disc mr-6 space-y-2 text-sm">
+                <li><strong>النسخ الاحتياطي:</strong> ينصح بإنشاء نسخة احتياطية بشكل دوري (يومي أو أسبوعي)</li>
+                <li><strong>التخزين:</strong> احتفظ بنسخ احتياطية خارج الخادم للأمان الإضافي</li>
+                <li><strong>الاستعادة:</strong> عند استعادة نسخة احتياطية، سيتم حذف جميع البيانات الحالية واستبدالها</li>
+                <li><strong>التحقق:</strong> تحقق من صحة النسخة الاحتياطية بعد التحميل</li>
+                <li><strong>الصلاحيات:</strong> تأكد من أن لديك الصلاحيات الكاملة قبل إجراء عملية الاستعادة</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

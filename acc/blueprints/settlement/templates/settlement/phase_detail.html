@@ -1,0 +1,524 @@
+{% extends "base.html" %}
+
+{% block title %}{{ phase.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">{{ phase.name }}</h2>
+            <p class="text-gray-600">{{ phase.project.name }}</p>
+        </div>
+        <div class="flex gap-2">
+            {% if phase.is_settled %}
+                <span class="badge badge-success text-lg px-4 py-2">
+                    <i class="fas fa-check-circle ml-2"></i>
+                    متسوية
+                </span>
+            {% else %}
+                <a href="#settlement-section" class="btn btn-primary">
+                    <i class="fas fa-calculator ml-2"></i>
+                    معاينة التسوية
+                </a>
+            {% endif %}
+            <a href="{{ url_for('settlement.phases_index') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right ml-2"></i>
+                رجوع
+            </a>
+        </div>
+    </div>
+    
+    <!-- معلومات المرحلة -->
+    <div class="card mb-6">
+        <h3 class="text-lg font-semibold mb-4">معلومات المرحلة</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="text-sm text-gray-600">تاريخ البداية</label>
+                <p class="font-medium">{{ phase.start_date.strftime('%Y-%m-%d') if phase.start_date else '-' }}</p>
+            </div>
+            <div>
+                <label class="text-sm text-gray-600">تاريخ النهاية</label>
+                <p class="font-medium">{{ phase.end_date.strftime('%Y-%m-%d') if phase.end_date else '-' }}</p>
+            </div>
+            <div>
+                <label class="text-sm text-gray-600">تاريخ التسوية</label>
+                <p class="font-medium">{{ phase.settled_at.strftime('%Y-%m-%d %H:%M') if phase.settled_at else 'غير متسوية' }}</p>
+            </div>
+            {% if phase.description %}
+            <div class="md:col-span-3">
+                <label class="text-sm text-gray-600">الوصف</label>
+                <p class="mt-1">{{ phase.description }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- ملخص التكاليف -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="card bg-blue-50">
+            <h4 class="text-sm text-gray-600 mb-1">إجمالي المصروفات</h4>
+            <p class="text-xl font-bold text-blue-600">{{ format_currency(details.total_expenses) }}</p>
+        </div>
+        <div class="card bg-green-50">
+            <h4 class="text-sm text-gray-600 mb-1">إجمالي المواد</h4>
+            <p class="text-xl font-bold text-green-600">{{ format_currency(details.total_materials) }}</p>
+        </div>
+        <div class="card bg-purple-50">
+            <h4 class="text-sm text-gray-600 mb-1">إجمالي التكلفة</h4>
+            <p class="text-xl font-bold text-purple-600">{{ format_currency(details.total_cost) }}</p>
+        </div>
+        <div class="card bg-orange-50">
+            <h4 class="text-sm text-gray-600 mb-1">عدد الشركاء</h4>
+            <p class="text-xl font-bold text-orange-600">{{ project_partners|length }}</p>
+        </div>
+    </div>
+    
+    <!-- المصروفات والمواد -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- المصروفات -->
+        <div class="card">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">المصروفات</h3>
+                {% if not phase.is_settled %}
+                <button onclick="showAddExpenseModal()" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus"></i>
+                </button>
+                {% endif %}
+            </div>
+            <div class="table-container max-h-96 overflow-y-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>الشريك</th>
+                            <th>المبلغ</th>
+                            <th>الفئة</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for expense in details.expenses %}
+                        <tr>
+                            <td>{{ expense.expense_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ expense.paid_by.name }}</td>
+                            <td>{{ format_currency(expense.amount) }}</td>
+                            <td>{{ expense.category or '-' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-gray-500 py-4">
+                                لا توجد مصروفات
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- المواد المصروفة -->
+        <div class="card">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">المواد المصروفة</h3>
+                {% if not phase.is_settled %}
+                <button onclick="showAddMaterialModal()" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus"></i>
+                </button>
+                {% endif %}
+            </div>
+            <div class="table-container max-h-96 overflow-y-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>المادة</th>
+                            <th>الكمية</th>
+                            <th>القيمة</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for issue in details.material_issues %}
+                        <tr>
+                            <td>{{ issue.issue_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ issue.material.name }}</td>
+                            <td>{{ issue.quantity }} {{ issue.material.unit }}</td>
+                            <td>{{ format_currency(issue.total_cost) }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-gray-500 py-4">
+                                لا توجد مواد مصروفة
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- تفاصيل حسب الشريك -->
+    <div class="card mb-6">
+        <h3 class="text-lg font-semibold mb-4">تفاصيل حسب الشريك</h3>
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>الشريك</th>
+                        <th>المصروفات</th>
+                        <th>المواد</th>
+                        <th>الإجمالي</th>
+                        <th>النسبة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for partner_id, data in details.by_partner.items() %}
+                    <tr>
+                        <td>{{ data.partner.name }}</td>
+                        <td>{{ format_currency(data.expenses) }}</td>
+                        <td>{{ format_currency(data.materials) }}</td>
+                        <td class="font-semibold">{{ format_currency(data.total) }}</td>
+                        <td>
+                            {% if details.total_cost > 0 %}
+                                {{ '%.1f' | format(data.total / details.total_cost * 100) }}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- قسم التسوية -->
+    {% if not phase.is_settled and settlement_preview and not settlement_preview.error %}
+    <div id="settlement-section" class="card mb-6 border-2 border-blue-200">
+        <h3 class="text-lg font-semibold mb-4 text-blue-700">
+            <i class="fas fa-calculator ml-2"></i>
+            معاينة التسوية
+        </h3>
+        
+        <div class="bg-blue-50 p-4 rounded mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="text-sm text-gray-600">إجمالي التكلفة</label>
+                    <p class="text-lg font-bold">{{ format_currency(settlement_preview.total_cost) }}</p>
+                </div>
+                <div>
+                    <label class="text-sm text-gray-600">عدد الشركاء</label>
+                    <p class="text-lg font-bold">{{ settlement_preview.partners_count }}</p>
+                </div>
+                <div>
+                    <label class="text-sm text-gray-600">المتوسط لكل شريك</label>
+                    <p class="text-lg font-bold">{{ format_currency(settlement_preview.average_per_partner) }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="table-container mb-4">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>الشريك</th>
+                        <th>ما دفعه</th>
+                        <th>المتوسط</th>
+                        <th>الفرق</th>
+                        <th>الرصيد الحالي</th>
+                        <th>الرصيد الجديد</th>
+                        <th>الحالة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for partner_data in settlement_preview.partners_data %}
+                    <tr>
+                        <td>{{ partner_data.partner.name }}</td>
+                        <td>{{ format_currency(partner_data.paid_amount) }}</td>
+                        <td>{{ format_currency(settlement_preview.average_per_partner) }}</td>
+                        <td class="font-semibold {% if partner_data.difference > 0 %}text-red-600{% elif partner_data.difference < 0 %}text-green-600{% endif %}">
+                            {{ format_currency(partner_data.difference) }}
+                        </td>
+                        <td>{{ format_currency(partner_data.current_balance) }}</td>
+                        <td class="font-semibold {% if partner_data.new_balance > 0 %}text-red-600{% elif partner_data.new_balance < 0 %}text-green-600{% endif %}">
+                            {{ format_currency(partner_data.new_balance) }}
+                        </td>
+                        <td>
+                            {% if partner_data.difference > 0 %}
+                                <span class="badge badge-danger">عليه دفع</span>
+                            {% elif partner_data.difference < 0 %}
+                                <span class="badge badge-success">له استرداد</span>
+                            {% else %}
+                                <span class="badge badge-secondary">متوازن</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if settlement_preview.can_settle %}
+        <form method="post" action="{{ url_for('settlement.settle_phase_route', id=phase.id) }}" class="mt-4">
+            <div class="mb-4">
+                <label class="form-label">ملاحظات التسوية</label>
+                <textarea name="notes" rows="3" class="form-input" 
+                          placeholder="أي ملاحظات حول هذه التسوية..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg" 
+                    onclick="return confirm('هل أنت متأكد من تنفيذ التسوية؟ لا يمكن التراجع عن هذا الإجراء.')">
+                <i class="fas fa-check-circle ml-2"></i>
+                تنفيذ التسوية الآن
+            </button>
+        </form>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- سجل التسوية (إذا كانت متسوية) -->
+    {% if phase.is_settled and settlement_record %}
+    <div class="card mb-6 border-2 border-green-200">
+        <h3 class="text-lg font-semibold mb-4 text-green-700">
+            <i class="fas fa-check-circle ml-2"></i>
+            سجل التسوية
+        </h3>
+        
+        <div class="bg-green-50 p-4 rounded mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="text-sm text-gray-600">تاريخ التسوية</label>
+                    <p class="font-medium">{{ settlement_record.settlement_date.strftime('%Y-%m-%d %H:%M') }}</p>
+                </div>
+                <div>
+                    <label class="text-sm text-gray-600">إجمالي التكلفة</label>
+                    <p class="font-medium">{{ format_currency(settlement_record.total_amount) }}</p>
+                </div>
+                <div>
+                    <label class="text-sm text-gray-600">عدد الشركاء</label>
+                    <p class="font-medium">{{ settlement_record.partners_count }}</p>
+                </div>
+                <div>
+                    <label class="text-sm text-gray-600">المتوسط لكل شريك</label>
+                    <p class="font-medium">{{ format_currency(settlement_record.average_per_partner) }}</p>
+                </div>
+            </div>
+            {% if settlement_record.notes %}
+            <div class="mt-4">
+                <label class="text-sm text-gray-600">الملاحظات</label>
+                <p class="mt-1">{{ settlement_record.notes }}</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>الشريك</th>
+                        <th>ما دفعه</th>
+                        <th>المتوسط</th>
+                        <th>الفرق</th>
+                        <th>الرصيد السابق</th>
+                        <th>الرصيد الجديد</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for line in settlement_record.lines %}
+                    <tr>
+                        <td>{{ line.partner.name }}</td>
+                        <td>{{ format_currency(line.paid_amount) }}</td>
+                        <td>{{ format_currency(line.average_amount) }}</td>
+                        <td class="font-semibold {% if line.difference > 0 %}text-red-600{% elif line.difference < 0 %}text-green-600{% endif %}">
+                            {{ format_currency(line.difference) }}
+                        </td>
+                        <td>{{ format_currency(line.previous_balance) }}</td>
+                        <td class="font-semibold {% if line.new_balance > 0 %}text-red-600{% elif line.new_balance < 0 %}text-green-600{% endif %}">
+                            {{ format_currency(line.new_balance) }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal إضافة مصروف -->
+<div id="addExpenseModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="text-lg font-semibold">إضافة مصروف</h3>
+            <button onclick="closeModal('addExpenseModal')" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form method="post" action="{{ url_for('settlement.add_expense', id=phase.id) }}">
+            <div class="modal-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label required">الشريك</label>
+                        <select name="partner_id" required class="form-input">
+                            <option value="">اختر الشريك</option>
+                            {% for pp in project_partners %}
+                            <option value="{{ pp.partner_id }}">{{ Partner.query.get(pp.partner_id).name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label required">المبلغ</label>
+                        <input type="number" name="amount" required step="0.01" min="0" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">الفئة</label>
+                        <input type="text" name="category" class="form-input" placeholder="مثال: مواد بناء">
+                    </div>
+                    <div>
+                        <label class="form-label">التاريخ</label>
+                        <input type="date" name="expense_date" value="{{ get_today() }}" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">رقم الإيصال</label>
+                        <input type="text" name="receipt_number" class="form-input">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="form-label">الوصف</label>
+                        <textarea name="description" rows="2" class="form-input"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">حفظ</button>
+                <button type="button" onclick="closeModal('addExpenseModal')" class="btn btn-secondary">إلغاء</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal إضافة مواد -->
+<div id="addMaterialModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="text-lg font-semibold">صرف مواد</h3>
+            <button onclick="closeModal('addMaterialModal')" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form method="post" action="{{ url_for('settlement.add_material_issue', id=phase.id) }}">
+            <div class="modal-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label required">المادة</label>
+                        <select name="material_id" required class="form-input" onchange="updateUnitCost(this)">
+                            <option value="">اختر المادة</option>
+                            {% for material in materials %}
+                            <option value="{{ material.id }}" data-cost="{{ material.unit_cost }}">
+                                {{ material.name }} ({{ material.unit }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label required">الكمية</label>
+                        <input type="number" name="quantity" required step="0.001" min="0" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label required">سعر الوحدة</label>
+                        <input type="number" name="unit_cost" required step="0.01" min="0" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">الشريك المسؤول</label>
+                        <select name="partner_id" class="form-input">
+                            <option value="">بدون</option>
+                            {% for pp in project_partners %}
+                            <option value="{{ pp.partner_id }}">{{ Partner.query.get(pp.partner_id).name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">التاريخ</label>
+                        <input type="date" name="issue_date" value="{{ get_today() }}" class="form-input">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="form-label">ملاحظات</label>
+                        <textarea name="notes" rows="2" class="form-input"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">حفظ</button>
+                <button type="button" onclick="closeModal('addMaterialModal')" class="btn btn-secondary">إلغاء</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showAddExpenseModal() {
+    document.getElementById('addExpenseModal').style.display = 'block';
+}
+
+function showAddMaterialModal() {
+    document.getElementById('addMaterialModal').style.display = 'block';
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
+
+function updateUnitCost(select) {
+    const selectedOption = select.options[select.selectedIndex];
+    const cost = selectedOption.getAttribute('data-cost');
+    if (cost) {
+        document.querySelector('input[name="unit_cost"]').value = cost;
+    }
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+    }
+}
+</script>
+
+<style>
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    border-radius: 0.5rem;
+    max-width: 600px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,116 @@
+{# Enhanced Search Bar Component #}
+{# Usage: {% include 'shared/search_bar.html' %} #}
+
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+    <div class="flex flex-col lg:flex-row gap-4">
+        <!-- Search Input -->
+        <div class="flex-1">
+            <div class="relative">
+                <input type="text" 
+                       id="search-input"
+                       name="q"
+                       value="{{ request.args.get('q', '') }}"
+                       placeholder="{{ search_placeholder|default('ابحث بالاسم، رقم الهاتف، الرقم القومي...') }}"
+                       class="w-full pl-10 pr-10 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                       data-advanced-search
+                       data-search-url="{{ search_url }}"
+                       data-results-container="#results-container"
+                       data-min-chars="1"
+                       data-delay="300">
+                
+                <!-- Search Icon -->
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fas fa-search text-gray-400"></i>
+                </div>
+                
+                <!-- Clear Button -->
+                <button type="button" 
+                        class="search-clear absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                        style="display: none;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- Search Suggestions -->
+            <div class="mt-2 text-sm text-gray-600">
+                <span>بحث سريع: </span>
+                <button type="button" class="text-blue-600 hover:underline" onclick="document.getElementById('search-input').value='نشط'; document.getElementById('search-input').dispatchEvent(new Event('input'))">نشط</button>
+                <span class="mx-2">•</span>
+                <button type="button" class="text-blue-600 hover:underline" onclick="document.getElementById('search-input').value='غير نشط'; document.getElementById('search-input').dispatchEvent(new Event('input'))">غير نشط</button>
+            </div>
+        </div>
+        
+        <!-- Filters -->
+        {% if show_filters|default(true) %}
+        <div class="flex flex-wrap gap-3 items-end">
+            <!-- Status Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ filter_label|default('الحالة') }}</label>
+                <select name="{{ filter_name|default('status') }}" 
+                        data-filter="{{ filter_name|default('status') }}"
+                        class="px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    {% for option in filter_options|default([{'value': '', 'label': 'جميع الحالات'}, {'value': 'نشط', 'label': 'نشط'}, {'value': 'غير نشط', 'label': 'غير نشط'}]) %}
+                    <option value="{{ option.value }}" {{ 'selected' if request.args.get(filter_name|default('status')) == option.value }}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Date Range Filter -->
+            {% if show_date_filter|default(false) %}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">من تاريخ</label>
+                <input type="date" 
+                       name="from_date"
+                       data-filter="from_date"
+                       value="{{ request.args.get('from_date', '') }}"
+                       class="px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">إلى تاريخ</label>
+                <input type="date" 
+                       name="to_date"
+                       data-filter="to_date"
+                       value="{{ request.args.get('to_date', '') }}"
+                       class="px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            {% endif %}
+            
+            <!-- Search Button -->
+            <button type="button" 
+                    onclick="document.getElementById('search-input').dispatchEvent(new Event('input'))"
+                    class="modern-btn modern-btn-secondary modern-btn-sm">
+                <i class="fas fa-filter"></i>
+                تطبيق
+            </button>
+            
+            <!-- Reset Button -->
+            <button type="button" 
+                    onclick="resetSearch()"
+                    class="modern-btn modern-btn-secondary modern-btn-sm">
+                <i class="fas fa-redo"></i>
+                إعادة تعيين
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function resetSearch() {
+    // Clear search input
+    document.getElementById('search-input').value = '';
+    
+    // Reset all filters
+    document.querySelectorAll('[data-filter]').forEach(element => {
+        if (element.type === 'checkbox' || element.type === 'radio') {
+            element.checked = false;
+        } else {
+            element.value = '';
+        }
+    });
+    
+    // Trigger search
+    document.getElementById('search-input').dispatchEvent(new Event('input'));
+}
+</script>

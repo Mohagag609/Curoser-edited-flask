@@ -1,0 +1,60 @@
+{% for customer in customers %}
+<tr id="row-{{ customer.id }}">
+    <td>
+        <span class="code-badge">{{ customer.code }}</span>
+    </td>
+    <td>
+        <div class="customer-name">{{ customer.name }}</div>
+        {% if customer.national_id %}
+        <div class="customer-meta">الرقم القومي: {{ customer.national_id }}</div>
+        {% endif %}
+    </td>
+    <td>
+        {% if customer.phone %}
+        <span class="phone-display">{{ customer.phone }}</span>
+        {% else %}
+        <span style="color: #9ca3af;">-</span>
+        {% endif %}
+    </td>
+    <td>{{ customer.address or '-' }}</td>
+    <td>
+        {% if customer.status == 'نشط' %}
+            <span class="status-indicator active">
+                <i class="fas fa-circle" style="font-size: 8px;"></i>
+                نشط
+            </span>
+        {% else %}
+            <span class="status-indicator inactive">
+                <i class="fas fa-circle" style="font-size: 8px;"></i>
+                معلق
+            </span>
+        {% endif %}
+    </td>
+    <td>
+        <div class="action-group">
+            <a href="{{ url_for('customers.detail', id=customer.id) }}" 
+               class="btn btn-sm btn-light">
+                <i class="fas fa-eye"></i>
+            </a>
+            <a href="{{ url_for('customers.edit', id=customer.id) }}" 
+               class="btn btn-sm btn-light">
+                <i class="fas fa-edit"></i>
+            </a>
+            <button onclick="deleteCustomer('{{ customer.id }}', '{{ customer.name }}')"
+                    class="btn btn-sm btn-danger">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    </td>
+</tr>
+{% else %}
+<tr>
+    <td colspan="6" class="empty-state">
+        <div class="empty-icon">
+            <i class="fas fa-search"></i>
+        </div>
+        <h3 class="empty-title">لا توجد نتائج</h3>
+        <p class="empty-description">لم يتم العثور على عملاء مطابقين للبحث</p>
+    </td>
+</tr>
+{% endfor %}

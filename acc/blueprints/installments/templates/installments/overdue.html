@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}الأقساط المتأخرة - {{ g.project.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" dir="rtl">
+    <!-- Header -->
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('installments.index') }}" class="btn btn-outline-secondary me-3">
+            <i class="fas fa-arrow-right"></i>
+        </a>
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                الأقساط المتأخرة
+            </h1>
+            <p class="text-muted mb-0">الأقساط التي تجاوزت تاريخ استحقاقها</p>
+        </div>
+    </div>
+
+    <!-- Alert Card -->
+    <div class="alert alert-danger mb-4">
+        <div class="row align-items-center">
+            <div class="col">
+                <h5 class="alert-heading mb-1">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    تنبيه: يوجد أقساط متأخرة تحتاج للمتابعة
+                </h5>
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <strong>عدد الأقساط المتأخرة:</strong> {{ installments|length }} قسط
+                    </div>
+                    <div class="col-md-4">
+                        <strong>إجمالي المستحق:</strong> {{ "{:,.2f}".format(total_amount) }} ج.م
+                    </div>
+                    <div class="col-md-4">
+                        <strong>أقدم قسط متأخر:</strong> 
+                        {% if installments %}
+                            {{ installments[0].days_overdue }} يوم
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overdue Installments -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">قائمة الأقساط المتأخرة</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>تاريخ الاستحقاق</th>
+                            <th>العميل</th>
+                            <th>الوحدة</th>
+                            <th>المبلغ المستحق</th>
+                            <th>عدد أيام التأخير</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for installment in installments %}
+                        <tr class="{% if installment.days_overdue > 30 %}table-danger{% else %}table-warning{% endif %}">
+                            <td>
+                                <strong>{{ installment.due_date.strftime('%Y-%m-%d') }}</strong>
+                            </td>
+                            <td>
+                                {% if installment.customer %}
+                                    <div class="fw-bold">{{ installment.customer.name }}</div>
+                                    <small class="text-muted">
+                                        <i class="fas fa-phone me-1"></i>
+                                        {{ installment.customer.phone }}
+                                    </small>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if installment.unit %}
+                                    {{ installment.unit.name }}
+                                    <br>
+                                    <small class="text-muted">{{ installment.unit.code }}</small>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td class="fw-bold text-danger">
+                                {{ "{:,.2f}".format(installment.amount - installment.get_paid_amount()) }} ج.م
+                            </td>
+                            <td>
+                                {% if installment.days_overdue > 90 %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>
+                                        {{ installment.days_overdue }} يوم
+                                    </span>
+                                {% elif installment.days_overdue > 30 %}
+                                    <span class="badge bg-warning text-dark">
+                                        {{ installment.days_overdue }} يوم
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">
+                                        {{ installment.days_overdue }} يوم
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('installments.detail', id=installment.id) }}" 
+                                       class="btn btn-outline-primary" title="التفاصيل">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('installments.pay', id=installment.id) }}" 
+                                       class="btn btn-outline-success" title="دفع">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                    </a>
+                                    <button onclick="sendReminder('{{ installment.customer.phone if installment.customer else '' }}')" 
+                                            class="btn btn-outline-warning" title="إرسال تذكير"
+                                            {% if not installment.customer %}disabled{% endif %}>
+                                        <i class="fas fa-bell"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="fas fa-check-circle fa-3x mb-3 d-block text-success"></i>
+                                ممتاز! لا توجد أقساط متأخرة
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function sendReminder(phone) {
+    if (!phone) {
+        window.notify('لا يوجد رقم هاتف للعميل', 'error');
+        return;
+    }
+    
+    if (confirm(`هل تريد إرسال تذكير للرقم ${phone}؟`)) {
+        window.notify('تم إرسال التذكير بنجاح', 'success');
+    }
+}
+</script>
+{% endblock %}

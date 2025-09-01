@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}{{ group.name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <a href="{{ url_for('partners.groups') }}" class="modern-btn modern-btn-back modern-btn-sm">
+                <i class="fas fa-arrow-right"></i>
+                <span>رجوع</span>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">{{ group.name }}</h1>
+                <p class="text-sm text-gray-600">كود المجموعة: {{ group.code }}</p>
+            </div>
+        </div>
+        
+        <form method="POST" action="{{ url_for('partners.delete_group', id=group.id) }}" class="inline" 
+              onsubmit="return confirm('هل أنت متأكد من حذف هذه المجموعة؟');">
+            <button type="submit" class="modern-btn modern-btn-danger">
+                <i class="fas fa-trash"></i>
+                <span>حذف المجموعة</span>
+            </button>
+        </form>
+    </div>
+    
+    <!-- Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-100 text-sm">عدد الأعضاء</p>
+                    <p class="text-3xl font-bold">{{ members|length }}</p>
+                </div>
+                <i class="fas fa-users text-4xl text-purple-200"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100 text-sm">النسبة الإجمالية</p>
+                    <p class="text-3xl font-bold">{{ total_percentage }}%</p>
+                </div>
+                <i class="fas fa-percentage text-4xl text-green-200"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100 text-sm">النسبة المتبقية</p>
+                    <p class="text-3xl font-bold">{{ 100 - total_percentage }}%</p>
+                </div>
+                <i class="fas fa-chart-pie text-4xl text-blue-200"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-orange-100 text-sm">شركاء متاحين</p>
+                    <p class="text-3xl font-bold">{{ available_count }}</p>
+                    <p class="text-xs text-orange-200">من {{ total_partners }}</p>
+                </div>
+                <i class="fas fa-user-plus text-4xl text-orange-200"></i>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Member Form -->
+    <div class="card">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-user-plus text-purple-500 ml-2"></i>
+            إضافة شريك للمجموعة
+        </h3>
+        
+        {% set available_to_add = [] %}
+        {% for partner in available_partners %}
+            {% set already_member = members|selectattr('partner.id', 'equalto', partner.id)|list|length > 0 %}
+            {% if not already_member %}
+                {% set _ = available_to_add.append(partner) %}
+            {% endif %}
+        {% endfor %}
+        
+        {% if available_to_add %}
+        <form method="POST" action="{{ url_for('partners.add_group_member', id=group.id) }}" class="flex gap-3">
+            <select name="partner_id" required class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                <option value="">-- اختر شريك ({{ available_to_add|length }} متاح) --</option>
+                {% for partner in available_to_add %}
+                    <option value="{{ partner.id }}">{{ partner.name }} ({{ partner.code }})</option>
+                {% endfor %}
+            </select>
+            
+            <input type="number" name="percentage" required 
+                   placeholder="النسبة %" 
+                   min="0.01" max="{{ 100 - total_percentage }}" step="0.01"
+                   class="w-32 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+            
+            <button type="submit" class="modern-btn modern-btn-primary" {% if total_percentage >= 100 %}disabled{% endif %}>
+                <i class="fas fa-plus"></i>
+                <span>إضافة</span>
+            </button>
+        </form>
+        {% else %}
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-info-circle text-yellow-400"></i>
+                </div>
+                <div class="mr-3">
+                    <p class="text-sm text-yellow-700">
+                        لا يوجد شركاء متاحين للإضافة. الأسباب المحتملة:
+                    </p>
+                    <ul class="mt-2 text-sm text-yellow-700 list-disc list-inside">
+                        <li>جميع الشركاء النشطين تم إضافتهم للمجموعة</li>
+                        <li>لا يوجد شركاء نشطين في النظام</li>
+                    </ul>
+                    <a href="{{ url_for('partners.add') }}" class="mt-3 inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-plus-circle"></i>
+                        إضافة شريك جديد
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if total_percentage >= 100 %}
+        <div class="mt-3 text-sm text-red-600">
+            <i class="fas fa-exclamation-triangle ml-1"></i>
+            النسبة الإجمالية وصلت إلى 100%
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Members Table -->
+    <div class="card">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">
+                <i class="fas fa-users text-purple-500 ml-2"></i>
+                أعضاء المجموعة ({{ members|length }} عضو)
+            </h3>
+            <div class="flex items-center gap-3">
+                {% if members %}
+                <span class="text-sm text-gray-500">
+                    النسبة الإجمالية: {{ total_percentage }}%
+                </span>
+                {% endif %}
+                <button onclick="window.location.reload()" 
+                        class="text-gray-500 hover:text-gray-700 transition-colors"
+                        title="تحديث الصفحة">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الكود</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">اسم الشريك</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">النسبة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in members %}
+                    {% set member = item.member %}
+                    {% set partner = item.partner %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            <span class="px-2 py-1 text-xs rounded-md bg-gray-100 text-gray-700">
+                                {{ partner.code }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{{ url_for('partners.detail', id=partner.id) }}" class="text-blue-600 hover:text-blue-900 font-medium">
+                                {{ partner.name }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-1 bg-gray-200 rounded-full h-2 ml-2 max-w-xs">
+                                    <div class="bg-green-500 rounded-full h-2" style="width: {{ member.percentage|float }}%"></div>
+                                </div>
+                                <span class="text-sm font-medium text-gray-900">{{ member.percentage }}%</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <form method="POST" action="{{ url_for('partners.remove_group_member', group_id=group.id, member_id=member.id) }}" class="inline" 
+                                  onsubmit="return confirm('هل أنت متأكد من حذف هذا الشريك من المجموعة؟');">
+                                <button type="submit" class="text-red-600 hover:text-red-900">
+                                    <i class="fas fa-times-circle"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-8 text-center text-gray-500">
+                            <i class="fas fa-user-slash text-3xl text-gray-300 mb-2"></i>
+                            <p>لا يوجد أعضاء في هذه المجموعة</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Notes -->
+    {% if group.notes %}
+    <div class="card">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-sticky-note text-yellow-500 ml-2"></i>
+            ملاحظات
+        </h3>
+        <p class="text-gray-700 whitespace-pre-wrap">{{ group.notes }}</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Auto-refresh after form submission to update available partners
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if there's a success message
+    const successMessages = document.querySelectorAll('.alert-success, .flash-success');
+    if (successMessages.length > 0) {
+        // Check if the message contains "تم إضافة الشريك"
+        const messageText = successMessages[0].textContent || '';
+        if (messageText.includes('تم إضافة الشريك')) {
+            // Force page refresh after a short delay to ensure data is updated
+            setTimeout(function() {
+                window.location.reload();
+            }, 100);
+        }
+    }
+    
+    // Debug: Log current members
+    console.log('Current members: {{ members|length }}');
+    console.log('Available partners: {{ available_count }}');
+    console.log('Total percentage: {{ total_percentage }}%');
+});
+</script>
+
+<style>
+/* Ensure buttons are visible */
+.modern-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    padding: 0.5rem 1rem !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    border-radius: 0.5rem !important;
+    transition: all 0.15s ease !important;
+    cursor: pointer !important;
+    text-decoration: none !important;
+    border: 1px solid transparent !important;
+}
+
+.modern-btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+    color: white !important;
+}
+
+.modern-btn-primary:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+}
+
+.modern-btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+    color: white !important;
+}
+
+.modern-btn-danger:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3) !important;
+}
+
+.modern-btn-back {
+    background: #f3f4f6 !important;
+    color: #374151 !important;
+    border-color: #d1d5db !important;
+}
+
+.modern-btn-back:hover {
+    background: #e5e7eb !important;
+    transform: translateX(4px) !important;
+}
+
+.modern-btn-sm {
+    padding: 0.375rem 0.875rem !important;
+    font-size: 0.8125rem !important;
+}
+
+.modern-btn:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+}
+
+/* RTL Support */
+[dir="rtl"] .modern-btn-back:hover {
+    transform: translateX(-4px) !important;
+}
+</style>
+{% endblock %}

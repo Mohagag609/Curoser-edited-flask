@@ -1,0 +1,296 @@
+/* Modern Button Design System */
+
+:root {
+    /* Primary Colors */
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    --danger-gradient: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
+    --warning-gradient: linear-gradient(135deg, #f2994a 0%, #f2c94c 100%);
+    --info-gradient: linear-gradient(135deg, #2af598 0%, #009efd 100%);
+    
+    /* Shadows */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.16);
+    --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* Base Modern Button */
+.modern-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-transform: none;
+    letter-spacing: 0.025em;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+}
+
+.modern-btn:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(-100%);
+    transition: transform 0.3s;
+}
+
+.modern-btn:hover:before {
+    transform: translateX(0);
+}
+
+.modern-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-xl);
+}
+
+.modern-btn:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+}
+
+/* View Button - Beautiful Blue */
+.modern-btn-view {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.modern-btn-view:hover {
+    background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+}
+
+/* Edit Button - Elegant Teal */
+.modern-btn-edit {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+}
+
+.modern-btn-edit:hover {
+    background: linear-gradient(135deg, #0e8a7e 0%, #2ed26a 100%);
+}
+
+/* Delete Button - Soft Red */
+.modern-btn-delete {
+    background: linear-gradient(135deg, #fc5c7d 0%, #ff7e5f 100%);
+    color: white;
+}
+
+.modern-btn-delete:hover {
+    background: linear-gradient(135deg, #eb4d6d 0%, #ff6b4a 100%);
+}
+
+/* Add Button - Fresh Green */
+.modern-btn-add {
+    background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+    color: white;
+}
+
+.modern-btn-add:hover {
+    background: linear-gradient(135deg, #4a9629 0%, #96d156 100%);
+}
+
+/* Export Button - Royal Purple */
+.modern-btn-export {
+    background: linear-gradient(135deg, #8e2de2 0%, #4a00e0 100%);
+    color: white;
+}
+
+.modern-btn-export:hover {
+    background: linear-gradient(135deg, #7c26c7 0%, #4000c7 100%);
+}
+
+/* Import Button - Warm Orange */
+.modern-btn-import {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    color: white;
+}
+
+.modern-btn-import:hover {
+    background: linear-gradient(135deg, #f85d88 0%, #fdd730 100%);
+}
+
+/* Secondary Button - Elegant Gray */
+.modern-btn-secondary {
+    background: linear-gradient(135deg, #e0e0e0 0%, #f5f5f5 100%);
+    color: #374151;
+}
+
+.modern-btn-secondary:hover {
+    background: linear-gradient(135deg, #d0d0d0 0%, #e5e5e5 100%);
+}
+
+/* Back Button - Special Style */
+.modern-btn-back {
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+    color: white;
+    padding-left: 1rem;
+}
+
+.modern-btn-back i {
+    transition: transform 0.3s;
+}
+
+.modern-btn-back:hover i {
+    transform: translateX(-4px);
+}
+
+/* Size Variants */
+.modern-btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.813rem;
+    border-radius: 0.625rem;
+}
+
+.modern-btn-lg {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    border-radius: 0.875rem;
+}
+
+/* Icon Only */
+.modern-btn-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border-radius: 50%;
+}
+
+.modern-btn-icon.modern-btn-sm {
+    width: 2rem;
+    height: 2rem;
+}
+
+/* Floating Action Button */
+.modern-fab {
+    position: fixed;
+    bottom: 2rem;
+    left: 2rem;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+    color: white;
+    box-shadow: 0 8px 24px rgba(86, 171, 47, 0.4);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+}
+
+.modern-fab:hover {
+    transform: scale(1.1) rotate(90deg);
+    box-shadow: 0 12px 32px rgba(86, 171, 47, 0.5);
+}
+
+/* Button Group */
+.modern-btn-group {
+    display: inline-flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* Loading State */
+.modern-btn-loading {
+    position: relative;
+    color: transparent;
+}
+
+.modern-btn-loading:after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 50%;
+    left: 50%;
+    margin-left: -10px;
+    margin-top: -10px;
+    border: 2px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 2px solid #3498db;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Disabled State */
+.modern-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Ripple Effect */
+.modern-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.modern-btn .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transform: scale(0);
+    animation: ripple 0.6s ease-out;
+}
+
+@keyframes ripple {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+/* RTL Support */
+[dir="rtl"] .modern-fab {
+    left: auto;
+    right: 2rem;
+}
+
+[dir="rtl"] .modern-btn-back i {
+    transform: scaleX(-1);
+}
+
+[dir="rtl"] .modern-btn-back:hover i {
+    transform: scaleX(-1) translateX(4px);
+}
+
+/* Mobile Responsive */
+@media (max-width: 640px) {
+    .modern-btn {
+        padding: 0.625rem 1.25rem;
+        font-size: 0.813rem;
+    }
+    
+    .modern-btn-sm {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.75rem;
+    }
+    
+    .modern-fab {
+        width: 3rem;
+        height: 3rem;
+        bottom: 1rem;
+        left: 1rem;
+    }
+    
+    .modern-btn-group {
+        flex-wrap: wrap;
+    }
+}

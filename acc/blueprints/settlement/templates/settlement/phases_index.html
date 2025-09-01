@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}المراحل{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-gray-900">إدارة المراحل</h2>
+        <a href="{{ url_for('settlement.add_phase') }}" class="btn btn-primary">
+            <i class="fas fa-plus ml-2"></i>
+            إضافة مرحلة
+        </a>
+    </div>
+    
+    <!-- فلاتر البحث -->
+    <div class="card mb-6">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <input type="text" name="search" value="{{ search }}" 
+                       placeholder="بحث في المراحل..."
+                       class="form-input">
+            </div>
+            
+            <div>
+                <select name="project_id" class="form-input">
+                    <option value="">جميع المشاريع</option>
+                    {% for project in projects %}
+                    <option value="{{ project.id }}" {% if project_id == project.id %}selected{% endif %}>
+                        {{ project.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <select name="status" class="form-input">
+                    <option value="">جميع الحالات</option>
+                    <option value="pending" {% if status == 'pending' %}selected{% endif %}>غير متسوية</option>
+                    <option value="settled" {% if status == 'settled' %}selected{% endif %}>متسوية</option>
+                </select>
+            </div>
+            
+            <div class="flex gap-2">
+                <button type="submit" class="btn btn-primary flex-1">
+                    <i class="fas fa-search"></i>
+                    بحث
+                </button>
+                <a href="{{ url_for('settlement.phases_index') }}" class="btn btn-secondary">
+                    <i class="fas fa-redo"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- جدول المراحل -->
+    <div class="card">
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>اسم المرحلة</th>
+                        <th>المشروع</th>
+                        <th>تاريخ البداية</th>
+                        <th>تاريخ النهاية</th>
+                        <th>إجمالي التكلفة</th>
+                        <th>الحالة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for phase in phases.items %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('settlement.phase_detail', id=phase.id) }}" 
+                               class="text-blue-600 hover:underline font-medium">
+                                {{ phase.name }}
+                            </a>
+                        </td>
+                        <td>{{ phase.project.name }}</td>
+                        <td>{{ phase.start_date.strftime('%Y-%m-%d') if phase.start_date else '-' }}</td>
+                        <td>{{ phase.end_date.strftime('%Y-%m-%d') if phase.end_date else '-' }}</td>
+                        <td>{{ format_currency(phase.total_cost()) }}</td>
+                        <td>
+                            {% if phase.is_settled %}
+                                <span class="badge badge-success">متسوية</span>
+                            {% else %}
+                                <span class="badge badge-warning">غير متسوية</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="flex gap-2">
+                                <a href="{{ url_for('settlement.phase_detail', id=phase.id) }}" 
+                                   class="btn btn-sm btn-secondary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if not phase.is_settled %}
+                                <a href="{{ url_for('settlement.settlement_view', id=phase.id) }}" 
+                                   class="btn btn-sm btn-primary" title="تسوية المرحلة">
+                                    <i class="fas fa-calculator"></i>
+                                    تسوية
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-8 text-gray-500">
+                            لا توجد مراحل
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if phases.pages > 1 %}
+        <div class="mt-6">
+            {{ render_pagination(phases, 'settlement.phases_index', search=search, project_id=project_id, status=status) }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

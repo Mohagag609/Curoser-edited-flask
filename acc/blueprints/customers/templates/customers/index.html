@@ -1,0 +1,491 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<style>
+/* إزالة جميع التأثيرات والخلفيات */
+* {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+}
+
+/* إصلاح تأثيرات الدخول */
+body, .page-content, main {
+    opacity: 1 !important;
+    transform: none !important;
+    visibility: visible !important;
+}
+
+/* إزالة أي transitions من الصفحة الرئيسية */
+body * {
+    animation: none !important;
+    transition: none !important;
+}
+
+/* إعادة تفعيل transitions للأزرار فقط */
+.modern-btn {
+    transition: background-color 0.15s ease, transform 0.15s ease !important;
+}
+
+/* إصلاح Modal لصق العملاء */
+.fixed.inset-0 {
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: none !important;
+}
+
+/* إصلاح زر إضافة عميل */
+.modern-btn-primary {
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* تحسين الأداء */
+.hover\:bg-gray-50:hover {
+    background-color: #f9fafb;
+}
+
+/* إصلاح Modal */
+[x-cloak] { 
+    display: none !important; 
+}
+
+/* تحسين الجدول */
+#customers-table-body tr {
+    opacity: 1 !important;
+}
+
+/* إزالة gradient من الخلفيات */
+.bg-gradient-to-r,
+.bg-gradient-to-l {
+    background-image: none !important;
+    background-color: #f3f4f6 !important;
+}
+</style>
+{% endblock %}
+
+{% block title %}العملاء{% endblock %}
+{% block page_title %}العملاء{% endblock %}
+
+{% block content %}
+<div class="space-y-6 page-content" x-data="{ 
+ showQuickAdd: false,
+ showEditModal: false,
+ editingCustomer: null,
+ init() {
+ // Keyboard shortcut: Alt+N for new customer
+ document.addEventListener('keydown', (e) => {
+ if (e.altKey && e.key === 'n') {
+ e.preventDefault();
+ this.showQuickAdd = true;
+ this.$nextTick(() => {
+ document.querySelector('input[name=name]')?.focus();
+ });
+ }
+ // ESC to close
+ if (e.key === 'Escape') {
+  if (this.showQuickAdd) this.showQuickAdd = false;
+  if (this.showEditModal) this.showEditModal = false;
+ }
+ });
+ },
+ openEditModal(id) {
+  htmx.ajax('GET', `/customers/${id}/edit-modal`, {
+   target: '#edit-modal-content',
+   swap: 'innerHTML'
+  }).then(() => {
+   this.showEditModal = true;
+  });
+ },
+ deleteCustomer(id, name) {
+  if (confirm(`هل أنت متأكد من حذف العميل "${name}"؟`)) {
+   htmx.ajax('DELETE', `/customers/${id}/delete-ajax`, {
+    target: `#customer-row-${id}`,
+    swap: 'outerHTML swap:0.3s'
+   });
+  }
+ }
+}">
+ <!-- Header with Back Button -->
+ <div class="flex items-center gap-4 mb-4">
+ <a href="{{ url_for('dashboard.index') }}" class="modern-btn modern-btn-back modern-btn-sm">
+ <i class="fas fa-arrow-right"></i>
+ <span>الرئيسية</span>
+ </a>
+ <div>
+ <h1 class="text-2xl font-bold text-gray-900">إدارة العملاء</h1>
+ <p class="text-sm text-gray-600">إدارة بيانات العملاء</p>
+ </div>
+ </div>
+ 
+ <!-- Quick Add Form -->
+ <div x-show="showQuickAdd" class="mb-6">
+ <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+ <form hx-post="{{ url_for('customers.add_ajax') }}" 
+ hx-target="#customers-table-body"
+ hx-swap="afterbegin"
+ hx-on:htmx:after-request="if(event.detail.successful) { showQuickAdd = false; this.reset(); }"
+ class="flex gap-3 items-end">
+ 
+ <div class="flex-1">
+ <label class="block text-sm font-medium text-gray-700 mb-1">
+ <i class="fas fa-user text-gray-400 ml-1"></i>
+ اسم العميل
+ </label>
+ <input type="text" 
+ name="name" 
+ placeholder="ادخل اسم العميل واضغط Enter" 
+ required
+ autofocus
+ class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+ </div>
+ 
+ <div class="flex-shrink-0">
+ <label class="block text-sm font-medium text-gray-700 mb-1">
+ <i class="fas fa-phone text-gray-400 ml-1"></i>
+ الهاتف (اختياري)
+ </label>
+ <input type="tel" 
+ name="phone" 
+ placeholder="رقم الهاتف"
+ class="w-48 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+ </div>
+ 
+ <input type="hidden" name="status" value="نشط">
+ 
+ <button type="submit" 
+ class="px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all transform hover:scale-105 shadow-md">
+ <i class="fas fa-check ml-1"></i>
+ حفظ
+ </button>
+ 
+ <button type="button" 
+ @click="showQuickAdd = false"
+ class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all">
+ <i class="fas fa-times"></i>
+ </button>
+ </form>
+ 
+ <p class="text-xs text-gray-500 mt-2">
+ <i class="fas fa-info-circle ml-1"></i>
+ نصيحة: اضغط Enter للحفظ السريع
+ </p>
+ </div>
+ </div>
+ 
+ <!-- Action Buttons -->
+ <div class="flex flex-wrap gap-2 mb-6">
+ <!-- زر إضافة عميل رئيسي -->
+ <a href="{{ url_for('customers.add') }}" class="modern-btn modern-btn-primary" style="background: #3b82f6 !important;">
+ <i class="fas fa-plus ml-2"></i>
+ إضافة عميل جديد
+ </a>
+ 
+ <button @click="showQuickAdd = !showQuickAdd" 
+ class="modern-btn modern-btn-secondary"
+ :class="{ 'ring-2 ring-blue-500': showQuickAdd }">
+ <i class="fas" :class="showQuickAdd ? 'fa-times' : 'fa-bolt'"></i>
+ <span x-text="showQuickAdd ? 'إلغاء' : 'إضافة سريعة'"></span>
+ </button>
+ 
+             <button @click="$dispatch('open-bulk-add')" class="modern-btn modern-btn-secondary">
+                <i class="fas fa-paste"></i>
+                <span>لصق قائمة</span>
+            </button>
+
+        </div>
+ 
+ <!-- Enhanced Search Bar -->
+ {% set search_url = url_for('customers.search') %}
+ {% set search_placeholder = 'البحث بالاسم، الهاتف، الرقم القومي...' %}
+ {% include 'shared/search_bar.html' %}
+ 
+ <!-- Results Container -->
+ <div id="results-container">
+ <!-- Customers Table -->
+ <div class="card overflow-hidden">
+ <div class="overflow-x-auto">
+ <table class="min-w-full divide-y divide-gray-200">
+ <thead class="bg-gradient-to-l from-gray-50 to-gray-100">
+ <tr>
+ <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الكود</th>
+ <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الاسم</th>
+ <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الهاتف</th>
+ <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الرقم القومي</th>
+ <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الحالة</th>
+ <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">الإجراءات</th>
+ </tr>
+                 </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="customers-table-body">
+                    {% for customer in customers %}
+ <tr id="customer-row-{{ customer.id }}" class="hover:bg-gray-50">
+ <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
+ <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded-md">{{ customer.code }}</span>
+ </td>
+ <td class="px-6 py-4 whitespace-nowrap">
+ <a href="{{ url_for('customers.detail', id=customer.id) }}" 
+ class="text-blue-600 hover:text-blue-900 font-medium">
+ {{ customer.name }}
+ </a>
+ </td>
+ <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+ {% if customer.phone %}
+ <a href="tel:{{ customer.phone }}" class="hover:text-blue-600">{{ customer.phone }}</a>
+ {% else %}
+ <span class="text-gray-400">-</span>
+ {% endif %}
+ </td>
+ <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+ {{ customer.national_id or '-' }}
+ </td>
+ <td class="px-6 py-4 whitespace-nowrap">
+ <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+ {% if customer.status == 'نشط' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+ {{ customer.status }}
+ </span>
+ </td>
+ <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+ <div class="modern-btn-group">
+ <a href="{{ url_for('customers.detail', id=customer.id) }}" 
+ class="modern-btn modern-btn-view modern-btn-sm">
+ <i class="fas fa-eye"></i>
+ <span>عرض</span>
+ </a>
+ <button @click="openEditModal('{{ customer.id }}')" 
+ class="modern-btn modern-btn-edit modern-btn-sm">
+ <i class="fas fa-edit"></i>
+ <span>تعديل</span>
+ </button>
+                                                 <button @click="deleteCustomer('{{ customer.id }}', '{{ customer.name }}')" 
+                                class="modern-btn modern-btn-delete modern-btn-sm">
+                            <i class="fas fa-trash"></i>
+                            <span>حذف</span>
+                        </button>
+ </div>
+ </td>
+ </tr>
+ {% else %}
+ <tr>
+ <td colspan="6" class="px-6 py-10 text-center text-gray-500">
+ <i class="fas fa-users text-4xl text-gray-300 mb-3 block"></i>
+ لا يوجد عملاء حالياً
+ </td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ 
+ <!-- Pagination -->
+ {% if pagination.pages > 1 %}
+ <div class="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+ <div class="flex-1 flex justify-between sm:hidden">
+ {% if pagination.has_prev %}
+ <a href="{{ url_for('customers.index', page=pagination.prev_num, q=q) }}" class="btn-secondary">
+ السابق
+ </a>
+ {% endif %}
+ {% if pagination.has_next %}
+ <a href="{{ url_for('customers.index', page=pagination.next_num, q=q) }}" class="btn-primary mr-auto">
+ التالي
+ </a>
+ {% endif %}
+ </div>
+ <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+ <div>
+ <p class="text-sm text-gray-700">
+ عرض <span class="font-medium">{{ (pagination.page - 1) * pagination.per_page + 1 }}</span>
+ إلى <span class="font-medium">{{ min(pagination.page * pagination.per_page, pagination.total) }}</span>
+ من <span class="font-medium">{{ pagination.total }}</span> نتيجة
+ </p>
+ </div>
+ <div>
+ <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+ {% if pagination.has_prev %}
+ <a href="{{ url_for('customers.index', page=1, q=q) }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+ <i class="fas fa-angle-double-right"></i>
+ </a>
+ <a href="{{ url_for('customers.index', page=pagination.prev_num, q=q) }}" class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+ <i class="fas fa-angle-right"></i>
+ </a>
+ {% endif %}
+ 
+ {% for page_num in pagination.iter_pages(left_edge=1, left_current=1, right_current=1, right_edge=1) %}
+ {% if page_num %}
+ {% if page_num != pagination.page %}
+ <a href="{{ url_for('customers.index', page=page_num, q=q) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+ {{ page_num }}
+ </a>
+ {% else %}
+ <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">
+ {{ page_num }}
+ </span>
+ {% endif %}
+ {% else %}
+ <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
+ {% endif %}
+ {% endfor %}
+ 
+ {% if pagination.has_next %}
+ <a href="{{ url_for('customers.index', page=pagination.next_num, q=q) }}" class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+ <i class="fas fa-angle-left"></i>
+ </a>
+ <a href="{{ url_for('customers.index', page=pagination.pages, q=q) }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+ <i class="fas fa-angle-double-left"></i>
+ </a>
+ {% endif %}
+ </nav>
+ </div>
+ </div>
+ </div>
+ {% endif %}
+ </div>
+ </div> <!-- End Results Container -->
+</div>
+
+<!-- Floating Action Button -->
+<button @click="showQuickAdd = true" class="modern-fab" title="إضافة عميل سريع (Alt+N)">
+ <i class="fas fa-plus text-xl"></i>
+</button>
+
+<!-- Bulk Add Modal -->
+<div x-data="{ 
+ showBulkModal: false,
+ bulkNames: '',
+ processBulkAdd() {
+ const names = this.bulkNames.split('\n').filter(n => n.trim());
+ if (names.length === 0) {
+ // toast.error('الرجاء إدخال أسماء العملاء'); // Disabled as per user request
+ alert('الرجاء إدخال أسماء العملاء');
+ return;
+ }
+ 
+ // Process each name
+ let successCount = 0;
+ names.forEach(async (name, index) => {
+ const formData = new FormData();
+ formData.append('name', name.trim());
+ formData.append('status', 'نشط');
+ 
+ try {
+ const response = await fetch('{{ url_for("customers.add") }}', {
+ method: 'POST',
+ body: formData,
+ headers: {
+ 'X-Requested-With': 'XMLHttpRequest'
+ }
+ });
+ 
+ if (response.ok) {
+ successCount++;
+ if (successCount === names.length) {
+ // toast.success(`تم إضافة ${successCount} عميل بنجاح!`); // Disabled as per user request
+ alert(`تم إضافة ${successCount} عميل بنجاح!`);
+ this.showBulkModal = false;
+ this.bulkNames = '';
+ setTimeout(() => window.location.reload(), 1500);
+ }
+ }
+ } catch (error) {
+ console.error('Error adding customer:', error);
+ }
+ });
+ }
+}"
+ @open-bulk-add.window="showBulkModal = true">
+ 
+ <!-- Modal -->
+ <div x-show="showBulkModal" 
+ class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+ style="background-color: rgba(0,0,0,0.5) !important;"
+ @click.self="showBulkModal = false">
+ 
+ <div class="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4">
+ <h3 class="text-xl font-bold mb-4">
+ <i class="fas fa-paste text-blue-600 ml-2"></i>
+ إضافة عملاء بالجملة
+ </h3>
+ 
+ <p class="text-sm text-gray-600 mb-4">
+ الصق أسماء العملاء (كل اسم في سطر منفصل)
+ </p>
+ 
+ <textarea 
+ x-model="bulkNames"
+ placeholder="محمد أحمد&#10;فاطمة علي&#10;أحمد محمود&#10;..."
+ class="w-full h-48 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+ autofocus></textarea>
+ 
+ <div class="mt-4 flex gap-3">
+ <button @click="processBulkAdd()" 
+ class="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all">
+ <i class="fas fa-check ml-2"></i>
+ إضافة الكل
+ </button>
+ <button @click="showBulkModal = false; bulkNames = ''" 
+ class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all">
+ إلغاء
+ </button>
+ </div>
+ </div>
+ </div>
+</div>
+
+<!-- Edit Modal -->
+<div x-show="showEditModal" 
+     x-cloak
+     @keydown.escape="showEditModal = false"
+     class="fixed inset-0 z-50 overflow-y-auto">
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-black bg-opacity-50" @click="showEditModal = false"></div>
+    
+    <!-- Modal -->
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6" 
+             @click.away="showEditModal = false"
+             id="edit-modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// تحسين الأداء وإصلاح الأخطاء
+document.addEventListener('DOMContentLoaded', function() {
+    // إزالة أي عناصر loading قديمة
+    const loadingElements = document.querySelectorAll('.loading, .loading-overlay, .page-loader');
+    loadingElements.forEach(el => el.remove());
+    
+    // التأكد من عمل HTMX بشكل صحيح
+    htmx.config.defaultSwapStyle = 'innerHTML';
+    htmx.config.defaultSwapDelay = 0;
+    htmx.config.defaultSettleDelay = 20;
+    
+    // إصلاح مشاكل Alpine.js
+    if (window.Alpine) {
+        Alpine.store('loading', false);
+    }
+});
+
+// معالج أخطاء HTMX
+document.body.addEventListener('htmx:responseError', function(evt) {
+    console.error('HTMX Error:', evt.detail);
+    notify('حدث خطأ في الطلب', 'error');
+});
+
+// معالج نجاح HTMX
+document.body.addEventListener('htmx:afterRequest', function(evt) {
+    if (evt.detail.successful && evt.detail.xhr.status === 200) {
+        // تحديث الجدول إذا لزم الأمر
+        const target = evt.detail.target;
+        if (target && target.id === 'customers-table-body') {
+            // إعادة تهيئة أي مكونات JavaScript
+            htmx.process(target);
+        }
+    }
+});
+</script>
+{% endblock %}

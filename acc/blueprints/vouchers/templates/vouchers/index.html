@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة السندات - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+ <!-- Header -->
+ <div class="flex justify-between items-center mb-6">
+ <div>
+ <h2 class="text-3xl font-bold text-gray-900">إدارة السندات</h2>
+ <p class="text-gray-600 mt-1">سندات القبض والصرف</p>
+ </div>
+ <a href="{{ url_for('vouchers.add') }}" class="btn btn-primary">
+ <i class="fas fa-plus"></i>
+ إضافة سند
+ </a>
+ </div>
+ 
+ <!-- Stats Cards -->
+ <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+ <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+ <div class="flex items-center justify-between">
+ <div>
+ <p class="text-green-100">إجمالي القبض</p>
+ <p class="text-2xl font-bold mt-2">{{ format_currency(total_receipts) }}</p>
+ </div>
+ <i class="fas fa-arrow-down text-3xl opacity-50"></i>
+ </div>
+ </div>
+ 
+ <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white">
+ <div class="flex items-center justify-between">
+ <div>
+ <p class="text-red-100">إجمالي الصرف</p>
+ <p class="text-2xl font-bold mt-2">{{ format_currency(total_payments) }}</p>
+ </div>
+ <i class="fas fa-arrow-up text-3xl opacity-50"></i>
+ </div>
+ </div>
+ 
+ <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+ <div class="flex items-center justify-between">
+ <div>
+ <p class="text-blue-100">قبض اليوم</p>
+ <p class="text-2xl font-bold mt-2">{{ format_currency(today_receipts) }}</p>
+ </div>
+ <i class="fas fa-calendar-day text-3xl opacity-50"></i>
+ </div>
+ </div>
+ 
+ <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-6 text-white">
+ <div class="flex items-center justify-between">
+ <div>
+ <p class="text-yellow-100">صرف اليوم</p>
+ <p class="text-2xl font-bold mt-2">{{ format_currency(today_payments) }}</p>
+ </div>
+ <i class="fas fa-calendar-check text-3xl opacity-50"></i>
+ </div>
+ </div>
+ </div>
+ 
+ <!-- Filters -->
+ <div class="card mb-6">
+ <form method="get" action="{{ url_for('vouchers.index') }}" class="space-y-4">
+ <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+ <!-- Search -->
+ <div>
+ <label class="form-label">البحث</label>
+ <input type="text" name="search" value="{{ search }}" 
+ placeholder="البحث في البيان أو الملاحظات..."
+ class="form-input">
+ </div>
+ 
+ <!-- Type Filter -->
+ <div>
+ <label class="form-label">النوع</label>
+ <select name="type" class="form-select">
+ <option value="">جميع الأنواع</option>
+ <option value="receipt" {% if voucher_type == 'receipt' %}selected{% endif %}>قبض</option>
+ <option value="payment" {% if voucher_type == 'payment' %}selected{% endif %}>صرف</option>
+ </select>
+ </div>
+ 
+ <!-- Safe Filter -->
+ <div>
+ <label class="form-label">الخزينة</label>
+ <select name="safe_id" class="form-select">
+ <option value="">جميع الخزائن</option>
+ {% for safe in safes %}
+ <option value="{{ safe.id }}" {% if safe.id == safe_id %}selected{% endif %}>
+ {{ safe.name }}
+ </option>
+ {% endfor %}
+ </select>
+ </div>
+ 
+ <!-- Buttons -->
+ <div class="flex items-end gap-2">
+ <button type="submit" class="btn btn-primary">
+ <i class="fas fa-search"></i>
+ بحث
+ </button>
+ <a href="{{ url_for('vouchers.index') }}" class="btn btn-secondary">
+ <i class="fas fa-redo"></i>
+ </a>
+ </div>
+ </div>
+ 
+ <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+ <!-- Date Range -->
+ <div>
+ <label class="form-label">من تاريخ</label>
+ <input type="date" name="from_date" value="{{ from_date }}" class="form-input">
+ </div>
+ 
+ <div>
+ <label class="form-label">إلى تاريخ</label>
+ <input type="date" name="to_date" value="{{ to_date }}" class="form-input">
+ </div>
+ </div>
+ </form>
+ </div>
+ 
+ <!-- Table -->
+ <div class="card">
+ <div class="table-container">
+ <table class="table">
+ <thead>
+ <tr>
+ <th>رقم السند</th>
+ <th>التاريخ</th>
+ <th>النوع</th>
+ <th>الخزينة</th>
+ <th>المبلغ</th>
+ <th>البيان</th>
+ <th>المرتبط بـ</th>
+ <th>الإجراءات</th>
+ </tr>
+ </thead>
+ <tbody>
+ {% for voucher in vouchers %}
+ <tr>
+ <td>
+ <a href="{{ url_for('vouchers.detail', id=voucher.id) }}" class="text-blue-600 hover:underline font-mono">
+ {{ voucher.id }}
+ </a>
+ </td>
+ <td>{{ voucher.date }}</td>
+ <td>
+ {% if voucher.type == 'receipt' %}
+ <span class="badge badge-success">قبض</span>
+ {% else %}
+ <span class="badge badge-danger">صرف</span>
+ {% endif %}
+ </td>
+ <td>{{ voucher.safe.name if voucher.safe else '-' }}</td>
+ <td class="font-semibold {% if voucher.type == 'receipt' %}text-green-600{% else %}text-red-600{% endif %}">
+ {{ format_currency(voucher.amount) }}
+ </td>
+ <td>{{ voucher.description }}</td>
+ <td>
+ {% if voucher.entity_type and voucher.entity_id %}
+ {% if voucher.entity_type == 'customer' %}
+ <a href="{{ url_for('customers.detail', id=voucher.entity_id) }}" class="text-blue-600 hover:underline">
+ عميل: {{ voucher.get_entity().name }}
+ </a>
+ {% elif voucher.entity_type == 'supplier' %}
+ <a href="{{ url_for('suppliers.detail', id=voucher.entity_id) }}" class="text-blue-600 hover:underline">
+ مورد: {{ voucher.get_entity().name }}
+ </a>
+ {% elif voucher.entity_type == 'contractor' %}
+ <a href="{{ url_for('contractors.detail', id=voucher.entity_id) }}" class="text-blue-600 hover:underline">
+ مقاول: {{ voucher.get_entity().name }}
+ </a>
+ {% elif voucher.entity_type == 'partner' %}
+ <a href="{{ url_for('partners.detail', id=voucher.entity_id) }}" class="text-blue-600 hover:underline">
+ شريك: {{ voucher.get_entity().name }}
+ </a>
+ {% endif %}
+ {% elif voucher.linked_type %}
+ <span class="badge badge-secondary">{{ voucher.linked_type }}</span>
+ {% else %}
+ -
+ {% endif %}
+ </td>
+ <td>
+ <div class="flex gap-1">
+ <a href="{{ url_for('vouchers.detail', id=voucher.id) }}" class="btn btn-sm btn-secondary">
+ <i class="fas fa-eye"></i>
+ </a>
+ <a href="{{ url_for('vouchers.print_voucher', id=voucher.id) }}" class="btn btn-sm btn-secondary" target="_blank">
+ <i class="fas fa-print"></i>
+ </a>
+ {% if not voucher.linked_type %}
+ <a href="{{ url_for('vouchers.edit', id=voucher.id) }}" class="btn btn-sm btn-primary">
+ <i class="fas fa-edit"></i>
+ </a>
+ {% endif %}
+ </div>
+ </td>
+ </tr>
+ {% else %}
+ <tr>
+ <td colspan="8" class="text-center text-gray-500">لا توجد سندات</td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ 
+ {% if pagination.pages > 1 %}
+ {% include '_partials/pagination.html' %}
+ {% endif %}
+ </div>
+</div>
+{% endblock %}

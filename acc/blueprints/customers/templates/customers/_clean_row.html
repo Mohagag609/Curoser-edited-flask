@@ -1,0 +1,28 @@
+<tr id="customer-{{ customer.id }}">
+    <td>{{ customer.code }}</td>
+    <td>{{ customer.name }}</td>
+    <td dir="ltr">{{ customer.phone or '-' }}</td>
+    <td>{{ customer.address or '-' }}</td>
+    <td>
+        {% if customer.status == 'نشط' %}
+            <span style="color: green;">● نشط</span>
+        {% else %}
+            <span style="color: red;">● معلق</span>
+        {% endif %}
+    </td>
+    <td>
+        <a href="{{ url_for('customers.detail', id=customer.id) }}" 
+           style="color: #3b82f6; margin-left: 10px;">عرض</a>
+        <a href="{{ url_for('customers.edit', id=customer.id) }}" 
+           style="color: #10b981; margin-left: 10px;">تعديل</a>
+        <button onclick="if(confirm('هل أنت متأكد؟')) { 
+                    htmx.ajax('DELETE', '{{ url_for('customers.delete_ajax', id=customer.id) }}', {
+                        target: '#customer-{{ customer.id }}',
+                        swap: 'outerHTML'
+                    });
+                }"
+                style="color: #ef4444; background: none; border: none; cursor: pointer;">
+            حذف
+        </button>
+    </td>
+</tr>

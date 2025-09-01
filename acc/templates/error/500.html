@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}خطأ في الخادم{% endblock %}
+
+{% block content %}
+<div class="container py-5" dir="rtl">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="error-page">
+                <h1 class="display-1 text-danger">500</h1>
+                <h2 class="mb-4">خطأ في الخادم</h2>
+                <p class="lead mb-4">
+                    عذراً، حدث خطأ غير متوقع في الخادم. 
+                    يرجى المحاولة مرة أخرى لاحقاً.
+                </p>
+                
+                {% if error and config.DEBUG %}
+                <div class="alert alert-danger text-start mb-4">
+                    <h5>تفاصيل الخطأ (وضع التطوير فقط):</h5>
+                    <pre class="mb-0">{{ error }}</pre>
+                </div>
+                {% endif %}
+                
+                <div class="d-flex gap-3 justify-content-center">
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary">
+                        <i class="fas fa-home me-2"></i>
+                        الصفحة الرئيسية
+                    </a>
+                    <button onclick="window.history.back()" class="btn btn-secondary">
+                        <i class="fas fa-arrow-right me-2"></i>
+                        رجوع
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.error-page {
+    padding: 40px 0;
+}
+
+.display-1 {
+    font-size: 6rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 20px;
+}
+
+pre {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    font-size: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+</style>
+{% endblock %}

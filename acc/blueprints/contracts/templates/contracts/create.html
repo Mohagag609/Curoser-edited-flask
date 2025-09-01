@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}إنشاء عقد جديد - {{ g.project.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4" dir="rtl">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Header -->
+            <div class="d-flex align-items-center mb-4">
+                <a href="{{ url_for('contracts.index') }}" class="btn btn-outline-secondary me-3">
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+                <div>
+                    <h1 class="h3 mb-0">إنشاء عقد جديد</h1>
+                    <p class="text-muted mb-0">قم بملء البيانات المطلوبة لإنشاء عقد جديد</p>
+                </div>
+            </div>
+
+            <!-- Form Card -->
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <form method="POST" onsubmit="return validateForm()">
+                        <!-- Basic Information -->
+                        <div class="section-header mb-3">
+                            <h5 class="mb-0">
+                                <i class="fas fa-info-circle text-primary me-2"></i>
+                                البيانات الأساسية
+                            </h5>
+                        </div>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">العميل <span class="text-danger">*</span></label>
+                                <select name="customer_id" class="form-select" required>
+                                    <option value="">اختر العميل</option>
+                                    {% for customer in customers %}
+                                    <option value="{{ customer.id }}">
+                                        {{ customer.name }} - {{ customer.phone }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">الوحدة <span class="text-danger">*</span></label>
+                                <select name="unit_id" class="form-select" required onchange="updateUnitDetails(this)">
+                                    <option value="">اختر الوحدة</option>
+                                    {% for unit in units %}
+                                    <option value="{{ unit.id }}" 
+                                            data-price="{{ unit.total_price }}"
+                                            data-details="{{ unit.code }} - المبنى {{ unit.building }} - الدور {{ unit.floor }}">
+                                        {{ unit.name }} - {{ unit.code }} - {{ format_currency(unit.total_price) }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <small id="unitDetails" class="text-muted mt-1"></small>
+                            </div>
+                        </div>
+
+                        <!-- Financial Information -->
+                        <div class="section-header mb-3">
+                            <h5 class="mb-0">
+                                <i class="fas fa-money-bill-wave text-success me-2"></i>
+                                البيانات المالية
+                            </h5>
+                        </div>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label">السعر الإجمالي <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="number" name="total_price" id="totalPrice" class="form-control" 
+                                           min="0" step="0.01" required onchange="calculateRemaining()">
+                                    <span class="input-group-text">ج.م</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">المقدم</label>
+                                <div class="input-group">
+                                    <input type="number" name="down_payment" id="downPayment" class="form-control" 
+                                           min="0" step="0.01" value="0" onchange="calculateRemaining()">
+                                    <span class="input-group-text">ج.م</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">المتبقي</label>
+                                <div class="input-group">
+                                    <input type="text" id="remaining" class="form-control" readonly>
+                                    <span class="input-group-text">ج.م</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label">وديعة الصيانة</label>
+                                <div class="input-group">
+                                    <input type="number" name="maintenance_deposit" class="form-control" 
+                                           min="0" step="0.01" value="0">
+                                    <span class="input-group-text">ج.م</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">اسم السمسار</label>
+                                <input type="text" name="broker_name" class="form-control" 
+                                       placeholder="اختياري">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">نسبة العمولة</label>
+                                <div class="input-group">
+                                    <input type="number" name="broker_percent" id="brokerPercent" class="form-control" 
+                                           min="0" max="100" step="0.01" value="0" onchange="calculateCommission()">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <small id="commissionAmount" class="text-muted"></small>
+                            </div>
+                        </div>
+
+                        <!-- Payment Information -->
+                        <div class="section-header mb-3">
+                            <h5 class="mb-0">
+                                <i class="fas fa-credit-card text-info me-2"></i>
+                                طريقة السداد
+                            </h5>
+                        </div>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">طريقة السداد</label>
+                                <select name="payment_type" id="paymentType" class="form-select" onchange="toggleInstallmentSection()">
+                                    <option value="cash">كاش</option>
+                                    <option value="installment">تقسيط</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">تاريخ البداية <span class="text-danger">*</span></label>
+                                <input type="date" name="start_date" class="form-control" 
+                                       value="{{ today }}" required>
+                            </div>
+                        </div>
+
+                        <!-- Installment Options -->
+                        <div id="installmentSection" class="card bg-light border-0 mb-4" style="display: none;">
+                            <div class="card-body">
+                                <h6 class="mb-3">
+                                    <i class="fas fa-calendar-alt text-primary me-2"></i>
+                                    خيارات التقسيط
+                                </h6>
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">نوع التقسيط</label>
+                                        <select name="installment_type" id="installmentType" class="form-select" onchange="calculateInstallments()">
+                                            <option value="شهري">شهري</option>
+                                            <option value="ربع سنوي">ربع سنوي</option>
+                                            <option value="نصف سنوي">نصف سنوي</option>
+                                            <option value="سنوي">سنوي</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">عدد السنوات</label>
+                                        <input type="number" name="years" id="years" class="form-control" 
+                                               min="1" max="30" value="1" onchange="calculateInstallments()">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">دفعات سنوية إضافية</label>
+                                        <input type="number" name="extra_annual" id="extraAnnual" class="form-control" 
+                                               min="0" value="0" onchange="calculateInstallments()">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">قيمة الدفعة السنوية</label>
+                                        <div class="input-group">
+                                            <input type="number" name="annual_payment" id="annualPayment" class="form-control" 
+                                                   min="0" step="0.01" value="0" onchange="calculateInstallments()">
+                                            <span class="input-group-text">ج.م</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Installment Preview -->
+                                <div id="installmentPreview" class="alert alert-info mt-3" style="display: none;">
+                                    <h6 class="alert-heading mb-2">معاينة الأقساط</h6>
+                                    <div id="previewContent"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('contracts.index') }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>
+                                إلغاء
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>
+                                حفظ العقد
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.section-header {
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 10px;
+}
+
+.form-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+#installmentSection {
+    transition: all 0.3s ease;
+}
+</style>
+
+<script>
+// Update unit details
+function updateUnitDetails(select) {
+    const selectedOption = select.options[select.selectedIndex];
+    const details = selectedOption.getAttribute('data-details');
+    const price = selectedOption.getAttribute('data-price');
+    
+    document.getElementById('unitDetails').textContent = details || '';
+    
+    if (price) {
+        document.getElementById('totalPrice').value = price;
+        calculateRemaining();
+    }
+}
+
+// Calculate remaining amount
+function calculateRemaining() {
+    const total = parseFloat(document.getElementById('totalPrice').value) || 0;
+    const downPayment = parseFloat(document.getElementById('downPayment').value) || 0;
+    const remaining = total - downPayment;
+    
+    document.getElementById('remaining').value = remaining.toLocaleString('ar-EG', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+// Calculate broker commission
+function calculateCommission() {
+    const total = parseFloat(document.getElementById('totalPrice').value) || 0;
+    const percent = parseFloat(document.getElementById('brokerPercent').value) || 0;
+    const commission = (total * percent) / 100;
+    
+    document.getElementById('commissionAmount').textContent = 
+        `العمولة: ${commission.toLocaleString('ar-EG', {minimumFractionDigits: 2})} ج.م`;
+}
+
+// Toggle installment section
+function toggleInstallmentSection() {
+    const paymentType = document.getElementById('paymentType').value;
+    const installmentSection = document.getElementById('installmentSection');
+    
+    if (paymentType === 'installment') {
+        installmentSection.style.display = 'block';
+        calculateInstallments();
+    } else {
+        installmentSection.style.display = 'none';
+    }
+}
+
+// Calculate installments preview
+function calculateInstallments() {
+    const total = parseFloat(document.getElementById('totalPrice').value) || 0;
+    const downPayment = parseFloat(document.getElementById('downPayment').value) || 0;
+    const remaining = total - downPayment;
+    
+    const installmentType = document.getElementById('installmentType').value;
+    const years = parseInt(document.getElementById('years').value) || 1;
+    const extraAnnual = parseInt(document.getElementById('extraAnnual').value) || 0;
+    const annualPayment = parseFloat(document.getElementById('annualPayment').value) || 0;
+    
+    let installmentsPerYear;
+    switch (installmentType) {
+        case 'شهري': installmentsPerYear = 12; break;
+        case 'ربع سنوي': installmentsPerYear = 4; break;
+        case 'نصف سنوي': installmentsPerYear = 2; break;
+        case 'سنوي': installmentsPerYear = 1; break;
+    }
+    
+    const totalInstallments = installmentsPerYear * years;
+    const extraTotal = extraAnnual * annualPayment;
+    const regularAmount = remaining - extraTotal;
+    const installmentAmount = regularAmount / totalInstallments;
+    
+    // Show preview
+    const preview = document.getElementById('installmentPreview');
+    const content = document.getElementById('previewContent');
+    
+    content.innerHTML = `
+        <div class="row g-3">
+            <div class="col-md-6">
+                <strong>عدد الأقساط:</strong> ${totalInstallments} قسط
+            </div>
+            <div class="col-md-6">
+                <strong>قيمة القسط:</strong> ${installmentAmount.toLocaleString('ar-EG', {minimumFractionDigits: 2})} ج.م
+            </div>
+            ${extraAnnual > 0 ? `
+            <div class="col-md-6">
+                <strong>الدفعات السنوية:</strong> ${extraAnnual} دفعة
+            </div>
+            <div class="col-md-6">
+                <strong>إجمالي الدفعات السنوية:</strong> ${extraTotal.toLocaleString('ar-EG', {minimumFractionDigits: 2})} ج.م
+            </div>
+            ` : ''}
+        </div>
+    `;
+    
+    preview.style.display = 'block';
+}
+
+// Validate form
+function validateForm() {
+    const total = parseFloat(document.getElementById('totalPrice').value) || 0;
+    const downPayment = parseFloat(document.getElementById('downPayment').value) || 0;
+    
+    if (downPayment > total) {
+        alert('المقدم لا يمكن أن يكون أكبر من السعر الإجمالي');
+        return false;
+    }
+    
+    return true;
+}
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', function() {
+    calculateRemaining();
+    calculateCommission();
+});
+</script>
+{% endblock %}

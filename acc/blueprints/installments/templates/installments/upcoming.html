@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}الأقساط القادمة - {{ g.project.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" dir="rtl">
+    <!-- Header -->
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('installments.index') }}" class="btn btn-outline-secondary me-3">
+            <i class="fas fa-arrow-right"></i>
+        </a>
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-clock text-info me-2"></i>
+                الأقساط القادمة
+            </h1>
+            <p class="text-muted mb-0">
+                الأقساط المستحقة من {{ date_from.strftime('%Y-%m-%d') }} 
+                إلى {{ date_to.strftime('%Y-%m-%d') }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Summary Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h5 class="mb-1">إجمالي الأقساط القادمة</h5>
+                    <h2 class="mb-0 text-primary">{{ "{:,.2f}".format(total_amount) }} ج.م</h2>
+                </div>
+                <div class="col-auto">
+                    <div class="stat-value text-muted">{{ installments|length }} قسط</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Installments List -->
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5 class="mb-0">قائمة الأقساط</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>العميل</th>
+                            <th>الوحدة</th>
+                            <th>المبلغ</th>
+                            <th>الأيام المتبقية</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for installment in installments %}
+                        {% set days_until = (installment.due_date - date_from).days %}
+                        <tr class="{% if days_until <= 7 %}table-warning{% endif %}">
+                            <td>
+                                <strong>{{ installment.due_date.strftime('%Y-%m-%d') }}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    {{ ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'][installment.due_date.weekday()] }}
+                                </small>
+                            </td>
+                            <td>
+                                {% if installment.customer %}
+                                    <div class="fw-bold">{{ installment.customer.name }}</div>
+                                    <small class="text-muted">{{ installment.customer.phone }}</small>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if installment.unit %}
+                                    {{ installment.unit.name }}
+                                    <br>
+                                    <small class="text-muted">{{ installment.unit.code }}</small>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td class="fw-bold">
+                                {{ "{:,.2f}".format(installment.amount) }} ج.م
+                            </td>
+                            <td>
+                                {% if days_until == 0 %}
+                                    <span class="badge bg-danger">اليوم</span>
+                                {% elif days_until == 1 %}
+                                    <span class="badge bg-warning">غداً</span>
+                                {% elif days_until <= 7 %}
+                                    <span class="badge bg-warning">{{ days_until }} أيام</span>
+                                {% else %}
+                                    <span class="badge bg-info">{{ days_until }} يوم</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('installments.detail', id=installment.id) }}" 
+                                       class="btn btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('installments.pay', id=installment.id) }}" 
+                                       class="btn btn-outline-success">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="fas fa-check-circle fa-3x mb-3 d-block text-success"></i>
+                                لا توجد أقساط قادمة في هذه الفترة
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stat-value {
+    font-size: 24px;
+    font-weight: 600;
+}
+</style>
+{% endblock %}

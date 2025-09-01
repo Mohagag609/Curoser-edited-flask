@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}تعديل المقاول - {{ contractor.name }}{% endblock %}
+{% block page_title %}تعديل المقاول{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="card">
+        <form method="post" action="{{ url_for('contractors.edit', id=contractor.id) }}"
+              data-ajax="true" 
+              data-loading-message="جاري تحديث المقاول..."
+              data-success-message="تم تحديث المقاول بنجاح"
+              data-error-message="فشل في تحديث المقاول">
+            
+            <!-- عرض الكود -->
+            <div class="mb-4 p-3 bg-orange-50 rounded-lg text-center">
+                <span class="text-orange-700 font-semibold">كود المقاول: </span>
+                <span class="text-orange-900 font-bold text-lg">{{ contractor.code }}</span>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label class="form-label" for="name">اسم المقاول *</label>
+                    <input type="text" 
+                           id="name" 
+                           name="name" 
+                           value="{{ contractor.name }}"
+                           class="form-input" 
+                           required
+                           autofocus>
+                </div>
+                
+                <div>
+                    <label class="form-label" for="phone">رقم الهاتف</label>
+                    <input type="text" 
+                           id="phone" 
+                           name="phone" 
+                           value="{{ contractor.phone or '' }}"
+                           class="form-input">
+                </div>
+                
+                <div>
+                    <label class="form-label" for="email">البريد الإلكتروني</label>
+                    <input type="email" 
+                           id="email" 
+                           name="email" 
+                           value="{{ contractor.email or '' }}"
+                           class="form-input">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="form-label" for="specialty">التخصص</label>
+                    <input type="text" 
+                           id="specialty" 
+                           name="specialty" 
+                           value="{{ contractor.specialty or '' }}"
+                           class="form-input"
+                           placeholder="مثال: أعمال خرسانة، تشطيبات، كهرباء، سباكة...">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="form-label" for="address">العنوان</label>
+                    <input type="text" 
+                           id="address" 
+                           name="address" 
+                           value="{{ contractor.address or '' }}"
+                           class="form-input">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="form-label" for="notes">ملاحظات</label>
+                    <textarea id="notes" 
+                              name="notes" 
+                              rows="3" 
+                              class="form-input">{{ contractor.notes or '' }}</textarea>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex gap-3">
+                <button type="submit" class="btn btn-edit">
+                    <i class="fas fa-save ml-2"></i>
+                    حفظ التعديلات
+                </button>
+                <a href="{{ url_for('contractors.detail', id=contractor.id) }}" class="btn btn-secondary">
+                    <i class="fas fa-times ml-2"></i>
+                    إلغاء
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

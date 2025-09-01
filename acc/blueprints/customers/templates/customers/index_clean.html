@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+
+{% block title %}العملاء{% endblock %}
+{% block page_title %}العملاء{% endblock %}
+
+{% block extra_head %}
+<style>
+/* تصميم نظيف بدون تأثيرات */
+* {
+    animation: none !important;
+    transition: none !important;
+}
+
+/* أزرار نظيفة */
+.clean-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.clean-btn:hover {
+    opacity: 0.9;
+}
+
+.btn-blue {
+    background: #3b82f6;
+    color: white;
+}
+
+.btn-green {
+    background: #10b981;
+    color: white;
+}
+
+.btn-gray {
+    background: #6b7280;
+    color: white;
+}
+
+/* إزالة كل الخلفيات */
+.bg-gradient-to-r,
+.bg-gradient-to-l {
+    background: none !important;
+}
+
+/* جدول نظيف */
+.clean-table {
+    width: 100%;
+    background: white;
+    border: 1px solid #e5e7eb;
+}
+
+.clean-table th {
+    background: #f9fafb;
+    padding: 12px;
+    text-align: right;
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.clean-table td {
+    padding: 12px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.clean-table tr:hover {
+    background: #f9fafb;
+}
+
+/* نماذج نظيفة */
+.clean-form {
+    background: #f9fafb;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.form-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.form-group {
+    flex: 1;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 13px;
+    color: #374151;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+/* Modal نظيف */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 40;
+}
+
+.modal-content {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    z-index: 50;
+    max-width: 500px;
+    width: 90%;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="{
+    showAddForm: false,
+    showQuickAdd: false,
+    showBulkAdd: false,
+    newCustomer: {
+        name: '',
+        phone: '',
+        national_id: '',
+        address: '',
+        notes: ''
+    },
+    quickName: '',
+    bulkNames: '',
+    resetForm() {
+        this.newCustomer = {
+            name: '',
+            phone: '',
+            national_id: '',
+            address: '',
+            notes: ''
+        };
+    }
+}">
+
+    <!-- رأس الصفحة -->
+    <div style="margin-bottom: 20px;">
+        <a href="{{ url_for('dashboard.index') }}" class="clean-btn btn-gray">
+            <i class="fas fa-arrow-right"></i>
+            الرئيسية
+        </a>
+    </div>
+
+    <!-- الأزرار الرئيسية -->
+    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+        <button @click="showAddForm = !showAddForm; showQuickAdd = false; showBulkAdd = false" 
+                class="clean-btn btn-blue">
+            <i class="fas fa-plus"></i>
+            إضافة عميل جديد
+        </button>
+        
+        <button @click="showQuickAdd = !showQuickAdd; showAddForm = false; showBulkAdd = false" 
+                class="clean-btn btn-green">
+            <i class="fas fa-bolt"></i>
+            إضافة سريعة
+        </button>
+        
+        <button @click="showBulkAdd = !showBulkAdd; showAddForm = false; showQuickAdd = false" 
+                class="clean-btn btn-gray">
+            <i class="fas fa-list"></i>
+            إضافة قائمة
+        </button>
+    </div>
+
+    <!-- نموذج إضافة عميل كامل -->
+    <div x-show="showAddForm" class="clean-form">
+        <h3 style="margin-bottom: 15px; font-size: 16px; font-weight: 600;">إضافة عميل جديد</h3>
+        <form hx-post="{{ url_for('customers.add_ajax') }}" 
+              hx-target="#customers-table tbody" 
+              hx-swap="afterbegin"
+              @htmx:after-request="if(event.detail.successful) { showAddForm = false; resetForm(); }">
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>الاسم *</label>
+                    <input type="text" name="name" x-model="newCustomer.name" required>
+                </div>
+                <div class="form-group">
+                    <label>الهاتف</label>
+                    <input type="tel" name="phone" x-model="newCustomer.phone" dir="ltr">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>الرقم القومي</label>
+                    <input type="text" name="national_id" x-model="newCustomer.national_id">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>العنوان</label>
+                <input type="text" name="address" x-model="newCustomer.address">
+            </div>
+            
+            <div class="form-group">
+                <label>ملاحظات</label>
+                <textarea name="notes" x-model="newCustomer.notes" rows="2"></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button type="submit" class="clean-btn btn-blue">
+                    <i class="fas fa-save"></i>
+                    حفظ
+                </button>
+                <button type="button" @click="showAddForm = false; resetForm()" class="clean-btn btn-gray">
+                    إلغاء
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- إضافة سريعة -->
+    <div x-show="showQuickAdd" class="clean-form">
+        <h3 style="margin-bottom: 15px; font-size: 16px; font-weight: 600;">إضافة سريعة</h3>
+        <form hx-post="{{ url_for('customers.add_ajax') }}" 
+              hx-target="#customers-table tbody" 
+              hx-swap="afterbegin"
+              @htmx:after-request="if(event.detail.successful) { quickName = ''; }">
+            <div style="display: flex; gap: 10px;">
+                <input type="text" name="name" x-model="quickName" 
+                       placeholder="اكتب اسم العميل واضغط Enter" 
+                       required style="flex: 1; padding: 10px; border: 1px solid #d1d5db; border-radius: 4px;">
+                <button type="submit" class="clean-btn btn-green">
+                    <i class="fas fa-check"></i>
+                    إضافة
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- إضافة قائمة -->
+    <div x-show="showBulkAdd" class="clean-form">
+        <h3 style="margin-bottom: 15px; font-size: 16px; font-weight: 600;">إضافة قائمة عملاء</h3>
+        <form @submit.prevent="
+            const names = bulkNames.split('\n').filter(n => n.trim());
+            names.forEach(name => {
+                htmx.ajax('POST', '{{ url_for('customers.add_ajax') }}', {
+                    values: { name: name.trim() }
+                });
+            });
+            bulkNames = '';
+            showBulkAdd = false;
+            notify('جاري إضافة العملاء...', 'info');
+        ">
+            <textarea x-model="bulkNames" 
+                      placeholder="اكتب أسماء العملاء (كل اسم في سطر منفصل)"
+                      rows="5" 
+                      style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 4px; margin-bottom: 10px;"></textarea>
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" class="clean-btn btn-gray">
+                    <i class="fas fa-upload"></i>
+                    إضافة الكل
+                </button>
+                <button type="button" @click="showBulkAdd = false; bulkNames = ''" class="clean-btn btn-gray">
+                    إلغاء
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- البحث -->
+    <div style="margin-bottom: 20px;">
+        <input type="text" 
+               placeholder="بحث..."
+               hx-get="{{ url_for('customers.search') }}"
+               hx-trigger="keyup changed delay:300ms"
+               hx-target="#customers-table tbody"
+               name="q"
+               style="width: 300px; padding: 10px; border: 1px solid #d1d5db; border-radius: 4px;">
+    </div>
+
+    <!-- جدول العملاء -->
+    <table id="customers-table" class="clean-table">
+        <thead>
+            <tr>
+                <th>الكود</th>
+                <th>الاسم</th>
+                <th>الهاتف</th>
+                <th>العنوان</th>
+                <th>الحالة</th>
+                <th>الإجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for customer in customers %}
+            <tr id="customer-{{ customer.id }}">
+                <td>{{ customer.code }}</td>
+                <td>{{ customer.name }}</td>
+                <td dir="ltr">{{ customer.phone or '-' }}</td>
+                <td>{{ customer.address or '-' }}</td>
+                <td>
+                    {% if customer.status == 'نشط' %}
+                        <span style="color: green;">● نشط</span>
+                    {% else %}
+                        <span style="color: red;">● معلق</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('customers.detail', id=customer.id) }}" 
+                       style="color: #3b82f6; margin-left: 10px;">عرض</a>
+                    <a href="{{ url_for('customers.edit', id=customer.id) }}" 
+                       style="color: #10b981; margin-left: 10px;">تعديل</a>
+                    <button onclick="if(confirm('هل أنت متأكد؟')) { 
+                                htmx.ajax('DELETE', '{{ url_for('customers.delete_ajax', id=customer.id) }}', {
+                                    target: '#customer-{{ customer.id }}',
+                                    swap: 'outerHTML'
+                                });
+                            }"
+                            style="color: #ef4444; background: none; border: none; cursor: pointer;">
+                        حذف
+                    </button>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 40px; color: #6b7280;">
+                    لا يوجد عملاء
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- الصفحات -->
+    {% if pagination and pagination.pages > 1 %}
+    <div style="margin-top: 20px; display: flex; gap: 5px;">
+        {% if pagination.has_prev %}
+        <a href="{{ url_for('customers.index', page=pagination.prev_num, q=q) }}" 
+           class="clean-btn btn-gray" style="padding: 5px 15px;">السابق</a>
+        {% endif %}
+        
+        <span style="padding: 5px 15px;">
+            صفحة {{ pagination.page }} من {{ pagination.pages }}
+        </span>
+        
+        {% if pagination.has_next %}
+        <a href="{{ url_for('customers.index', page=pagination.next_num, q=q) }}" 
+           class="clean-btn btn-gray" style="padding: 5px 15px;">التالي</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

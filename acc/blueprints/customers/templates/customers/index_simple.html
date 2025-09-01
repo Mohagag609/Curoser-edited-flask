@@ -1,0 +1,958 @@
+{% extends "base.html" %}
+
+{% block title %}العملاء{% endblock %}
+{% block page_title %}العملاء{% endblock %}
+
+{% block extra_head %}
+<style>
+/* Form Section Styles */
+.form-section {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.form-section-hidden {
+    display: none;
+}
+
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.form-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+/* Action Buttons */
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-add {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+}
+
+.btn-list {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.btn-save {
+    background: #4f46e5;
+    color: white;
+}
+
+.btn-cancel {
+    background: #6b7280;
+    color: white;
+}
+
+/* Form Styles */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.form-input {
+    padding: 10px 14px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    transition: all 0.2s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* List Add Styles */
+.list-textarea {
+    width: 100%;
+    min-height: 200px;
+    padding: 14px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: monospace;
+}
+
+.list-help {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Notification Styles */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: white;
+    border-radius: 8px;
+    padding: 16px 20px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 300px;
+    max-width: 500px;
+    z-index: 1000;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.notification.success {
+    border-right: 4px solid #10b981;
+}
+
+.notification.error {
+    border-right: 4px solid #ef4444;
+}
+
+.notification-icon {
+    font-size: 20px;
+}
+
+.notification-icon.success {
+    color: #10b981;
+}
+
+.notification-icon.error {
+    color: #ef4444;
+}
+
+.notification-message {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    color: #1f2937;
+}
+
+/* Enhanced Table Styles */
+.table-container {
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 16px;
+    overflow-x: auto;
+    overflow-y: visible;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+}
+
+/* Custom Scrollbar */
+.table-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table thead {
+    background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.data-table th {
+    padding: 16px 20px;
+    text-align: right;
+    font-size: 13px;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.data-table tbody tr {
+    border-bottom: 1px solid #f1f5f9;
+    transition: all 0.2s ease;
+}
+
+.data-table tbody tr:hover {
+    background-color: #f8fafc;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.data-table tbody tr:nth-child(even) {
+    background-color: #fafbfc;
+}
+
+.data-table td {
+    padding: 14px 20px;
+    font-size: 14px;
+    color: #1e293b;
+}
+
+.code-badge {
+    display: inline-block;
+    background: #dbeafe;
+    color: #1e40af;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-badge.active {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-badge.inactive {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.btn-sm {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 8px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.btn-sm:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-view {
+    background: #e0f2fe;
+    color: #0369a1;
+    border-color: #bae6fd;
+}
+
+.btn-view:hover {
+    background: #bae6fd;
+}
+
+.btn-edit {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fde68a;
+}
+
+.btn-edit:hover {
+    background: #fde68a;
+}
+
+.btn-delete {
+    background: #fee2e2;
+    color: #991b1b;
+    border-color: #fecaca;
+}
+
+.btn-delete:hover {
+    background: #fecaca;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .btn-sm span {
+        display: none;
+    }
+    
+    .btn-sm {
+        padding: 8px 12px;
+    }
+    
+    .data-table {
+        font-size: 12px;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: 10px 12px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6 page-content">
+    <!-- Header with Back Button -->
+    <div class="flex items-center gap-4 mb-4">
+        <a href="{{ url_for('dashboard.index') }}" class="modern-btn modern-btn-back modern-btn-sm">
+            <i class="fas fa-arrow-right"></i>
+            <span>الرئيسية</span>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">العملاء</h1>
+            <p class="text-sm text-gray-600">إدارة بيانات العملاء</p>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100 text-sm">إجمالي العملاء</p>
+                    <p class="text-3xl font-bold" id="total-customers">{{ customers|length }}</p>
+                </div>
+                <i class="fas fa-users text-4xl text-blue-200"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100 text-sm">عملاء نشطون</p>
+                    <p class="text-3xl font-bold" id="active-customers">{{ customers|selectattr('status', 'equalto', 'نشط')|list|length }}</p>
+                </div>
+                <i class="fas fa-check-circle text-4xl text-green-200"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-100 text-sm">غير نشط</p>
+                    <p class="text-3xl font-bold" id="inactive-customers">{{ customers|selectattr('status', 'equalto', 'معلق')|list|length }}</p>
+                </div>
+                <i class="fas fa-pause-circle text-4xl text-gray-200"></i>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Add Section -->
+    <div class="form-section mb-6">
+        <div class="flex items-center gap-4 mb-3">
+            <i class="fas fa-bolt text-yellow-500 text-2xl"></i>
+            <h3 class="text-lg font-bold text-gray-800">إضافة سريعة</h3>
+        </div>
+        <form id="quick-add-form" onsubmit="return quickAddCustomer(event)" class="flex gap-3">
+            <input type="text" 
+                   name="name" 
+                   placeholder="اكتب اسم العميل واضغط Enter أو زر الإضافة"
+                   class="form-input flex-1"
+                   required>
+            <button type="submit" class="action-btn btn-add">
+                <i class="fas fa-plus"></i>
+                <span>إضافة سريعة</span>
+            </button>
+        </form>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="flex gap-3 mb-6">
+        <button onclick="toggleForm('single')" class="action-btn btn-add">
+            <i class="fas fa-user-plus"></i>
+            <span>إضافة عميل كامل</span>
+        </button>
+        
+        <button onclick="toggleForm('list')" class="action-btn btn-list">
+            <i class="fas fa-list"></i>
+            <span>إضافة قائمة عملاء</span>
+        </button>
+    </div>
+    
+    <!-- Single Customer Form -->
+    <div id="single-form" class="form-section form-section-hidden">
+        <div class="form-header">
+            <h3 class="form-title">
+                <i class="fas fa-user-plus text-blue-600 ml-2"></i>
+                إضافة عميل جديد
+            </h3>
+            <button onclick="toggleForm(null)" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form id="add-customer-form" onsubmit="return addCustomer(event)">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">الاسم الكامل <span class="text-red-500">*</span></label>
+                    <input type="text" name="name" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">رقم الهاتف</label>
+                    <input type="tel" name="phone" class="form-input" dir="ltr">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">الرقم القومي</label>
+                    <input type="text" name="national_id" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">العنوان</label>
+                    <input type="text" name="address" class="form-input">
+                </div>
+            </div>
+            
+            <div class="form-group mt-4">
+                <label class="form-label">ملاحظات</label>
+                <textarea name="notes" class="form-input form-textarea"></textarea>
+            </div>
+            
+            <div class="flex gap-3 mt-6">
+                <button type="submit" class="action-btn btn-save">
+                    <i class="fas fa-save"></i>
+                    <span>حفظ العميل</span>
+                </button>
+                <button type="button" onclick="toggleForm(null)" class="action-btn btn-cancel">
+                    <i class="fas fa-times"></i>
+                    <span>إلغاء</span>
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Edit Customer Form -->
+    <div id="edit-form" class="form-section form-section-hidden">
+        <div class="form-header">
+            <h3 class="form-title">
+                <i class="fas fa-edit text-orange-600 ml-2"></i>
+                تعديل بيانات العميل
+            </h3>
+            <button onclick="toggleForm(null)" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form id="edit-customer-form" onsubmit="return updateCustomer(event)">
+            <input type="hidden" id="edit-customer-id" name="id">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">الاسم الكامل <span class="text-red-500">*</span></label>
+                    <input type="text" id="edit-name" name="name" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">رقم الهاتف</label>
+                    <input type="tel" id="edit-phone" name="phone" class="form-input" dir="ltr">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">الرقم القومي</label>
+                    <input type="text" id="edit-national_id" name="national_id" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">العنوان</label>
+                    <input type="text" id="edit-address" name="address" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">الحالة</label>
+                    <select id="edit-status" name="status" class="form-input">
+                        <option value="نشط">نشط</option>
+                        <option value="معلق">معلق</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group mt-4">
+                <label class="form-label">ملاحظات</label>
+                <textarea id="edit-notes" name="notes" class="form-input form-textarea"></textarea>
+            </div>
+            
+            <div class="flex gap-3 mt-6">
+                <button type="submit" class="action-btn btn-save">
+                    <i class="fas fa-save"></i>
+                    <span>حفظ التعديلات</span>
+                </button>
+                <button type="button" onclick="toggleForm(null)" class="action-btn btn-cancel">
+                    <i class="fas fa-times"></i>
+                    <span>إلغاء</span>
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- List Add Form -->
+    <div id="list-form" class="form-section form-section-hidden">
+        <div class="form-header">
+            <h3 class="form-title">
+                <i class="fas fa-list text-green-600 ml-2"></i>
+                إضافة قائمة عملاء
+            </h3>
+            <button onclick="toggleForm(null)" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form id="add-list-form" onsubmit="return addCustomerList(event)">
+            <div class="form-group">
+                <label class="form-label">أسماء العملاء</label>
+                <textarea name="names" class="list-textarea" 
+                          placeholder="اكتب اسم عميل في كل سطر&#10;&#10;مثال:&#10;محمد أحمد&#10;أحمد محمد&#10;فاطمة علي" 
+                          required></textarea>
+                <p class="list-help">
+                    <i class="fas fa-info-circle"></i>
+                    اكتب اسم عميل واحد في كل سطر
+                </p>
+            </div>
+            
+            <div class="flex gap-3 mt-6">
+                <button type="submit" class="action-btn btn-save">
+                    <i class="fas fa-users"></i>
+                    <span>إضافة الجميع</span>
+                </button>
+                <button type="button" onclick="toggleForm(null)" class="action-btn btn-cancel">
+                    <i class="fas fa-times"></i>
+                    <span>إلغاء</span>
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Search Bar -->
+    {% set search_url = url_for('customers.search') %}
+    {% set search_placeholder = 'البحث بالاسم، الهاتف، الرقم القومي...' %}
+    {% set filter_options = [
+        {'value': '', 'label': 'جميع الحالات'},
+        {'value': 'نشط', 'label': 'نشط'},
+        {'value': 'معلق', 'label': 'معلق'}
+    ] %}
+    {% set filter_name = 'status' %}
+    {% set filter_label = 'الحالة' %}
+    {% include 'shared/search_bar.html' %}
+    
+    <!-- Results Container -->
+    <div id="results-container">
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>الكود</th>
+                        <th>الاسم</th>
+                        <th>الهاتف</th>
+                        <th>الرقم القومي</th>
+                        <th>العنوان</th>
+                        <th>الحالة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="customers-table">
+                    {% for customer in customers %}
+                    <tr id="row-{{ customer.id }}">
+                        <td><span class="code-badge">{{ customer.code }}</span></td>
+                        <td class="font-medium">{{ customer.name }}</td>
+                        <td class="font-mono text-sm" dir="ltr">{{ customer.phone or '-' }}</td>
+                        <td class="text-sm text-gray-600">{{ customer.national_id or '-' }}</td>
+                        <td class="text-sm text-gray-600">{{ customer.address or '-' }}</td>
+                        <td>
+                            {% if customer.status == 'نشط' %}
+                                <span class="status-badge active">
+                                    <i class="fas fa-circle text-xs"></i>
+                                    نشط
+                                </span>
+                            {% else %}
+                                <span class="status-badge inactive">
+                                    <i class="fas fa-circle text-xs"></i>
+                                    معلق
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="flex gap-2">
+                                <a href="{{ url_for('customers.detail', id=customer.id) }}" class="btn-sm btn-view">
+                                    <i class="fas fa-eye"></i>
+                                    عرض
+                                </a>
+                                <button onclick="loadCustomerForEdit('{{ customer.id }}', '{{ customer.name }}', '{{ customer.phone or '' }}', '{{ customer.national_id or '' }}', '{{ customer.address or '' }}', '{{ customer.status }}', '{{ customer.notes or '' }}')" 
+                                        class="btn-sm btn-edit">
+                                    <i class="fas fa-edit"></i>
+                                    تعديل
+                                </button>
+                                <button onclick="deleteCustomer('{{ customer.id }}', '{{ customer.name }}')" 
+                                        class="btn-sm btn-delete">
+                                    <i class="fas fa-trash"></i>
+                                    حذف
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-12 text-gray-500">
+                            <i class="fas fa-inbox text-4xl mb-4"></i>
+                            <p class="text-lg">لا يوجد عملاء</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if pagination and pagination.pages > 1 %}
+        <div class="mt-6">
+            {% include 'shared/pagination.html' %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Toggle Forms
+function toggleForm(type) {
+    const singleForm = document.getElementById('single-form');
+    const listForm = document.getElementById('list-form');
+    const editForm = document.getElementById('edit-form');
+    
+    // Hide all forms first
+    singleForm.classList.add('form-section-hidden');
+    listForm.classList.add('form-section-hidden');
+    editForm.classList.add('form-section-hidden');
+    
+    // Show requested form
+    if (type === 'single') {
+        singleForm.classList.remove('form-section-hidden');
+    } else if (type === 'list') {
+        listForm.classList.remove('form-section-hidden');
+    } else if (type === 'edit') {
+        editForm.classList.remove('form-section-hidden');
+    }
+}
+
+// Show Notification
+function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-times-circle';
+    
+    notification.innerHTML = `
+        <i class="fas ${icon} notification-icon ${type}"></i>
+        <span class="notification-message">${message}</span>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Show animation
+    setTimeout(() => notification.classList.add('show'), 10);
+    
+    // Remove after 5 seconds
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, 5000);
+}
+
+// Quick Add Customer
+async function quickAddCustomer(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch('{{ url_for("customers.add_ajax") }}', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            const html = await response.text();
+            const tbody = document.getElementById('customers-table');
+            const emptyRow = tbody.querySelector('tr:has(td[colspan])');
+            
+            if (emptyRow) {
+                emptyRow.remove();
+            }
+            
+            tbody.insertAdjacentHTML('afterbegin', html);
+            form.reset();
+            showNotification('تم إضافة العميل بنجاح', 'success');
+            updateStats();
+        } else {
+            const data = await response.json();
+            showNotification(data.error || 'حدث خطأ أثناء الإضافة', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('حدث خطأ في الاتصال', 'error');
+    }
+    
+    return false;
+}
+
+// Add Single Customer
+async function addCustomer(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch('{{ url_for("customers.add_ajax") }}', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            const html = await response.text();
+            const tbody = document.getElementById('customers-table');
+            const emptyRow = tbody.querySelector('tr:has(td[colspan])');
+            
+            if (emptyRow) {
+                emptyRow.remove();
+            }
+            
+            tbody.insertAdjacentHTML('afterbegin', html);
+            form.reset();
+            toggleForm(null);
+            showNotification('تم إضافة العميل بنجاح', 'success');
+            updateStats();
+        } else {
+            const data = await response.json();
+            showNotification(data.error || 'حدث خطأ أثناء الإضافة', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('حدث خطأ في الاتصال', 'error');
+    }
+    
+    return false;
+}
+
+// Add Customer List
+async function addCustomerList(event) {
+    event.preventDefault();
+    const form = event.target;
+    const names = form.names.value.split('\n').filter(n => n.trim());
+    
+    if (names.length === 0) {
+        showNotification('الرجاء إدخال أسماء العملاء', 'error');
+        return false;
+    }
+    
+    let addedCount = 0;
+    let failedCount = 0;
+    
+    for (const name of names) {
+        const formData = new FormData();
+        formData.append('name', name.trim());
+        
+        try {
+            const response = await fetch('{{ url_for("customers.add_ajax") }}', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                const html = await response.text();
+                const tbody = document.getElementById('customers-table');
+                const emptyRow = tbody.querySelector('tr:has(td[colspan])');
+                
+                if (emptyRow) {
+                    emptyRow.remove();
+                }
+                
+                tbody.insertAdjacentHTML('afterbegin', html);
+                addedCount++;
+            } else {
+                failedCount++;
+            }
+        } catch (error) {
+            failedCount++;
+        }
+    }
+    
+    form.reset();
+    toggleForm(null);
+    
+    if (addedCount > 0) {
+        showNotification(`تم إضافة ${addedCount} عميل بنجاح`, 'success');
+        updateStats();
+    }
+    
+    if (failedCount > 0) {
+        setTimeout(() => {
+            showNotification(`فشل إضافة ${failedCount} عميل`, 'error');
+        }, 1000);
+    }
+    
+    return false;
+}
+
+// Delete Customer
+function deleteCustomer(id, name) {
+    if (!confirm(`هل أنت متأكد من حذف العميل "${name}"؟`)) {
+        return;
+    }
+    
+    const row = document.getElementById(`row-${id}`);
+    row.style.opacity = '0.5';
+    
+    fetch(`/customers/${id}/delete-ajax`, {
+        method: 'DELETE',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            row.style.transition = 'all 0.3s ease';
+            row.style.transform = 'translateX(-100%)';
+            row.style.opacity = '0';
+            setTimeout(() => {
+                row.remove();
+                showNotification('تم حذف العميل بنجاح', 'success');
+                updateStats();
+            }, 300);
+        } else {
+            row.style.opacity = '1';
+            return response.json();
+        }
+    })
+    .then(data => {
+        if (data && data.error) {
+            showNotification(data.error, 'error');
+        }
+    })
+    .catch(error => {
+        row.style.opacity = '1';
+        showNotification('حدث خطأ أثناء الحذف', 'error');
+    });
+}
+
+// Update Statistics
+function updateStats() {
+    // This would be enhanced to update stats dynamically
+    console.log('Stats updated');
+}
+
+// Load Customer for Edit
+function loadCustomerForEdit(id, name, phone, nationalId, address, status, notes) {
+    // Fill the form
+    document.getElementById('edit-customer-id').value = id;
+    document.getElementById('edit-name').value = name;
+    document.getElementById('edit-phone').value = phone;
+    document.getElementById('edit-national_id').value = nationalId;
+    document.getElementById('edit-address').value = address;
+    document.getElementById('edit-status').value = status;
+    document.getElementById('edit-notes').value = notes;
+    
+    // Show edit form
+    toggleForm('edit');
+    
+    // Scroll to form
+    document.getElementById('edit-form').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Update Customer
+async function updateCustomer(event) {
+    event.preventDefault();
+    const form = event.target;
+    const customerId = document.getElementById('edit-customer-id').value;
+    const formData = new FormData(form);
+    
+    // Remove the id from formData as it's in the URL
+    formData.delete('id');
+    
+    try {
+        const response = await fetch(`/customers/${customerId}/update-ajax`, {
+            method: 'PUT',
+            body: formData
+        });
+        
+        if (response.ok) {
+            const html = await response.text();
+            const oldRow = document.getElementById(`row-${customerId}`);
+            if (oldRow) {
+                oldRow.outerHTML = html;
+            }
+            
+            toggleForm(null);
+            showNotification('تم تحديث بيانات العميل بنجاح', 'success');
+        } else {
+            const data = await response.json();
+            showNotification(data.error || 'حدث خطأ أثناء التحديث', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('حدث خطأ في الاتصال', 'error');
+    }
+    
+    return false;
+}
+</script>
+{% endblock %}

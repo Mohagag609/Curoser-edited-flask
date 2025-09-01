@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}دفتر أرصدة الشركاء - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">دفتر أرصدة الشركاء</h2>
+            <p class="text-gray-600">{{ project.name }}</p>
+        </div>
+        <a href="{{ url_for('projects.detail', id=project.id) }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-right ml-2"></i>
+            رجوع للمشروع
+        </a>
+    </div>
+    
+    <!-- ملخص الأرصدة -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="card bg-red-50">
+            <h4 class="text-sm text-gray-600 mb-1">إجمالي المديونيات</h4>
+            <p class="text-xl font-bold text-red-600">{{ format_currency(total_debit) }}</p>
+            <p class="text-sm text-gray-500">مبالغ على الشركاء</p>
+        </div>
+        <div class="card bg-green-50">
+            <h4 class="text-sm text-gray-600 mb-1">إجمالي المستحقات</h4>
+            <p class="text-xl font-bold text-green-600">{{ format_currency(total_credit) }}</p>
+            <p class="text-sm text-gray-500">مبالغ للشركاء</p>
+        </div>
+        <div class="card bg-blue-50">
+            <h4 class="text-sm text-gray-600 mb-1">الفرق</h4>
+            <p class="text-xl font-bold text-blue-600">{{ format_currency(total_debit - total_credit) }}</p>
+            <p class="text-sm text-gray-500">{% if total_debit > total_credit %}صافي مديونيات{% else %}صافي مستحقات{% endif %}</p>
+        </div>
+    </div>
+    
+    <!-- جدول الأرصدة -->
+    <div class="card">
+        <h3 class="text-lg font-semibold mb-4">أرصدة الشركاء</h3>
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>الشريك</th>
+                        <th>الرصيد</th>
+                        <th>الحالة</th>
+                        <th>آخر تحديث</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in ledger_data %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('partners.detail', id=item.partner.id) }}" 
+                               class="text-blue-600 hover:underline font-medium">
+                                {{ item.partner.name }}
+                            </a>
+                        </td>
+                        <td class="font-semibold {% if item.balance > 0 %}text-red-600{% elif item.balance < 0 %}text-green-600{% else %}text-gray-600{% endif %}">
+                            {{ format_currency(abs(item.balance)) }}
+                        </td>
+                        <td>
+                            {% if item.balance > 0 %}
+                                <span class="badge badge-danger">مدين</span>
+                            {% elif item.balance < 0 %}
+                                <span class="badge badge-success">دائن</span>
+                            {% else %}
+                                <span class="badge badge-secondary">متوازن</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ item.last_updated.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            <button onclick="showPartnerDetails('{{ item.partner.id }}')" 
+                                    class="btn btn-sm btn-secondary">
+                                <i class="fas fa-list"></i>
+                                التفاصيل
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-8 text-gray-500">
+                            لا توجد أرصدة مسجلة
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- معلومات إضافية -->
+    <div class="card mt-6">
+        <h3 class="text-lg font-semibold mb-4">ملاحظات مهمة</h3>
+        <div class="bg-yellow-50 p-4 rounded">
+            <ul class="list-disc mr-6 space-y-2 text-sm">
+                <li><strong>الرصيد الموجب:</strong> يعني أن الشريك عليه مبلغ للمشروع (مدين)</li>
+                <li><strong>الرصيد السالب:</strong> يعني أن للشريك مبلغ على المشروع (دائن)</li>
+                <li><strong>الرصيد صفر:</strong> يعني أن الشريك متوازن مع المشروع</li>
+                <li>يتم تحديث الأرصدة تلقائياً عند تسوية كل مرحلة</li>
+                <li>يمكن مراجعة تفاصيل كل شريك من خلال النقر على اسمه أو زر التفاصيل</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+function showPartnerDetails(partnerId) {
+    // يمكن إضافة نافذة منبثقة أو توجيه لصفحة تفاصيل الشريك
+    window.location.href = `/partners/${partnerId}`;
+}
+</script>
+{% endblock %}

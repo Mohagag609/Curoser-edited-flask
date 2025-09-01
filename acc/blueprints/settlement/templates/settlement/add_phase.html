@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة مرحلة جديدة{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-gray-900">إضافة مرحلة جديدة</h2>
+        <a href="{{ url_for('settlement.phases_index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-right ml-2"></i>
+            رجوع
+        </a>
+    </div>
+    
+    <form method="post" class="max-w-2xl">
+        <div class="card">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- اسم المرحلة -->
+                <div class="md:col-span-2">
+                    <label class="form-label required">اسم المرحلة</label>
+                    <input type="text" name="name" required 
+                           class="form-input"
+                           placeholder="مثال: المرحلة الأولى - الأساسات">
+                </div>
+                
+                <!-- المشروع -->
+                <div class="md:col-span-2">
+                    <label class="form-label required">المشروع</label>
+                    <select name="project_id" required class="form-input">
+                        <option value="">اختر المشروع</option>
+                        {% for project in projects %}
+                        <option value="{{ project.id }}" 
+                                {% if current_project and current_project.id == project.id %}selected{% endif %}>
+                            {{ project.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- تاريخ البداية -->
+                <div>
+                    <label class="form-label">تاريخ البداية</label>
+                    <input type="date" name="start_date" 
+                           value="{{ today }}"
+                           class="form-input">
+                </div>
+                
+                <!-- تاريخ النهاية -->
+                <div>
+                    <label class="form-label">تاريخ النهاية المتوقع</label>
+                    <input type="date" name="end_date" 
+                           class="form-input">
+                </div>
+                
+                <!-- الوصف -->
+                <div class="md:col-span-2">
+                    <label class="form-label">وصف المرحلة</label>
+                    <textarea name="description" rows="4" 
+                              class="form-input"
+                              placeholder="وصف تفصيلي للمرحلة وأعمالها..."></textarea>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex gap-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save ml-2"></i>
+                    حفظ المرحلة
+                </button>
+                <a href="{{ url_for('settlement.phases_index') }}" class="btn btn-secondary">
+                    إلغاء
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

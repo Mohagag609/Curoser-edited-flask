@@ -1,0 +1,44 @@
+{
+  "name": "نظام إدارة المشاريع العقارية",
+  "short_name": "إدارة العقارات",
+  "description": "نظام متكامل لإدارة المشاريع العقارية والمحاسبة",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3f4f6",
+  "theme_color": "#1e40af",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/static/images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "finance", "productivity"],
+  "lang": "ar",
+  "dir": "rtl",
+  "shortcuts": [
+    {
+      "name": "إضافة عميل",
+      "url": "/customers/add",
+      "icons": [{ "src": "/static/images/add-customer.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "إضافة عقد",
+      "url": "/contracts/add",
+      "icons": [{ "src": "/static/images/add-contract.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "التقارير",
+      "url": "/reports",
+      "icons": [{ "src": "/static/images/reports.png", "sizes": "96x96" }]
+    }
+  ]
+}

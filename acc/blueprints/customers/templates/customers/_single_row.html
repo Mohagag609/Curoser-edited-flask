@@ -1,0 +1,52 @@
+<tr id="customer-row-{{ customer.id }}" class="hover:bg-gray-50 transition-colors duration-200">
+    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
+        <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded-md">{{ customer.code }}</span>
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap">
+        <a href="{{ url_for('customers.detail', id=customer.id) }}" 
+           class="text-gray-900 hover:text-blue-600 transition-colors">
+            <div class="text-sm font-medium">{{ customer.name }}</div>
+            {% if customer.national_id %}
+            <div class="text-xs text-gray-500">{{ customer.national_id }}</div>
+            {% endif %}
+        </a>
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700" dir="ltr">
+        {{ customer.phone or '-' }}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+        {{ customer.address or '-' }}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap">
+        {% if customer.status == 'نشط' %}
+            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                <i class="fas fa-check-circle ml-1"></i>
+                نشط
+            </span>
+        {% elif customer.status == 'معلق' %}
+            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                <i class="fas fa-pause-circle ml-1"></i>
+                معلق
+            </span>
+        {% endif %}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-sm">
+        <div class="flex gap-2">
+            <a href="{{ url_for('customers.detail', id=customer.id) }}" 
+               class="modern-btn modern-btn-view modern-btn-sm">
+                <i class="fas fa-eye"></i>
+                <span>عرض</span>
+            </a>
+            <button @click="openEditModal('{{ customer.id }}')" 
+                    class="modern-btn modern-btn-edit modern-btn-sm">
+                <i class="fas fa-edit"></i>
+                <span>تعديل</span>
+            </button>
+            <button @click="deleteCustomer('{{ customer.id }}', '{{ customer.name }}')" 
+                    class="modern-btn modern-btn-delete modern-btn-sm">
+                <i class="fas fa-trash"></i>
+                <span>حذف</span>
+            </button>
+        </div>
+    </td>
+</tr>

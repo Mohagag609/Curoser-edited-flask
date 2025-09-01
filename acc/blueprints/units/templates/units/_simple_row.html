@@ -1,0 +1,46 @@
+<tr id="row-{{ unit.id }}">
+    <td class="font-medium">
+        {% if unit.name %}{{ unit.name }}{% endif %}
+        {% if unit.floor %} الدور {{ unit.floor }}{% endif %}
+        {% if unit.building %} عمارة {{ unit.building }}{% endif %}
+    </td>
+    <td class="text-sm text-gray-600">{{ unit.area|default('-', true) }} م²</td>
+    <td class="font-semibold text-green-600">{{ format_currency(unit.total_price) }}</td>
+    <td>
+        {% if unit.status == 'متاحة' %}
+            <span class="status-badge available">
+                <i class="fas fa-circle text-xs"></i>
+                متاح
+            </span>
+        {% elif unit.status == 'مباعة' %}
+            <span class="status-badge sold">
+                <i class="fas fa-circle text-xs"></i>
+                مباع
+            </span>
+        {% else %}
+            <span class="status-badge reserved">
+                <i class="fas fa-circle text-xs"></i>
+                محجوز
+            </span>
+        {% endif %}
+    </td>
+    <td class="text-sm text-gray-600">{{ partners|default('-', true)|truncate(30, true) }}</td>
+    <td>
+        <div class="flex gap-2">
+            <a href="{{ url_for('units.detail', id=unit.id) }}" class="btn-sm btn-view">
+                <i class="fas fa-eye"></i>
+                <span>عرض</span>
+            </a>
+            <button onclick="loadUnitForEdit('{{ unit.id }}', '{{ unit.name }}', '{{ unit.building }}', '{{ unit.floor }}', '{{ unit.area or '' }}', '{{ unit.unit_type }}', '{{ unit.total_price }}', '{{ unit.status }}', '{{ unit.notes or '' }}')" 
+                    class="btn-sm btn-edit">
+                <i class="fas fa-edit"></i>
+                <span>تعديل</span>
+            </button>
+            <button onclick="deleteUnit('{{ unit.id }}', '{{ unit.name }}')" 
+                    class="btn-sm btn-delete">
+                <i class="fas fa-trash"></i>
+                <span>حذف</span>
+            </button>
+        </div>
+    </td>
+</tr>
