@@ -220,32 +220,6 @@ def add():
                          today=date.today(),
                          format_currency=format_currency)
 
-@bp.route('/<string:id>')
-def view(id):
-    contract = Contract.query.get_or_404(id)
-    
-    # Ensure contract belongs to current project
-    if contract.project_id != g.project.id:
-        flash('❌ عقد غير موجود', 'error')
-        return redirect(url_for('contracts.index'))
-    
-    # Get installments - using direct query to avoid property issues
-    from acc.models import Installment as InstallmentModel
-    installments = InstallmentModel.query.filter_by(unit_id=contract.unit_id).order_by(InstallmentModel.due_date).all() if contract.unit_id else []
-    
-    # Calculate statistics
-    total_paid = sum(i.get_paid_amount() for i in installments if hasattr(i, 'get_paid_amount'))
-    total_due = sum(i.amount for i in installments if i.amount)
-    overdue_count = sum(1 for i in installments if i.status == 'متأخر')
-    
-    return render_template('contracts/view.html',
-                         contract=contract,
-                         installments=installments,
-                         total_paid=total_paid,
-                         total_due=total_due,
-                         overdue_count=overdue_count,
-                         format_currency=format_currency,
-                         format_date=format_date)
 
 @bp.route('/<string:id>/edit', methods=['GET', 'POST'])
 def edit(id):
@@ -599,4 +573,32 @@ def delete(id):
             return jsonify({'success': False, 'message': f'حدث خطأ: {str(e)}'}), 500
         else:
             flash(f'حدث خطأ: {str(e)}', 'error')
-            return redirect(url_for('contracts.index'))    
+            return redirect(url_for('contracts.index'))
+
+@bp.route('/<string:id>')
+def view(id):
+    contract = Contract.query.get_or_404(id)
+    
+    # Ensure contract belongs to current project
+    if contract.project_id != g.project.id:
+        flash('❌ عقد غير موجود', 'error')
+        return redirect(url_for('contracts.index'))
+    
+    # Get installments - using direct query to avoid property issues
+    from acc.models import Installment as InstallmentModel
+    installments = InstallmentModel.query.filter_by(unit_id=contract.unit_id).order_by(InstallmentModel.due_date).all() if contract.unit_id else []
+    
+    # Calculate statistics
+    total_paid = sum(i.get_paid_amount() for i in installments if hasattr(i, 'get_paid_amount'))
+    total_due = sum(i.amount for i in installments if i.amount)
+    overdue_count = sum(1 for i in installments if i.status == 'متأخر')
+    
+    return render_template('contracts/view.html',
+                         contract=contract,
+                         installments=installments,
+                         total_paid=total_paid,
+                         total_due=total_due,
+                         overdue_count=overdue_count,
+                         format_currency=format_currency,
+                         format_date=format_date)
+

@@ -24,6 +24,10 @@ def project_required(f):
     def decorated_function(*args, **kwargs):
         current_project = get_current_project()
         if not current_project:
+            # Check if this is an AJAX request
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                from flask import jsonify
+                return jsonify({'error': 'الرجاء اختيار مشروع أولاً'}), 401
             flash('الرجاء اختيار مشروع أولاً.', 'warning')
             return redirect(url_for('main.select_project', next=request.url))
         g.project = current_project  # Attach project to global context

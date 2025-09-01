@@ -912,6 +912,11 @@ async function deleteContract(contractId, hasInstallments) {
         console.log('Response headers:', response.headers);
         
         // Handle specific status codes
+        if (response.status === 401) {
+            showNotification('الرجاء تسجيل الدخول أو اختيار مشروع', 'error');
+            return;
+        }
+        
         if (response.status === 404) {
             showNotification('العقد غير موجود', 'error');
             return;
