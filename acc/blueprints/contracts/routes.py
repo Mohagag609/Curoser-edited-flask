@@ -449,7 +449,7 @@ def generate_installments(id):
 
 
 # Single delete endpoint
-@bp.route('/delete/<string:id>', methods=['POST'])
+@bp.route('/<string:id>/delete', methods=['POST'])
 def delete(id):
     """Delete contract via AJAX"""
     try:
