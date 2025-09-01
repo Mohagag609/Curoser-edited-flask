@@ -376,6 +376,29 @@
     color: #6b7280;
     margin-bottom: 24px;
 }
+
+/* Animations for notifications */
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+}
 </style>
 {% endblock %}
 
@@ -475,7 +498,7 @@
                 </thead>
                 <tbody id="contractsTableBody">
                     {% for contract in contracts %}
-                    <tr data-id="{{ contract.id }}">
+                    <tr data-contract-id="{{ contract.id }}">
                         <td class="font-bold">{{ contract.code }}</td>
                         <td>{{ contract.customer.name if contract.customer else '-' }}</td>
                         <td>
@@ -519,7 +542,7 @@
                                     <i class="fas fa-edit"></i>
                                     تعديل
                                 </button>
-                                <button onclick="deleteContract('{{ contract.id }}')" 
+                                <button onclick="deleteContract('{{ contract.id }}', {% if contract.installments %}{{ contract.installments.count() > 0|lower }}{% else %}false{% endif %})" 
                                         class="btn-modern btn-sm btn-delete">
                                     <i class="fas fa-trash"></i>
                                     حذف
@@ -698,6 +721,39 @@
 </div>
 
 <script>
+// نظام الإشعارات
+function showNotification(message, type = 'info') {
+    const notificationArea = document.getElementById('notificationArea');
+    if (!notificationArea) {
+        // إنشاء منطقة الإشعارات إذا لم تكن موجودة
+        const area = document.createElement('div');
+        area.id = 'notificationArea';
+        area.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999;';
+        document.body.appendChild(area);
+    }
+    
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.style.cssText = `
+        background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        animation: slideIn 0.3s ease-out;
+        font-family: Arial, sans-serif;
+    `;
+    notification.textContent = message;
+    
+    document.getElementById('notificationArea').appendChild(notification);
+    
+    // إزالة الإشعار بعد 3 ثواني
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease-in';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
 // Contract Management Functions
 function showContractForm() {
     document.getElementById('contractModal').classList.add('active');
@@ -826,7 +882,13 @@ function editContract(contractId) {
     window.location.href = `/contracts/${contractId}/edit`;
 }
 
-async function deleteContract(contractId) {
+async function deleteContract(contractId, hasInstallments) {
+    // Check if contract has installments
+    if (hasInstallments === true || hasInstallments === 'True' || hasInstallments === 'true') {
+        showNotification('لا يمكن حذف عقد له أقساط', 'error');
+        return;
+    }
+    
     if (!confirm('هل أنت متأكد من حذف هذا العقد؟')) {
         return;
     }
@@ -838,33 +900,43 @@ async function deleteContract(contractId) {
         const response = await fetch(deleteUrl, {
             method: 'POST',
             headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin'
         });
         
         console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
         
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        // Handle specific status codes
+        if (response.status === 404) {
+            showNotification('العقد غير موجود', 'error');
+            return;
+        }
+        
+        if (response.status === 405) {
+            showNotification('طريقة الطلب غير مسموحة - تحقق من إعدادات الخادم', 'error');
+            return;
         }
         
         const result = await response.json();
         
         if (result.success) {
-            window.notify('تم حذف العقد بنجاح', 'success');
-            setTimeout(() => window.location.reload(), 1000);
+            showNotification('تم حذف العقد بنجاح', 'success');
+            // Remove row from table without reload
+            const row = document.querySelector(`tr[data-contract-id="${contractId}"]`);
+            if (row) {
+                row.remove();
+            } else {
+                setTimeout(() => window.location.reload(), 1000);
+            }
         } else {
-            window.notify(result.message || 'حدث خطأ في حذف العقد', 'error');
+            showNotification(result.message || 'حدث خطأ في حذف العقد', 'error');
         }
     } catch (error) {
         console.error('Delete error:', error);
-        if (error.message.includes('404')) {
-            window.notify('صفحة الحذف غير موجودة (404)', 'error');
-        } else if (error.message.includes('405')) {
-            window.notify('طريقة الطلب غير مسموحة (405)', 'error');
-        } else {
-            window.notify(`حدث خطأ: ${error.message}`, 'error');
-        }
+        showNotification(`حدث خطأ: ${error.message}`, 'error');
     }
 }
 

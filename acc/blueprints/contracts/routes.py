@@ -547,10 +547,13 @@ def delete(id):
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     
     app.logger.info(f"Delete request for contract {id}, AJAX: {is_ajax}")
+    app.logger.info(f"Request method: {request.method}")
+    app.logger.info(f"Headers: {dict(request.headers)}")
     
     try:
         contract = Contract.query.filter_by(id=id, project_id=g.project.id).first()
         if not contract:
+            app.logger.warning(f"Contract {id} not found in project {g.project.id}")
             if is_ajax:
                 return jsonify({'success': False, 'message': 'العقد غير موجود'}), 404
             else:
@@ -560,20 +563,29 @@ def delete(id):
         # Check if contract has installments - using direct query
         from acc.models import Installment as InstallmentModel
         has_installments = InstallmentModel.query.filter_by(unit_id=contract.unit_id).count() > 0 if contract.unit_id else False
+        
+        app.logger.info(f"Contract {id} has installments: {has_installments}")
             
         if has_installments:
             if is_ajax:
-                return jsonify({'success': False, 'message': 'لا يمكن حذف عقد له أقساط'})
+                return jsonify({'success': False, 'message': 'لا يمكن حذف عقد له أقساط'}), 400
             else:
                 flash('لا يمكن حذف عقد له أقساط', 'error')
                 return redirect(url_for('contracts.index'))
         
+        # Store contract code for log
+        contract_code = contract.code
+        
         # Update unit status back to available
         if contract.unit:
             contract.unit.status = 'متاحة'
+            app.logger.info(f"Updated unit {contract.unit.id} status to 'متاحة'")
         
         db.session.delete(contract)
         db.session.commit()
+        
+        log_action('حذف عقد', {'id': id, 'code': contract_code})
+        app.logger.info(f"Successfully deleted contract {contract_code}")
         
         if is_ajax:
             return jsonify({'success': True, 'message': 'تم حذف العقد بنجاح'})
@@ -583,8 +595,9 @@ def delete(id):
         
     except Exception as e:
         db.session.rollback()
+        app.logger.error(f"Error deleting contract {id}: {str(e)}")
         if is_ajax:
-            return jsonify({'success': False, 'message': f'حدث خطأ: {str(e)}'})
+            return jsonify({'success': False, 'message': f'حدث خطأ: {str(e)}'}), 500
         else:
             flash(f'حدث خطأ: {str(e)}', 'error')
             return redirect(url_for('contracts.index'))    
