@@ -1,4 +1,5 @@
 from acc.models.customer import Customer
+from acc.models.user import User
 from acc.models.unit import Unit
 from acc.models.partner import Partner, PartnerGroup, PartnerGroupMember, UnitPartner, PartnerDebt
 from acc.models.broker import Broker, BrokerDue
@@ -26,3 +27,6 @@ __all__ = [
     'MaterialIssue', 'PartnerLedger', 'PhaseSettlement', 'PhaseSettlementLine', 
     'InterProjectTransfer'
 ]
+# Contract models
+from acc.models.contract import Contract, ContractStatus, PaymentType, InstallmentPeriod, ContractDocument
+from acc.models.installment import Installment, InstallmentStatus, InstallmentType, InstallmentPayment, InstallmentReminder

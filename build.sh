@@ -12,6 +12,13 @@ pip install --upgrade pip
 echo "Installing Python dependencies..."
 pip install -r requirements.txt
 
+# Run fixes for known issues
+echo "Running application fixes..."
+if [ -f "fix_all_issues.py" ]; then
+    echo "Applying all known fixes..."
+    python3 fix_all_issues.py || echo "Warning: Some fixes may have failed"
+fi
+
 # Install Node dependencies and build CSS
 echo "Installing Node dependencies and building CSS..."
 npm install
@@ -26,6 +33,26 @@ with app.app_context():
     db.create_all()
     print('Database tables ready!')
 "
+
+# Run database fixes if needed
+
+# Run contracts system update
+if [ -f "update_contracts_db.py" ]; then
+    echo "Updating contracts database schema..."
+    python3 update_contracts_db.py || echo "Warning: Contracts update may have partially failed"
+fi
+
+echo "Checking for database fixes..."
+if [ -f "fix_db_errors.py" ]; then
+    echo "Running database fixes..."
+    python3 fix_db_errors.py || echo "Warning: Database fixes may have partially failed"
+fi
+
+# Run quick fixes if available
+if [ -f "quick_fix.py" ]; then
+    echo "Running quick fixes..."
+    python3 quick_fix.py || echo "Warning: Quick fixes may have partially failed"
+fi
 
 # Check if this is the first deployment or optimization needed
 OPTIMIZATION_FLAG="/opt/render/project/.optimizations_done"
@@ -47,3 +74,8 @@ else
 fi
 
 echo "=== Build completed successfully ==="
+
+# Summary of fixes added:
+# 1. fix_all_issues.py - Fixes CSRF tokens, delete routes, and error logging
+# 2. fix_db_errors.py - Adds missing database columns
+# 3. quick_fix.py - Quick database connection fixes

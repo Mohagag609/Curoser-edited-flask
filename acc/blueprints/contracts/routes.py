@@ -1,176 +1,251 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify, g
-from acc.blueprints.contracts import bp
-from acc.extensions import db
-from acc.models import Contract, Customer, Unit, Safe, Installment
-from acc.services.utils import generate_uid, log_action, Pagination, format_currency, format_date
-from acc.services.code_generator import generate_contract_code
-from sqlalchemy import or_, and_
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, g, send_file
+from datetime import datetime, date
 from decimal import Decimal
-from datetime import datetime, timedelta
-import json
+from sqlalchemy import or_, and_, func
+from acc.extensions import db
+from acc.models.contract import Contract, ContractStatus, PaymentType, InstallmentPeriod
+from acc.models.installment import Installment, InstallmentStatus
+from acc.models import Customer, Unit, Broker, Project
+from acc.services.utils import generate_uid, format_currency
+from acc.services.project_selection import project_required
+from acc.services.auth import login_required
+from acc.services.audit import log_action
+import logging
+from flask import current_app as app
+
+bp = Blueprint('contracts', __name__)
 
 @bp.route('/')
+@project_required
 def index():
-    """عرض قائمة العقود"""
-    # Clean up any failed transactions
+    """قائمة العقود"""
     try:
-        db.session.rollback()
-    except:
-        pass
-    
-    page = request.args.get('page', 1, type=int)
-    q = request.args.get('q', '')
-    status = request.args.get('status', '')
-    
-    # البحث والتصفية
-    query = Contract.query.filter_by(project_id=g.project.id)
-    
-    if q:
-        search_term = f'%{q}%'
-        # Use outer joins to handle missing relationships
-        query = query.outerjoin(Customer).outerjoin(Unit).filter(
-            or_(
-                Contract.code.ilike(search_term),
-                Customer.name.ilike(search_term),
-                Unit.name.ilike(search_term),
-                Unit.code.ilike(search_term)
+        # الحصول على معاملات الفلترة
+        page = request.args.get('page', 1, type=int)
+        search = request.args.get('search', '')
+        status = request.args.get('status', '')
+        payment_type = request.args.get('payment_type', '')
+        from_date = request.args.get('from_date')
+        to_date = request.args.get('to_date')
+        
+        # بناء الاستعلام
+        query = Contract.query.filter_by(project_id=g.project.id)
+        
+        # تطبيق الفلاتر
+        if search:
+            query = query.join(Customer).join(Unit).filter(
+                or_(
+                    Contract.code.ilike(f'%{search}%'),
+                    Customer.name.ilike(f'%{search}%'),
+                    Customer.phone.ilike(f'%{search}%'),
+                    Unit.name.ilike(f'%{search}%')
+                )
             )
+        
+        if status:
+            try:
+                status_enum = ContractStatus[status.upper()]
+                query = query.filter(Contract.status == status_enum)
+            except:
+                pass
+        
+        if payment_type:
+            try:
+                payment_enum = PaymentType[payment_type.upper()]
+                query = query.filter(Contract.payment_type == payment_enum)
+            except:
+                pass
+        
+        if from_date:
+            query = query.filter(Contract.contract_date >= from_date)
+        
+        if to_date:
+            query = query.filter(Contract.contract_date <= to_date)
+        
+        # الترتيب
+        query = query.order_by(Contract.created_at.desc())
+        
+        # التصفح
+        per_page = 20
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        contracts = pagination.items
+        
+        # حساب الإحصائيات
+        stats = calculate_stats()
+        
+        return render_template('contracts/index.html',
+            contracts=contracts,
+            pagination=pagination,
+            stats=stats,
+            format_currency=format_currency
         )
-    
-    if status:
-        query = query.filter(Contract.status == status)
-    
-    # الترتيب والترقيم
-    query = query.order_by(Contract.created_at.desc())
-    pagination = Pagination(query, page, per_page=20)
-    
-    # الإحصائيات
-    stats = {
-        'total': Contract.query.filter_by(project_id=g.project.id).count(),
-        'active': Contract.query.filter_by(project_id=g.project.id, status='نشط').count(),
-        'completed': Contract.query.filter_by(project_id=g.project.id, status='مكتمل').count(),
-        'cancelled': Contract.query.filter_by(project_id=g.project.id, status='ملغي').count()
-    }
-    
-    return render_template('contracts/index.html',
-                         contracts=pagination.items,
-                         pagination=pagination,
-                         q=q,
-                         status=status,
-                         stats=stats)
+        
+    except Exception as e:
+        app.logger.error(f'Error in contracts index: {str(e)}')
+        flash('حدث خطأ في تحميل العقود', 'error')
+        return redirect(url_for('dashboard.index'))
 
 @bp.route('/create', methods=['GET', 'POST'])
+@project_required
 def create():
     """إنشاء عقد جديد"""
     if request.method == 'POST':
         try:
-            # البيانات الأساسية
-            unit_id = request.form.get('unit_id')
-            customer_id = request.form.get('customer_id')
+            # التحقق من البيانات المطلوبة
+            required_fields = ['code', 'customer_id', 'unit_id', 'unit_price', 'payment_type', 'contract_date']
+            for field in required_fields:
+                if not request.form.get(field):
+                    flash(f'الحقل {field} مطلوب', 'error')
+                    return redirect(request.url)
             
-            # التحقق من الوحدة والعميل
-            unit = Unit.query.get_or_404(unit_id)
-            customer = Customer.query.get_or_404(customer_id)
-            
+            # التحقق من أن الوحدة متاحة
+            unit = Unit.query.get_or_404(request.form['unit_id'])
             if unit.status != 'متاحة':
-                raise Exception('الوحدة غير متاحة للبيع')
+                flash('الوحدة غير متاحة', 'error')
+                return redirect(request.url)
             
             # إنشاء العقد
             contract = Contract(
                 id=generate_uid('CNT'),
                 project_id=g.project.id,
-                code=generate_contract_code(g.project.id),
-                unit_id=unit_id,
-                customer_id=customer_id,
-                total_price=Decimal(request.form.get('total_price', unit.total_price)),
-                down_payment=Decimal(request.form.get('down_payment', 0)),
+                code=request.form['code'],
+                customer_id=request.form['customer_id'],
+                unit_id=request.form['unit_id'],
+                unit_price=Decimal(request.form['unit_price']),
+                discount_percent=Decimal(request.form.get('discount_percent', 0)),
+                payment_type=PaymentType[request.form['payment_type'].upper()],
+                contract_date=datetime.strptime(request.form['contract_date'], '%Y-%m-%d').date(),
+                down_payment_percent=Decimal(request.form.get('down_payment_percent', 0)),
                 maintenance_deposit=Decimal(request.form.get('maintenance_deposit', 0)),
-                broker_name=request.form.get('broker_name'),
+                broker_id=request.form.get('broker_id') or None,
                 broker_percent=Decimal(request.form.get('broker_percent', 0)),
-                payment_type=request.form.get('payment_type', 'cash'),
-                start_date=datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date(),
-                status='نشط'
+                status=ContractStatus.DRAFT,
+                created_by='system' if not hasattr(g, 'user') else g.user.id
             )
             
-            # حساب عمولة السمسار
-            if contract.broker_percent > 0:
-                contract.broker_amount = (contract.total_price * contract.broker_percent) / 100
+            # حساب الأسعار
+            contract.calculate_prices()
+            
+            # إعدادات الأقساط
+            if contract.payment_type in [PaymentType.INSTALLMENT, PaymentType.MIXED]:
+                contract.installment_type = InstallmentPeriod[request.form.get('installment_type', 'MONTHLY').upper()]
+                contract.installment_count = int(request.form.get('installment_count', 0))
+                contract.start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d').date()
+                contract.extra_annual_payments = int(request.form.get('extra_annual_payments', 0))
+                contract.annual_payment_value = Decimal(request.form.get('annual_payment_value', 0))
             
             # تحديث حالة الوحدة
             unit.status = 'محجوزة'
             
+            # حفظ في قاعدة البيانات
             db.session.add(contract)
             db.session.commit()
             
-            # توليد الأقساط إذا كان السداد بالتقسيط
-            if contract.payment_type == 'installment':
-                generate_installments(contract.id)
+            # توليد الأقساط إذا لزم الأمر
+            if contract.payment_type in [PaymentType.INSTALLMENT, PaymentType.MIXED]:
+                contract.generate_installments()
             
-            log_action('إضافة عقد', {'id': contract.id, 'code': contract.code})
-            
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({
-                    'success': True,
-                    'message': 'تم إنشاء العقد بنجاح',
-                    'contract_id': contract.id
-                })
+            # تسجيل الحدث
+            log_action('إنشاء عقد', {
+                'contract_id': contract.id,
+                'code': contract.code,
+                'customer': contract.customer.name,
+                'unit': contract.unit.name,
+                'value': float(contract.final_price)
+            })
             
             flash('تم إنشاء العقد بنجاح', 'success')
+            
+            # طباعة إذا طُلب ذلك
+            if request.form.get('print_after_save'):
+                return redirect(url_for('contracts.print', id=contract.id))
+            
             return redirect(url_for('contracts.view', id=contract.id))
             
         except Exception as e:
             db.session.rollback()
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'success': False, 'message': str(e)}), 400
-            flash(f'خطأ: {str(e)}', 'error')
-            return redirect(url_for('contracts.create'))
+            app.logger.error(f'Error creating contract: {str(e)}')
+            flash(f'خطأ في إنشاء العقد: {str(e)}', 'error')
+            return redirect(request.url)
     
-    # عرض النموذج
-    customers = Customer.query.filter_by(status='نشط').order_by(Customer.name).all()
-    units = Unit.query.filter_by(project_id=g.project.id, status='متاحة').order_by(Unit.code).all()
-    safes = Safe.query.filter_by(project_id=g.project.id, status='نشط').all()
-    
-    return render_template('contracts/create.html',
-                         customers=customers,
-                         units=units,
-                         safes=safes,
-                         today=datetime.today().date())
+    # GET request
+    try:
+        # البيانات المطلوبة للنموذج
+        customers = Customer.query.filter_by(project_id=g.project.id).order_by(Customer.name).all()
+        available_units = Unit.query.filter_by(project_id=g.project.id, status='متاحة').order_by(Unit.name).all()
+        brokers = Broker.query.filter_by(project_id=g.project.id, status='نشط').order_by(Broker.name).all()
+        
+        # اقتراح رقم العقد
+        last_contract = Contract.query.filter_by(project_id=g.project.id).order_by(Contract.code.desc()).first()
+        if last_contract:
+            # استخراج الرقم من آخر عقد وزيادته
+            try:
+                last_number = int(last_contract.code.split('-')[-1])
+                suggested_code = f"CNT-{g.project.code}-{last_number + 1:04d}"
+            except:
+                suggested_code = f"CNT-{g.project.code}-0001"
+        else:
+            suggested_code = f"CNT-{g.project.code}-0001"
+        
+        return render_template('contracts/create.html',
+            customers=customers,
+            available_units=available_units,
+            brokers=brokers,
+            suggested_code=suggested_code,
+            today=date.today().strftime('%Y-%m-%d'),
+            format_currency=format_currency
+        )
+        
+    except Exception as e:
+        app.logger.error(f'Error loading create form: {str(e)}')
+        flash('حدث خطأ في تحميل النموذج', 'error')
+        return redirect(url_for('contracts.index'))
 
 @bp.route('/<string:id>')
+@project_required
 def view(id):
     """عرض تفاصيل العقد"""
-    contract = Contract.query.get_or_404(id)
-    
-    if contract.project_id != g.project.id:
-        flash('العقد غير موجود', 'error')
+    try:
+        contract = Contract.query.get_or_404(id)
+        
+        # التحقق من أن العقد ينتمي للمشروع الحالي
+        if contract.project_id != g.project.id:
+            flash('العقد غير موجود', 'error')
+            return redirect(url_for('contracts.index'))
+        
+        # جلب الأقساط
+        installments = contract.installments.order_by(Installment.due_date).all()
+        
+        # حساب ملخص الأقساط
+        installment_summary = {
+            'total': len(installments),
+            'paid': sum(1 for i in installments if i.status == InstallmentStatus.PAID),
+            'pending': sum(1 for i in installments if i.status == InstallmentStatus.PENDING),
+            'overdue': sum(1 for i in installments if i.is_overdue),
+            'total_amount': sum(i.amount for i in installments),
+            'paid_amount': sum(i.paid_amount for i in installments),
+            'overdue_amount': sum(i.remaining_amount for i in installments if i.is_overdue)
+        }
+        
+        return render_template('contracts/view.html',
+            contract=contract,
+            installments=installments,
+            installment_summary=installment_summary,
+            format_currency=format_currency
+        )
+        
+    except Exception as e:
+        app.logger.error(f'Error viewing contract {id}: {str(e)}')
+        flash('حدث خطأ في عرض العقد', 'error')
         return redirect(url_for('contracts.index'))
-    
-    # جلب الأقساط
-    installments = Installment.query.filter_by(
-        contract_id=contract.id
-    ).order_by(Installment.due_date).all()
-    
-    # حساب الإحصائيات
-    total_installments = len(installments)
-    paid_installments = sum(1 for i in installments if i.status == 'مدفوع')
-    total_paid = sum(i.get_paid_amount() for i in installments)
-    remaining_amount = contract.total_price - contract.down_payment - total_paid
-    
-    return render_template('contracts/view.html',
-                         contract=contract,
-                         installments=installments,
-                         stats={
-                             'total_installments': total_installments,
-                             'paid_installments': paid_installments,
-                             'total_paid': total_paid,
-                             'remaining_amount': remaining_amount
-                         })
 
 @bp.route('/<string:id>/edit', methods=['GET', 'POST'])
+@project_required
 def edit(id):
     """تعديل العقد"""
     contract = Contract.query.get_or_404(id)
     
+    # التحقق من أن العقد ينتمي للمشروع الحالي
     if contract.project_id != g.project.id:
         flash('العقد غير موجود', 'error')
         return redirect(url_for('contracts.index'))
@@ -178,244 +253,208 @@ def edit(id):
     if request.method == 'POST':
         try:
             # تحديث البيانات
-            contract.total_price = Decimal(request.form.get('total_price'))
-            contract.down_payment = Decimal(request.form.get('down_payment'))
+            contract.discount_percent = Decimal(request.form.get('discount_percent', 0))
+            contract.down_payment_percent = Decimal(request.form.get('down_payment_percent', 0))
             contract.maintenance_deposit = Decimal(request.form.get('maintenance_deposit', 0))
-            contract.broker_name = request.form.get('broker_name')
+            contract.broker_id = request.form.get('broker_id') or None
             contract.broker_percent = Decimal(request.form.get('broker_percent', 0))
-            contract.status = request.form.get('status')
+            contract.notes = request.form.get('notes', '')
             
-            # إعادة حساب عمولة السمسار
-            if contract.broker_percent > 0:
-                contract.broker_amount = (contract.total_price * contract.broker_percent) / 100
-            else:
-                contract.broker_amount = 0
+            # إعادة حساب الأسعار
+            contract.calculate_prices()
             
+            # حفظ التغييرات
             db.session.commit()
-            log_action('تعديل عقد', {'id': contract.id, 'code': contract.code})
             
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'success': True, 'message': 'تم تعديل العقد بنجاح'})
+            # تسجيل الحدث
+            log_action('تعديل عقد', {'contract_id': id, 'code': contract.code})
             
-            flash('تم تعديل العقد بنجاح', 'success')
+            flash('تم تحديث العقد بنجاح', 'success')
             return redirect(url_for('contracts.view', id=id))
             
         except Exception as e:
             db.session.rollback()
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'success': False, 'message': str(e)}), 400
-            flash(f'خطأ: {str(e)}', 'error')
+            app.logger.error(f'Error editing contract {id}: {str(e)}')
+            flash(f'خطأ في تحديث العقد: {str(e)}', 'error')
     
-    return render_template('contracts/edit.html', contract=contract)
+    # جلب البيانات للنموذج
+    brokers = Broker.query.filter_by(project_id=g.project.id, status='نشط').order_by(Broker.name).all()
+    
+    return render_template('contracts/edit.html',
+        contract=contract,
+        brokers=brokers,
+        format_currency=format_currency
+    )
 
-@bp.route('/<string:id>/delete', methods=['POST'])
+@bp.route('/<string:id>/delete', methods=['POST', 'DELETE'])
+@project_required
 def delete(id):
     """حذف العقد"""
     try:
         contract = Contract.query.get_or_404(id)
         
+        # التحقق من أن العقد ينتمي للمشروع الحالي
         if contract.project_id != g.project.id:
             return jsonify({'success': False, 'message': 'العقد غير موجود'}), 404
         
-        # التحقق من وجود أقساط
-        has_installments = Installment.query.filter_by(unit_id=contract.unit_id).count() > 0 if contract.unit_id else False
+        # التحقق من إمكانية الحذف
+        if contract.status != ContractStatus.DRAFT:
+            return jsonify({'success': False, 'message': 'لا يمكن حذف عقد غير مسودة'}), 400
         
-        if has_installments:
-            return jsonify({'success': False, 'message': 'لا يمكن حذف عقد له أقساط'}), 400
+        # التحقق من عدم وجود دفعات
+        if contract.paid_amount > 0:
+            return jsonify({'success': False, 'message': 'لا يمكن حذف عقد له دفعات'}), 400
         
         # إعادة الوحدة للحالة المتاحة
         if contract.unit:
             contract.unit.status = 'متاحة'
         
-        # حذف العقد
+        # حذف العقد (سيحذف الأقساط تلقائياً بسبب cascade)
         db.session.delete(contract)
         db.session.commit()
         
+        # تسجيل الحدث
         log_action('حذف عقد', {'id': id, 'code': contract.code})
         
         return jsonify({'success': True, 'message': 'تم حذف العقد بنجاح'})
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)}), 500
+        app.logger.error(f'Error deleting contract {id}: {str(e)}')
+        return jsonify({'success': False, 'message': f'خطأ في حذف العقد: {str(e)}'}), 500
 
-@bp.route('/<string:id>/installments/generate', methods=['POST'])
-def generate_installments(contract_id=None):
-    """توليد أقساط العقد"""
+@bp.route('/<string:id>/activate', methods=['POST'])
+@project_required
+def activate(id):
+    """تفعيل العقد"""
     try:
-        # إما من معامل الدالة أو من الطلب
-        if not contract_id:
-            contract_id = request.form.get('contract_id')
-        
-        contract = Contract.query.get_or_404(contract_id)
+        contract = Contract.query.get_or_404(id)
         
         if contract.project_id != g.project.id:
             return jsonify({'success': False, 'message': 'العقد غير موجود'}), 404
         
-        # الحصول على بيانات الأقساط
-        installment_type = request.form.get('installment_type', 'شهري')
-        years = int(request.form.get('years', 1))
-        extra_annual = int(request.form.get('extra_annual', 0))
-        annual_payment = Decimal(request.form.get('annual_payment', 0))
+        # التحقق من إمكانية التفعيل
+        if contract.status != ContractStatus.DRAFT:
+            return jsonify({'success': False, 'message': 'العقد مفعل بالفعل'}), 400
         
-        # حساب عدد الأقساط
-        if installment_type == 'شهري':
-            installments_per_year = 12
-        elif installment_type == 'ربع سنوي':
-            installments_per_year = 4
-        elif installment_type == 'نصف سنوي':
-            installments_per_year = 2
-        else:  # سنوي
-            installments_per_year = 1
+        # تفعيل العقد
+        contract.status = ContractStatus.ACTIVE
+        contract.approved_by = 'system' if not hasattr(g, 'user') else g.user.id
+        contract.approval_date = datetime.now()
         
-        total_installments = installments_per_year * years
-        
-        # حساب المبلغ المتبقي بعد المقدم
-        remaining = contract.total_price - contract.down_payment
-        
-        # خصم الدفعات السنوية من المتبقي
-        extra_total = extra_annual * annual_payment
-        remaining_after_extra = remaining - extra_total
-        
-        # حساب قيمة القسط العادي
-        installment_amount = remaining_after_extra / total_installments
-        
-        # حذف الأقساط القديمة إن وجدت
-        Installment.query.filter_by(contract_id=contract.id).delete()
-        
-        # إنشاء الأقساط الجديدة
-        start_date = contract.start_date
-        
-        for i in range(total_installments):
-            # حساب تاريخ الاستحقاق
-            if installment_type == 'شهري':
-                due_date = start_date + timedelta(days=30 * (i + 1))
-            elif installment_type == 'ربع سنوي':
-                due_date = start_date + timedelta(days=90 * (i + 1))
-            elif installment_type == 'نصف سنوي':
-                due_date = start_date + timedelta(days=180 * (i + 1))
-            else:  # سنوي
-                due_date = start_date + timedelta(days=365 * (i + 1))
-            
-            installment = Installment(
-                id=generate_uid('INS'),
-                project_id=g.project.id,
-                contract_id=contract.id,
-                unit_id=contract.unit_id,
-                customer_id=contract.customer_id,
-                installment_number=i + 1,
-                amount=installment_amount,
-                original_amount=installment_amount,
-                due_date=due_date,
-                status='مستحق'
-            )
-            
-            db.session.add(installment)
-        
-        # إضافة الدفعات السنوية إن وجدت
-        for i in range(extra_annual):
-            due_date = start_date + timedelta(days=365 * (i + 1))
-            
-            installment = Installment(
-                id=generate_uid('INS'),
-                project_id=g.project.id,
-                contract_id=contract.id,
-                unit_id=contract.unit_id,
-                customer_id=contract.customer_id,
-                installment_number=total_installments + i + 1,
-                amount=annual_payment,
-                original_amount=annual_payment,
-                due_date=due_date,
-                status='مستحق',
-                type='دفعة سنوية'
-            )
-            
-            db.session.add(installment)
-        
-        # إضافة وديعة الصيانة كقسط أخير
-        if contract.maintenance_deposit > 0:
-            last_due_date = start_date + timedelta(days=365 * years)
-            
-            installment = Installment(
-                id=generate_uid('INS'),
-                project_id=g.project.id,
-                contract_id=contract.id,
-                unit_id=contract.unit_id,
-                customer_id=contract.customer_id,
-                installment_number=total_installments + extra_annual + 1,
-                amount=contract.maintenance_deposit,
-                original_amount=contract.maintenance_deposit,
-                due_date=last_due_date,
-                status='مستحق',
-                type='وديعة صيانة'
-            )
-            
-            db.session.add(installment)
+        # تحديث حالة الوحدة
+        if contract.unit:
+            contract.unit.status = 'مباعة'
         
         db.session.commit()
         
-        log_action('توليد أقساط', {'contract_id': contract.id, 'count': total_installments + extra_annual})
+        # تسجيل الحدث
+        log_action('تفعيل عقد', {'contract_id': id, 'code': contract.code})
         
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({
-                'success': True,
-                'message': f'تم توليد {total_installments + extra_annual} قسط بنجاح'
-            })
-        
-        return redirect(url_for('contracts.view', id=contract.id))
+        return jsonify({'success': True, 'message': 'تم تفعيل العقد بنجاح'})
         
     except Exception as e:
         db.session.rollback()
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'success': False, 'message': str(e)}), 500
-        flash(f'خطأ: {str(e)}', 'error')
-        return redirect(url_for('contracts.view', id=contract_id))
+        app.logger.error(f'Error activating contract {id}: {str(e)}')
+        return jsonify({'success': False, 'message': str(e)}), 500
 
-@bp.route('/search')
-def search():
-    """البحث في العقود (AJAX)"""
-    q = request.args.get('q', '')
-    page = request.args.get('page', 1, type=int)
-    
-    query = Contract.query.filter_by(project_id=g.project.id)
-    
-    if q:
-        search_term = f'%{q}%'
-        query = query.join(Customer).join(Unit).filter(
-            or_(
-                Contract.code.ilike(search_term),
-                Customer.name.ilike(search_term),
-                Unit.name.ilike(search_term),
-                Unit.code.ilike(search_term)
-            )
+@bp.route('/<string:id>/print')
+@project_required
+def print_contract(id):
+    """طباعة العقد"""
+    try:
+        contract = Contract.query.get_or_404(id)
+        
+        if contract.project_id != g.project.id:
+            flash('العقد غير موجود', 'error')
+            return redirect(url_for('contracts.index'))
+        
+        # إنشاء ملف PDF للعقد
+        # TODO: implement PDF generation
+        
+        return render_template('contracts/print.html',
+            contract=contract,
+            format_currency=format_currency
         )
-    
-    query = query.order_by(Contract.created_at.desc())
-    pagination = Pagination(query, page, per_page=20)
-    
-    contracts = []
-    for contract in pagination.items:
-        contracts.append({
-            'id': contract.id,
-            'code': contract.code,
-            'customer_name': contract.customer.name if contract.customer else '',
-            'unit_name': contract.unit.name if contract.unit else '',
-            'unit_code': contract.unit.code if contract.unit else '',
-            'total_price': float(contract.total_price),
-            'down_payment': float(contract.down_payment),
-            'remaining': float(contract.total_price - contract.down_payment),
-            'status': contract.status,
-            'start_date': contract.start_date.strftime('%Y-%m-%d')
-        })
-    
-    return jsonify({
-        'success': True,
-        'contracts': contracts,
-        'pagination': {
-            'page': pagination.page,
-            'pages': pagination.pages,
-            'total': pagination.total,
-            'has_prev': pagination.has_prev,
-            'has_next': pagination.has_next
+        
+    except Exception as e:
+        app.logger.error(f'Error printing contract {id}: {str(e)}')
+        flash('حدث خطأ في طباعة العقد', 'error')
+        return redirect(url_for('contracts.view', id=id))
+
+@bp.route('/export')
+@project_required
+def export():
+    """تصدير العقود"""
+    try:
+        # TODO: implement export functionality
+        flash('وظيفة التصدير قيد التطوير', 'info')
+        return redirect(url_for('contracts.index'))
+        
+    except Exception as e:
+        app.logger.error(f'Error exporting contracts: {str(e)}')
+        flash('حدث خطأ في التصدير', 'error')
+        return redirect(url_for('contracts.index'))
+
+def calculate_stats():
+    """حساب إحصائيات العقود"""
+    try:
+        # إجمالي العقود
+        total_contracts = Contract.query.filter_by(project_id=g.project.id).count()
+        
+        # العقود النشطة
+        active_contracts = Contract.query.filter_by(
+            project_id=g.project.id,
+            status=ContractStatus.ACTIVE
+        ).count()
+        
+        # النسبة المئوية للعقود النشطة
+        active_percentage = round((active_contracts / total_contracts * 100) if total_contracts > 0 else 0, 1)
+        
+        # إجمالي قيمة العقود
+        total_value = db.session.query(func.sum(Contract.final_price)).filter_by(
+            project_id=g.project.id
+        ).scalar() or 0
+        
+        # المبلغ المحصل
+        # TODO: حساب المبلغ المحصل من جدول المدفوعات
+        collected_amount = 0
+        
+        # نسبة التحصيل
+        collection_rate = round((collected_amount / total_value * 100) if total_value > 0 else 0, 1)
+        
+        # الأقساط المتأخرة
+        overdue_installments = 0
+        overdue_amount = 0
+        
+        # حساب الأقساط المتأخرة
+        contracts = Contract.query.filter_by(project_id=g.project.id).all()
+        for contract in contracts:
+            for installment in contract.installments:
+                if installment.is_overdue:
+                    overdue_installments += 1
+                    overdue_amount += installment.remaining_amount
+        
+        return {
+            'total_contracts': total_contracts,
+            'active_contracts': active_contracts,
+            'active_percentage': active_percentage,
+            'total_value': float(total_value),
+            'collected_amount': float(collected_amount),
+            'collection_rate': collection_rate,
+            'overdue_installments': overdue_installments,
+            'overdue_amount': float(overdue_amount)
         }
-    })
+        
+    except Exception as e:
+        app.logger.error(f'Error calculating stats: {str(e)}')
+        return {
+            'total_contracts': 0,
+            'active_contracts': 0,
+            'active_percentage': 0,
+            'total_value': 0,
+            'collected_amount': 0,
+            'collection_rate': 0,
+            'overdue_installments': 0,
+            'overdue_amount': 0
+        }

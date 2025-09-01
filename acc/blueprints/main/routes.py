@@ -59,3 +59,10 @@ def clear_project():
     clear_current_project()
     flash('تم إلغاء اختيار المشروع', 'info')
     return redirect(url_for('main.select_project'))
+
+@bp.route('/logout')
+def logout():
+    """تسجيل الخروج"""
+    session.clear()
+    flash('تم تسجيل الخروج بنجاح', 'info')
+    return redirect(url_for('main.index'))
