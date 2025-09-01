@@ -2,7 +2,7 @@
 # exit on error
 set -o errexit
 
-echo "=== Starting build process ==="
+echo "=== Starting optimized build process ==="
 
 # Upgrade pip
 echo "Upgrading pip..."
@@ -17,33 +17,49 @@ echo "Installing Node dependencies and building CSS..."
 npm install
 npm run build
 
-# Create tables only if they don't exist (SAFE MODE)
-echo "Checking database tables..."
+# Create necessary directories
+echo "Creating directories..."
+mkdir -p logs
+mkdir -p backups
+mkdir -p uploads
+mkdir -p reports
+
+# Set permissions
+chmod 755 logs backups uploads reports
+
+# Initialize optimized application
+echo "Initializing optimized application..."
 python3 -c "
-from app import app, db
+from acc import create_app
+from acc.core.database import get_database_stats
+from acc.core.backup import create_automatic_backup
+
+app = create_app()
 with app.app_context():
-    print('Creating tables if not exist...')
-    db.create_all()
-    print('Database tables ready!')
+    print('✅ Optimized application initialized')
+    
+    # Display database stats
+    try:
+        stats = get_database_stats()
+        print('📊 Database Statistics:')
+        for table, count in stats.items():
+            if not table.startswith('database_'):
+                print(f'   {table}: {count:,} records')
+        
+        if 'database_size_mb' in stats:
+            print(f'   Database size: {stats[\"database_size_mb\"]} MB')
+    except Exception as e:
+        print(f'⚠️ Could not get database stats: {e}')
+    
+    # Create initial backup
+    try:
+        if create_automatic_backup():
+            print('✅ Initial backup created')
+        else:
+            print('⚠️ Backup creation failed')
+    except Exception as e:
+        print(f'⚠️ Backup error: {e}')
 "
 
-# Check if this is the first deployment or optimization needed
-OPTIMIZATION_FLAG="/opt/render/project/.optimizations_done"
-
-if [ ! -f "$OPTIMIZATION_FLAG" ]; then
-    echo "First deployment detected - Running optimizations..."
-    
-    # Run database optimizations (once only)
-    if [ -f "database_optimizations.py" ]; then
-        python3 database_optimizations.py && touch "$OPTIMIZATION_FLAG" || echo "Optimizations failed, continuing..."
-    fi
-    
-    # Run performance boost (once only)
-    if [ -f "performance_boost.py" ]; then
-        python3 performance_boost.py indexes || echo "Performance boost failed, continuing..."
-    fi
-else
-    echo "Optimizations already applied - skipping..."
-fi
-
-echo "=== Build completed successfully ==="
+echo "=== Optimized build completed successfully ==="
+echo "🌐 Run with: python run_optimized.py"

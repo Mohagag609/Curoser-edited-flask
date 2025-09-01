@@ -1,7 +1,33 @@
+# Core Flask Dependencies
 Flask==3.0.0
 Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.5
+Flask-Caching==2.1.0
+
+# Database Drivers
 psycopg2-binary==2.9.9
+
+# Environment & Configuration
 python-dotenv==1.0.0
+
+# Template Engine
 Jinja2==3.1.2
+
+# Production Server
 gunicorn==21.2.0
+
+# Date/Time Utilities
 python-dateutil==2.8.2
+
+# Performance & Monitoring
+APScheduler==3.10.4
+
+# Security
+cryptography==41.0.7
+
+# Data Processing
+pandas==2.1.4
+openpyxl==3.1.2
+
+# Logging & Monitoring
+structlog==23.2.0
