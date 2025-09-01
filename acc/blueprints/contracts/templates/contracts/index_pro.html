@@ -672,8 +672,11 @@
                         </div>
                     </div>
                     
-                    <div id="installmentPreview" class="installment-preview">
-                        <!-- Preview will be shown here -->
+                    <div class="form-group col-span-2">
+                        <button type="button" onclick="showInstallmentPreview()" class="btn-modern btn-primary w-full">
+                            <i class="fas fa-calculator"></i>
+                            معاينة خطة الأقساط
+                        </button>
                     </div>
                 </div>
             </div>
@@ -872,5 +875,242 @@ function filterContracts() {
 function printContracts() {
     window.print();
 }
+
+let currentContractData = null;
+
+function showInstallmentPreview() {
+    const form = document.getElementById('contractForm');
+    const formData = new FormData(form);
+    
+    // Validate required fields
+    const totalPrice = parseFloat(formData.get('total_price')) || 0;
+    const downPayment = parseFloat(formData.get('down_payment')) || 0;
+    const paymentType = formData.get('payment_type');
+    
+    if (!paymentType || paymentType !== 'installment') {
+        alert('الرجاء اختيار طريقة السداد "تقسيط"');
+        return;
+    }
+    
+    if (totalPrice <= 0) {
+        alert('الرجاء إدخال السعر الكلي');
+        return;
+    }
+    
+    // Store form data for later use
+    currentContractData = formData;
+    
+    // Generate preview
+    generateInstallmentPreview();
+    
+    // Show modal
+    document.getElementById('installmentPreviewModal').style.display = 'flex';
+}
+
+function hideInstallmentPreview() {
+    document.getElementById('installmentPreviewModal').style.display = 'none';
+}
+
+function generateInstallmentPreview() {
+    const totalPrice = parseFloat(currentContractData.get('total_price')) || 0;
+    const downPayment = parseFloat(currentContractData.get('down_payment')) || 0;
+    const installmentType = currentContractData.get('installment_type') || 'شهري';
+    const years = parseInt(currentContractData.get('years')) || 1;
+    const extraAnnual = parseInt(currentContractData.get('extra_annual')) || 0;
+    const annualValue = parseFloat(currentContractData.get('annual_payment_value')) || 0;
+    const maintenanceDeposit = parseFloat(currentContractData.get('maintenance_deposit')) || 0;
+    
+    const remaining = totalPrice - downPayment;
+    const extraAmount = extraAnnual * annualValue;
+    const regularAmount = remaining - extraAmount;
+    
+    let installmentsPerYear = 12;
+    if (installmentType === 'ربع سنوي') installmentsPerYear = 4;
+    else if (installmentType === 'نصف سنوي') installmentsPerYear = 2;
+    else if (installmentType === 'سنوي') installmentsPerYear = 1;
+    
+    const totalInstallments = years * installmentsPerYear;
+    const installmentAmount = regularAmount / totalInstallments;
+    
+    let html = `
+        <div class="mb-6">
+            <h4 class="text-lg font-semibold mb-4">ملخص الأقساط</h4>
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="p-4 bg-gray-50 rounded">
+                    <div class="text-sm text-gray-600">السعر الكلي</div>
+                    <div class="text-xl font-bold">${formatCurrency(totalPrice)}</div>
+                </div>
+                <div class="p-4 bg-gray-50 rounded">
+                    <div class="text-sm text-gray-600">المبلغ المدفوع</div>
+                    <div class="text-xl font-bold">${formatCurrency(downPayment)}</div>
+                </div>
+                <div class="p-4 bg-gray-50 rounded">
+                    <div class="text-sm text-gray-600">المبلغ المتبقي</div>
+                    <div class="text-xl font-bold">${formatCurrency(remaining)}</div>
+                </div>
+                <div class="p-4 bg-gray-50 rounded">
+                    <div class="text-sm text-gray-600">نوع التقسيط</div>
+                    <div class="text-xl font-bold">${installmentType}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mb-6">
+            <h4 class="text-lg font-semibold mb-4">جدول الأقساط</h4>
+            <table class="w-full border rounded-lg overflow-hidden">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="p-3 text-right">رقم القسط</th>
+                        <th class="p-3 text-right">التاريخ</th>
+                        <th class="p-3 text-right">المبلغ</th>
+                        <th class="p-3 text-right">النوع</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+    
+    const startDate = new Date(currentContractData.get('start_date') || new Date());
+    let installmentNumber = 1;
+    
+    // Add regular installments
+    for (let i = 0; i < totalInstallments; i++) {
+        const dueDate = new Date(startDate);
+        
+        if (installmentType === 'شهري') {
+            dueDate.setMonth(dueDate.getMonth() + i);
+        } else if (installmentType === 'ربع سنوي') {
+            dueDate.setMonth(dueDate.getMonth() + (i * 3));
+        } else if (installmentType === 'نصف سنوي') {
+            dueDate.setMonth(dueDate.getMonth() + (i * 6));
+        } else if (installmentType === 'سنوي') {
+            dueDate.setFullYear(dueDate.getFullYear() + i);
+        }
+        
+        html += `
+            <tr class="border-t">
+                <td class="p-3">${installmentNumber++}</td>
+                <td class="p-3">${dueDate.toLocaleDateString('ar-SA')}</td>
+                <td class="p-3">${formatCurrency(installmentAmount)}</td>
+                <td class="p-3">قسط ${installmentType}</td>
+            </tr>`;
+    }
+    
+    // Add extra annual installments
+    for (let i = 0; i < extraAnnual; i++) {
+        const dueDate = new Date(startDate);
+        dueDate.setFullYear(dueDate.getFullYear() + i + 1);
+        
+        html += `
+            <tr class="border-t">
+                <td class="p-3">${installmentNumber++}</td>
+                <td class="p-3">${dueDate.toLocaleDateString('ar-SA')}</td>
+                <td class="p-3">${formatCurrency(annualValue)}</td>
+                <td class="p-3">دفعة سنوية إضافية</td>
+            </tr>`;
+    }
+    
+    // Add maintenance deposit if exists
+    if (maintenanceDeposit > 0) {
+        const lastDate = new Date(startDate);
+        lastDate.setFullYear(lastDate.getFullYear() + years);
+        
+        html += `
+            <tr class="border-t bg-blue-50">
+                <td class="p-3">${installmentNumber++}</td>
+                <td class="p-3">${lastDate.toLocaleDateString('ar-SA')}</td>
+                <td class="p-3">${formatCurrency(maintenanceDeposit)}</td>
+                <td class="p-3">وديعة الصيانة</td>
+            </tr>`;
+    }
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="p-4 bg-yellow-50 rounded-lg">
+            <p class="text-sm text-yellow-800">
+                <i class="fas fa-info-circle ml-2"></i>
+                سيتم توليد ${totalInstallments} قسط ${installmentType} + ${extraAnnual} دفعة سنوية إضافية
+                ${maintenanceDeposit > 0 ? ' + وديعة الصيانة' : ''}
+            </p>
+        </div>`;
+    
+    document.getElementById('installmentPreviewContent').innerHTML = html;
+}
+
+async function confirmAndGenerateInstallments() {
+    try {
+        // First save the contract
+        const response = await fetch('{{ url_for("contracts.create") }}', {
+            method: 'POST',
+            body: currentContractData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Generate installments
+            const installmentResponse = await fetch(`/contracts/${result.contract_id}/generate_installments`, {
+                method: 'POST',
+                body: currentContractData
+            });
+            
+            const installmentResult = await installmentResponse.json();
+            
+            if (installmentResult.success) {
+                alert('تم حفظ العقد وتوليد الأقساط بنجاح');
+                // Redirect to installments page
+                window.location.href = '/installments/';
+            } else {
+                alert('تم حفظ العقد ولكن حدث خطأ في توليد الأقساط');
+            }
+        } else {
+            alert(result.message || 'حدث خطأ في حفظ العقد');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('حدث خطأ في الاتصال');
+    }
+}
+
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('ar-SA', {
+        style: 'currency',
+        currency: 'SAR',
+        minimumFractionDigits: 2
+    }).format(amount);
+}
 </script>
+
+<!-- Installment Preview Modal -->
+<div id="installmentPreviewModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-header">
+            <h3 class="modal-title">معاينة خطة الأقساط</h3>
+            <button onclick="hideInstallmentPreview()" class="btn-modern btn-sm">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="modal-body">
+            <div id="installmentPreviewContent">
+                <!-- Preview content will be generated here -->
+            </div>
+        </div>
+        
+        <div class="modal-header" style="border-top: 1px solid #e5e7eb; border-bottom: none;">
+            <div></div>
+            <div class="toolbar-actions">
+                <button type="button" onclick="hideInstallmentPreview()" class="btn-modern btn-secondary">
+                    إلغاء
+                </button>
+                <button type="button" onclick="confirmAndGenerateInstallments()" class="btn-modern btn-primary">
+                    <i class="fas fa-check"></i>
+                    توليد الأقساط والترحيل
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
