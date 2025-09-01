@@ -48,12 +48,10 @@ class DatabaseManager:
                 # فهارس مركبة للبحث السريع
                 self._create_composite_indexes()
                 
-                db.session.commit()
                 logger.info("✅ تم إنشاء جميع الفهارس بنجاح")
                 return True
                 
             except Exception as e:
-                db.session.rollback()
                 logger.error(f"❌ خطأ في إنشاء الفهارس: {str(e)}")
                 return False
     
@@ -71,8 +69,10 @@ class DatabaseManager:
         for index in indexes:
             try:
                 db.session.execute(text(index))
+                db.session.commit()
                 logger.debug(f"✅ Created customer index: {index.split(' ')[5]}")
             except Exception as e:
+                db.session.rollback()
                 logger.warning(f"⚠️ Customer index warning: {e}")
     
     def _create_project_indexes(self):
@@ -143,8 +143,10 @@ class DatabaseManager:
         for index in indexes:
             try:
                 db.session.execute(text(index))
+                db.session.commit()  # Commit after each index
                 logger.debug(f"✅ Created installment index: {index.split(' ')[5]}")
             except Exception as e:
+                db.session.rollback()  # Rollback on error
                 logger.warning(f"⚠️ Installment index warning: {e}")
     
     def _create_voucher_indexes(self):

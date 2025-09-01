@@ -22,18 +22,18 @@ def create_app(config_class=Config):
         try:
             # Import here to avoid circular imports
             from acc.migrations.migration_manager import run_migrations
-            from acc.core.database import create_all_indexes, optimize_database
+            from acc.core.database_simple import create_essential_indexes, optimize_database_simple
             
             # Run migrations
             run_migrations(app)
             app.logger.info('✅ Database migrations completed successfully')
             
-            # Create indexes
-            create_all_indexes(app)
-            app.logger.info('✅ Database indexes created successfully')
+            # Create essential indexes only
+            create_essential_indexes(app)
+            app.logger.info('✅ Essential database indexes created successfully')
             
             # Optimize database
-            optimize_database(app)
+            optimize_database_simple(app)
             app.logger.info('✅ Database optimization completed successfully')
             
         except Exception as e:

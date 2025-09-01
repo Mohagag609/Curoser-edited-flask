@@ -35,7 +35,7 @@ python3 reset_db_simple.py
 echo "Initializing optimized application..."
 python3 -c "
 from acc import create_app
-from acc.core.database import get_database_stats
+from acc.core.database_simple import get_database_stats_simple
 from acc.core.backup import create_automatic_backup
 
 app = create_app()
@@ -44,14 +44,10 @@ with app.app_context():
     
     # Display database stats
     try:
-        stats = get_database_stats(app)
+        stats = get_database_stats_simple(app)
         print('📊 Database Statistics:')
         for table, count in stats.items():
-            if not table.startswith('database_'):
-                print(f'   {table}: {count:,} records')
-        
-        if 'database_size_mb' in stats:
-            print(f'   Database size: {stats[\"database_size_mb\"]} MB')
+            print(f'   {table}: {count:,} records')
     except Exception as e:
         print(f'⚠️ Could not get database stats: {e}')
     
