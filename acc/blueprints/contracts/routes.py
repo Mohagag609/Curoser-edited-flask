@@ -211,7 +211,7 @@ def delete(id):
             return jsonify({'success': False, 'message': 'العقد غير موجود'}), 404
         
         # التحقق من وجود أقساط
-        has_installments = Installment.query.filter_by(contract_id=contract.id).count() > 0
+        has_installments = Installment.query.filter_by(unit_id=contract.unit_id).count() > 0 if contract.unit_id else False
         
         if has_installments:
             return jsonify({'success': False, 'message': 'لا يمكن حذف عقد له أقساط'}), 400
@@ -298,6 +298,7 @@ def generate_installments(contract_id=None):
                 customer_id=contract.customer_id,
                 installment_number=i + 1,
                 amount=installment_amount,
+                original_amount=installment_amount,
                 due_date=due_date,
                 status='مستحق'
             )
@@ -316,6 +317,7 @@ def generate_installments(contract_id=None):
                 customer_id=contract.customer_id,
                 installment_number=total_installments + i + 1,
                 amount=annual_payment,
+                original_amount=annual_payment,
                 due_date=due_date,
                 status='مستحق',
                 type='دفعة سنوية'
@@ -335,6 +337,7 @@ def generate_installments(contract_id=None):
                 customer_id=contract.customer_id,
                 installment_number=total_installments + extra_annual + 1,
                 amount=contract.maintenance_deposit,
+                original_amount=contract.maintenance_deposit,
                 due_date=last_due_date,
                 status='مستحق',
                 type='وديعة صيانة'
