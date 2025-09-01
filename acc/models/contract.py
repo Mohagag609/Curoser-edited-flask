@@ -29,6 +29,7 @@ class InstallmentPeriod(enum.Enum):
 class Contract(db.Model):
     """نموذج العقود المحسّن"""
     __tablename__ = 'contracts'
+    __table_args__ = {"extend_existing": True}
     
     # المعرفات الأساسية
     id = Column(String(20), primary_key=True)

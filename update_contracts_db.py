@@ -8,8 +8,14 @@ import sys
 from datetime import datetime
 
 # إعداد البيئة
-os.environ['FLASK_APP'] = 'app'
-os.environ['FLASK_ENV'] = 'development'
+# إعداد البيئة
+if not os.environ.get('FLASK_APP'):
+    os.environ['FLASK_APP'] = 'app'
+if not os.environ.get('FLASK_ENV'):
+    os.environ['FLASK_ENV'] = 'development'
+
+# إضافة المسار الحالي
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 print("🔧 تحديث قاعدة البيانات للنماذج المحسّنة...\n")
 
@@ -50,7 +56,10 @@ try:
         
         # فحص وإضافة الأعمدة
         if 'contracts' in existing_tables:
+            try:
             existing_columns = [col['name'] for col in inspector.get_columns('contracts')]
+        except:
+            existing_columns = []
             
             for column_name, column_type in contract_columns:
                 if column_name not in existing_columns:

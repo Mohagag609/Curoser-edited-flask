@@ -3,8 +3,8 @@ from datetime import datetime, date
 from decimal import Decimal
 from sqlalchemy import or_, and_, func
 from acc.extensions import db
-from acc.models.contract_enhanced import Contract, ContractStatus, PaymentType, InstallmentPeriod
-from acc.models.installment_enhanced import Installment, InstallmentStatus
+from acc.models.contract import Contract, ContractStatus, PaymentType, InstallmentPeriod
+from acc.models.installment import Installment, InstallmentStatus
 from acc.models import Customer, Unit, Broker, Project
 from acc.services.utils import generate_uid, format_currency
 from acc.services.project_selection import project_required

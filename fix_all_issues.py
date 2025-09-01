@@ -9,7 +9,7 @@ def fix_delete_contract_js():
     print("🔧 إصلاح مشكلة حذف العقود...")
     
     # قراءة ملف contracts/view.html
-    view_file = '/workspace/acc/blueprints/contracts/templates/contracts/view.html'
+    view_file = './acc/blueprints/contracts/templates/contracts/view.html'
     with open(view_file, 'r') as f:
         content = f.read()
     
@@ -57,7 +57,7 @@ def fix_delete_contract_js():
         print("  ✅ تم تحديث contracts/view.html")
     
     # تحديث ملف contracts/index.html أيضًا
-    index_file = '/workspace/acc/blueprints/contracts/templates/contracts/index.html'
+    index_file = './acc/blueprints/contracts/templates/contracts/index.html'
     with open(index_file, 'r') as f:
         content = f.read()
     
@@ -71,7 +71,7 @@ def add_csrf_meta_to_base():
     """إضافة CSRF meta tag إلى base.html"""
     print("\n🔧 إضافة CSRF token إلى base.html...")
     
-    base_file = '/workspace/acc/templates/base.html'
+    base_file = './acc/templates/base.html'
     with open(base_file, 'r') as f:
         content = f.read()
     
@@ -88,7 +88,7 @@ def fix_delete_route_methods():
     """تحديث مسار الحذف لقبول DELETE method أيضًا"""
     print("\n🔧 تحديث مسارات الحذف...")
     
-    routes_file = '/workspace/acc/blueprints/contracts/routes.py'
+    routes_file = './acc/blueprints/contracts/routes.py'
     with open(routes_file, 'r') as f:
         content = f.read()
     
@@ -106,7 +106,7 @@ def add_error_logging():
     """إضافة تسجيل أفضل للأخطاء"""
     print("\n🔧 إضافة تسجيل محسّن للأخطاء...")
     
-    routes_file = '/workspace/acc/blueprints/contracts/routes.py'
+    routes_file = './acc/blueprints/contracts/routes.py'
     with open(routes_file, 'r') as f:
         content = f.read()
     
@@ -175,10 +175,10 @@ echo "📌 لتشغيل التطبيق:"
 echo "   python3 app.py"
 """
     
-    with open('/workspace/install_requirements.sh', 'w') as f:
+    with open('./install_requirements.sh', 'w') as f:
         f.write(script_content)
     
-    os.chmod('/workspace/install_requirements.sh', 0o755)
+    os.chmod('./install_requirements.sh', 0o755)
     print("  ✅ تم إنشاء install_requirements.sh")
 
 def create_test_delete_script():
@@ -228,10 +228,10 @@ if __name__ == '__main__':
     test_delete_contract(test_contract_id)
 """
     
-    with open('/workspace/test_delete_contract.py', 'w') as f:
+    with open('./test_delete_contract.py', 'w') as f:
         f.write(script_content)
     
-    os.chmod('/workspace/test_delete_contract.py', 0o755)
+    os.chmod('./test_delete_contract.py', 0o755)
     print("  ✅ تم إنشاء test_delete_contract.py")
 
 def main():

@@ -61,7 +61,7 @@ def add_logout_functionality():
     """إضافة وظيفة تسجيل خروج بسيطة"""
     print("\n🔧 إضافة وظيفة تسجيل الخروج...")
     
-    main_routes = '/workspace/acc/blueprints/main/routes.py'
+    main_routes = './acc/blueprints/main/routes.py'
     
     with open(main_routes, 'r') as f:
         content = f.read()
@@ -89,11 +89,11 @@ def clear_template_cache():
     print("\n🧹 مسح ذاكرة التخزين المؤقت...")
     
     cache_dirs = [
-        '/workspace/__pycache__',
-        '/workspace/acc/__pycache__',
-        '/workspace/acc/blueprints/__pycache__',
-        '/workspace/acc/blueprints/dashboard/__pycache__',
-        '/workspace/acc/templates/__pycache__'
+        './__pycache__',
+        './acc/__pycache__',
+        './acc/blueprints/__pycache__',
+        './acc/blueprints/dashboard/__pycache__',
+        './acc/templates/__pycache__'
     ]
     
     import shutil
@@ -109,7 +109,7 @@ def check_base_template():
     """فحص قالب base.html بحثًا عن المشاكل"""
     print("\n🔍 فحص base.html...")
     
-    base_path = '/workspace/acc/templates/base.html'
+    base_path = './acc/templates/base.html'
     if os.path.exists(base_path):
         with open(base_path, 'r') as f:
             content = f.read()

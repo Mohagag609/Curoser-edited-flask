@@ -23,6 +23,7 @@ class InstallmentType(enum.Enum):
 class Installment(db.Model):
     """نموذج الأقساط المحسّن"""
     __tablename__ = 'installments'
+    __table_args__ = {"extend_existing": True}
     
     # المعرفات الأساسية
     id = Column(String(20), primary_key=True)

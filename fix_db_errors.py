@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """إصلاح أخطاء قاعدة البيانات وإضافة الحقول المفقودة"""
 
+import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from acc import create_app, db
 from sqlalchemy import text
 import sys
@@ -22,11 +25,16 @@ def fix_database():
             print("2️⃣ إضافة الحقول المفقودة لجدول الأقساط...")
             
             # Check if columns exist before adding
-            result = db.session.execute(text("""
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name='installments'
-            """))
+            try:
+                result = db.session.execute(text("""
+                    SELECT name FROM pragma_table_info('installments')
+                """))
+            except:
+                result = db.session.execute(text("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name='installments'
+                """))
             existing_columns = [row[0] for row in result]
             
             # Add project_id if missing
