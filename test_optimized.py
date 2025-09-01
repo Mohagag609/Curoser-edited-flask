@@ -23,7 +23,7 @@ def test_system():
         # اختبار قاعدة البيانات
         print("\n1️⃣ اختبار قاعدة البيانات...")
         try:
-            stats = get_database_stats()
+            stats = get_database_stats(app)
             print("✅ قاعدة البيانات تعمل بشكل صحيح")
             print(f"   إجمالي الجداول: {len([k for k in stats.keys() if not k.startswith('database_')])}")
             print(f"   حجم قاعدة البيانات: {stats.get('database_size_mb', 0)} MB")

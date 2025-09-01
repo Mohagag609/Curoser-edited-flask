@@ -3,16 +3,15 @@
 """
 from acc.extensions import db
 from sqlalchemy import text, Index
-from acc.core.logging import get_logger
 import logging
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 class DatabaseManager:
     """مدير قاعدة البيانات"""
     
-    def __init__(self):
-        self.app = None
+    def __init__(self, app=None):
+        self.app = app
     
     def init_app(self, app):
         """تهيئة مدير قاعدة البيانات"""
@@ -306,17 +305,20 @@ database_manager = DatabaseManager()
 
 def init_database(app):
     """تهيئة قاعدة البيانات"""
-    database_manager.init_app(app)
-    return database_manager
+    manager = DatabaseManager(app)
+    return manager
 
-def create_all_indexes():
+def create_all_indexes(app):
     """إنشاء جميع الفهارس"""
-    return database_manager.create_all_indexes()
+    manager = DatabaseManager(app)
+    return manager.create_all_indexes()
 
-def optimize_database():
+def optimize_database(app):
     """تحسين قاعدة البيانات"""
-    return database_manager.optimize_database()
+    manager = DatabaseManager(app)
+    return manager.optimize_database()
 
-def get_database_stats():
+def get_database_stats(app):
     """الحصول على إحصائيات قاعدة البيانات"""
-    return database_manager.get_database_stats()
+    manager = DatabaseManager(app)
+    return manager.get_database_stats()

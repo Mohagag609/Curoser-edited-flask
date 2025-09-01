@@ -4,8 +4,6 @@ from config import Config
 from acc.extensions import db
 from acc.core.logging import LoggingManager
 from acc.core.backup import backup_manager
-from acc.core.database import init_database, create_all_indexes, optimize_database
-from acc.migrations.migration_manager import run_migrations
 import os
 
 
@@ -19,22 +17,23 @@ def create_app(config_class=Config):
     # Initialize logging system
     logging_manager = LoggingManager(app)
     
-    # Initialize database manager
-    database_manager = init_database(app)
-    
     # Run database migrations and optimizations
     with app.app_context():
         try:
+            # Import here to avoid circular imports
+            from acc.migrations.migration_manager import run_migrations
+            from acc.core.database import create_all_indexes, optimize_database
+            
             # Run migrations
-            run_migrations()
+            run_migrations(app)
             app.logger.info('✅ Database migrations completed successfully')
             
             # Create indexes
-            create_all_indexes()
+            create_all_indexes(app)
             app.logger.info('✅ Database indexes created successfully')
             
             # Optimize database
-            optimize_database()
+            optimize_database(app)
             app.logger.info('✅ Database optimization completed successfully')
             
         except Exception as e:

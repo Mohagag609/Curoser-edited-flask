@@ -1,7 +1,6 @@
 """
 مدير Migrations مخصص لإدارة قاعدة البيانات
 """
-from acc import create_app
 from acc.extensions import db
 from sqlalchemy import text
 import logging
@@ -11,8 +10,8 @@ logger = logging.getLogger(__name__)
 class MigrationManager:
     """مدير Migrations مخصص"""
     
-    def __init__(self):
-        self.app = create_app()
+    def __init__(self, app=None):
+        self.app = app
         
     def run_migrations(self):
         """تشغيل جميع migrations"""
@@ -172,11 +171,13 @@ class MigrationManager:
         except Exception as e:
             logger.warning(f"   ⚠️ لا يمكن تنفيذ VACUUM: {e}")
 
-def run_migrations():
+def run_migrations(app):
     """تشغيل migrations"""
-    manager = MigrationManager()
+    manager = MigrationManager(app)
     return manager.run_migrations()
 
 if __name__ == "__main__":
-    success = run_migrations()
+    from acc import create_app
+    app = create_app()
+    success = run_migrations(app)
     exit(0 if success else 1)

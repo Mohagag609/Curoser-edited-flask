@@ -21,7 +21,7 @@ def main():
     with app.app_context():
         # عرض إحصائيات قاعدة البيانات
         try:
-            stats = get_database_stats()
+            stats = get_database_stats(app)
             print("\n📊 إحصائيات قاعدة البيانات:")
             for table, count in stats.items():
                 if not table.startswith('database_'):
