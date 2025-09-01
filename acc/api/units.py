@@ -1,9 +1,12 @@
 from flask import Blueprint, jsonify, g
 from acc.models import Unit
+from acc.decorators import login_required, project_required
 
 bp = Blueprint('api_units', __name__)
 
 @bp.route('/available')
+@login_required
+@project_required
 def available():
     """جلب الوحدات المتاحة"""
     units = Unit.query.filter_by(
